@@ -190,11 +190,16 @@ publish:
 deploy-k8s:
   stage: deploy-k8s
   image: bitnami/kubectl:latest
+  network_mode: host
   before_script:
     - kubectl version --client
   script:
-    - kubectl config use-context kind-gms
-    - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do kubectl set image deployment/$app $app=$REGISTRY/vimi-$app:latest -n vimi; done
+    - echo "$KUBECONFIG_BASE64" | base64 -d > /tmp/kubeconfig
+    - kubectl --kubeconfig /tmp/kubeconfig config get-contexts
+    - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do kubectl --kubeconfig /tmp/kubeconfig set image deployment/$app $app=$REGISTRY/vimi-$app:latest -n vimi; done
+    - kubectl --kubeconfig /tmp/kubeconfig rollout restart deployment -n vimi
+    - kubectl --kubeconfig /tmp/kubeconfig rollout status deployment -n vimi --timeout=120s || true
+    - kubectl --kubeconfig /tmp/kubeconfig get pods -n vimi
     - kubectl rollout restart deployment -n vimi
     - kubectl rollout status deployment -n vimi --timeout=120s || true
     - kubectl get pods -n vimi
