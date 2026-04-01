@@ -13,7 +13,7 @@ stages:
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
-  REGISTRY: registry.stsgym.com
+  REGISTRY: darth:5000
   K8S_CLUSTER: kind-gms
   VIMI_NS: vimi
 
@@ -155,3 +155,24 @@ deploy-k8s:
   when: manual
   only:
     - master
+
+deploy-k8s:
+  stage: deploy-k8s
+  image: bitnami/kubectl:latest
+  only:
+    - master
+  before_script:
+    - kubectl config get-contexts
+  script:
+    - kubectl config use-context kind-gms
+    - |
+      for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator \
+                 alert-dissemination env-monitor replay-engine data-catalog \
+                 dis-hla-gateway vimi-plugin; do
+        kubectl set image deployment/$app $app=darth:5000/vimi/$app:latest -n vimi
+        kubectl rollout restart deployment/$app -n vimi
+      done
+    - kubectl rollout status deployment -n vimi --timeout=120s || true
+    - kubectl get pods -n vimi
+  tags:
+    - vimi
