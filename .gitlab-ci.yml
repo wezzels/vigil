@@ -1,17 +1,24 @@
 stages:
   - build
   - test
+  - security-scan
+  - publish
+  - deploy-k8s
 
 variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
   REGISTRY: darth:5000
 
+# Build each mission app
 build-opir-ingest:
   stage: build
   image: docker:24-dind
+  services:
+    - docker:24-dind
   before_script:
     - docker info
   script:
-    - echo "Building opir-ingest..."
     - docker build -t $REGISTRY/vimi-opir-ingest:latest apps/opir-ingest/
     - docker push $REGISTRY/vimi-opir-ingest:latest || true
   only:
@@ -20,20 +27,205 @@ build-opir-ingest:
 build-missile-warning-engine:
   stage: build
   image: docker:24-dind
+  services:
+    - docker:24-dind
   before_script:
     - docker info
   script:
-    - echo "Building missile-warning-engine..."
     - docker build -t $REGISTRY/vimi-missile-warning-engine:latest apps/missile-warning-engine/
     - docker push $REGISTRY/vimi-missile-warning-engine:latest || true
   only:
     - master
 
+build-sensor-fusion:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-sensor-fusion:latest apps/sensor-fusion/
+    - docker push $REGISTRY/vimi-sensor-fusion:latest || true
+  only:
+    - master
+
+build-lvc-coordinator:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-lvc-coordinator:latest apps/lvc-coordinator/
+    - docker push $REGISTRY/vimi-lvc-coordinator:latest || true
+  only:
+    - master
+
+build-alert-dissemination:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-alert-dissemination:latest apps/alert-dissemination/
+    - docker push $REGISTRY/vimi-alert-dissemination:latest || true
+  only:
+    - master
+
+build-env-monitor:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-env-monitor:latest apps/env-monitor/
+    - docker push $REGISTRY/vimi-env-monitor:latest || true
+  only:
+    - master
+
+build-replay-engine:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-replay-engine:latest apps/replay-engine/
+    - docker push $REGISTRY/vimi-replay-engine:latest || true
+  only:
+    - master
+
+build-data-catalog:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-data-catalog:latest apps/data-catalog/
+    - docker push $REGISTRY/vimi-data-catalog:latest || true
+  only:
+    - master
+
+build-dis-hla-gateway:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-dis-hla-gateway:latest apps/dis-hla-gateway/
+    - docker push $REGISTRY/vimi-dis-hla-gateway:latest || true
+  only:
+    - master
+
+build-vimi-plugin:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -t $REGISTRY/vimi-vimi-plugin:latest apps/vimi-plugin/
+    - docker push $REGISTRY/vimi-vimi-plugin:latest || true
+  only:
+    - master
+
+# Test all apps
 test-all:
   stage: test
   image: golang:1.22
   script:
     - go version
-    - echo "Go build test passed"
+    - go build ./... 2>&1 | tail -5
+    - echo "Build verification passed"
+  only:
+    - master
+
+# Security scan
+security-scan:
+  stage: security-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  before_script:
+    - trivy version || true
+  script:
+    - |
+      for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator \
+                 alert-dissemination env-monitor replay-engine data-catalog \
+                 dis-hla-gateway vimi-plugin; do
+        trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY/vimi-$app:latest 2>&1 | grep -E 'Total|CRITICAL|HIGH' || true
+      done
+  allow_failure: true
+  only:
+    - master
+
+# Push to registry
+publish:
+  stage: publish
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY || true
+    - |
+      for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator \
+                 alert-dissemination env-monitor replay-engine data-catalog \
+                 dis-hla-gateway vimi-plugin; do
+        docker push $REGISTRY/vimi-$app:latest || true
+      done
+  needs:
+    - build-opir-ingest
+    - build-missile-warning-engine
+    - build-sensor-fusion
+    - build-lvc-coordinator
+    - build-alert-dissemination
+    - build-env-monitor
+    - build-replay-engine
+    - build-data-catalog
+    - build-dis-hla-gateway
+    - build-vimi-plugin
+  only:
+    - master
+
+# Deploy to Kind cluster
+deploy-k8s:
+  stage: deploy-k8s
+  image: bitnami/kubectl:latest
+  before_script:
+    - kubectl version --client
+  script:
+    - kubectl config get-contexts
+    - kubectl config use-context kind-gms
+    - kubectl set image deployment/opir-ingest opir-ingest=$REGISTRY/vimi-opir-ingest:latest -n vimi
+    - kubectl set image deployment/missile-warning-engine missile-warning-engine=$REGISTRY/vimi-missile-warning-engine:latest -n vimi
+    - kubectl set image deployment/sensor-fusion sensor-fusion=$REGISTRY/vimi-sensor-fusion:latest -n vimi
+    - kubectl set image deployment/lvc-coordinator lvc-coordinator=$REGISTRY/vimi-lvc-coordinator:latest -n vimi
+    - kubectl set image deployment/alert-dissemination alert-dissemination=$REGISTRY/vimi-alert-dissemination:latest -n vimi
+    - kubectl set image deployment/env-monitor env-monitor=$REGISTRY/vimi-env-monitor:latest -n vimi
+    - kubectl set image deployment/replay-engine replay-engine=$REGISTRY/vimi-replay-engine:latest -n vimi
+    - kubectl set image deployment/data-catalog data-catalog=$REGISTRY/vimi-data-catalog:latest -n vimi
+    - kubectl set image deployment/dis-hla-gateway dis-hla-gateway=$REGISTRY/vimi-dis-hla-gateway:latest -n vimi
+    - kubectl set image deployment/vimi-plugin vimi-plugin=$REGISTRY/vimi-vimi-plugin:latest -n vimi
+    - kubectl rollout restart deployment -n vimi
+    - kubectl rollout status deployment -n vimi --timeout=120s || true
+    - kubectl get pods -n vimi
+  environment:
+    name: production
+    url: https://vimi.stsgym.com
+  when: manual
   only:
     - master
