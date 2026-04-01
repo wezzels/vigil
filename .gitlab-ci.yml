@@ -184,21 +184,28 @@ publish:
 deploy-k8s:
   stage: deploy-k8s
   image: docker:24-dind
-  network_mode: kind
+  services:
+  - name: docker:24-dind
   needs:
   - publish
   before_script:
   - apk add --no-cache kubectl >/dev/null 2>&1
   script:
+  - set -e
   - echo "$KUBECONFIG_BASE64" | base64 -d > /tmp/kubeconfig
-  - kubectl --kubeconfig /tmp/kubeconfig get nodes
-  - kubectl --kubeconfig /tmp/kubeconfig config get-contexts
-  - kubectl --kubeconfig /tmp/kubeconfig get pods -n vimi
+  - sed -i "s|https://[^:]*:6443|https://172.17.0.1:6443|g" /tmp/kubeconfig
+  - kubectl --kubeconfig /tmp/kubeconfig cluster-info
+  - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination
+    env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do echo "Loading
+    $app into kind..."; docker save $REGISTRY/vimi-$app:latest | docker exec -i $(kubectl
+    --kubeconfig /tmp/kubeconfig get nodes -o jsonpath='{.items[0].metadata.name}')
+    ctr -n k8s.io images import - 2>/dev/null || true; done
+  - kubectl --kubeconfig /tmp/kubeconfig get ns vimi 2>/dev/null || kubectl --kubeconfig
+    /tmp/kubeconfig create ns vimi
   - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination
     env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do kubectl
     --kubeconfig /tmp/kubeconfig set image deployment/$app $app=$REGISTRY/vimi-$app:latest
     -n vimi; done
-  - kubectl --kubeconfig /tmp/kubeconfig rollout restart deployment -n vimi
   - kubectl --kubeconfig /tmp/kubeconfig rollout status deployment -n vimi --timeout=120s
     || true
   - kubectl --kubeconfig /tmp/kubeconfig get pods -n vimi
@@ -208,11 +215,3 @@ deploy-k8s:
   when: manual
   only:
   - master
-
-test-network-host:
-  stage: test
-  image: bitnami/kubectl:latest
-  network_mode: host
-  script:
-    - kubectl version --client
-    - curl -sk https://127.0.0.1:6443/healthz | head -3 || echo "failed"
