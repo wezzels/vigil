@@ -85,3 +85,4 @@ kubectl apply -f k8s/vimi-cluster/ -n vimi
 **GitLab:** `git@idm.wezzel.com:crab-meat-repos/trooper-vimi.git`
 
 *Note: Repo must be created manually (bot token has Guest access — cannot create via API). Create via web UI at https://idm.wezzel.com/crab-meat-repos/trooper-vimi*
+# VIMI CI Test - Wed Apr  1 07:34:25 PM UTC 2026
