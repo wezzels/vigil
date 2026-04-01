@@ -4,5 +4,3 @@ test-vimi-runner:
     - echo "VIMI runner works!"
     - uptime
     - df -h /
-  tags:
-    - vimi
