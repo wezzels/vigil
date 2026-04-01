@@ -123,7 +123,7 @@ build-dis-hla-gateway:
   before_script:
     - docker info
   script:
-    - docker build -t $REGISTRY/vimi-dis-hla-gateway:latest apps/dis-hla-gateway/
+    - docker build -t $REGISTRY/vimi-dis-hla-gateway:latest dis-hla-gateway/
     - docker push $REGISTRY/vimi-dis-hla-gateway:latest || true
   only:
     - master
@@ -136,7 +136,7 @@ build-vimi-plugin:
   before_script:
     - docker info
   script:
-    - docker build -t $REGISTRY/vimi-vimi-plugin:latest apps/vimi-plugin/
+    - docker build -t $REGISTRY/vimi-vimi-plugin:latest vimi-plugin/
     - docker push $REGISTRY/vimi-vimi-plugin:latest || true
   only:
     - master
