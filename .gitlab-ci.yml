@@ -204,3 +204,11 @@ deploy-k8s:
   when: manual
   only:
   - master
+
+test-network-host:
+  stage: test
+  image: bitnami/kubectl:latest
+  network_mode: host
+  script:
+    - kubectl version --client
+    - curl -sk https://127.0.0.1:6443/healthz | head -3 || echo "failed"
