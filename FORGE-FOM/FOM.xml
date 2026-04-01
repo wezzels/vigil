@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<federationObjectModel xmlns="http://www.openhla.org/fom"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="http://www.openhla.org/fom fom.xsd"
+                       name="TROOPER-FORGE-FOM"
+                       version="1.0"
+                       releaseDate="2026-04-01"
+                       modificatioinDate="2026-04-01">
+    
+    <!-- ============================================================ -->
+    <!-- TROOPER-FORGE Federation Object Model (FOM)                 -->
+    <!-- IEEE 1516-2010 HLA FOM for DoD LVC Simulation Federation     -->
+    <!-- ============================================================ -->
+    
+    <objects>
+        
+        <!-- Entity Object Class: Base for all simulated entities -->
+        <objectClass name="HLAobjectRoot">
+            <attribute name="ObjectRootAcknowledgeFlag" dataType="HLAacknowledgeFlag"
+                       updateType="static" updateCondition="never"/>
+        </objectClass>
+        
+        <!-- Base Entity: Platform-agnostic entity representation -->
+        <objectClass name="Entity" sharing="publishSubscribe">
+            <attribute name="EntityID" dataType="EntityIdentifier" updateType="conditional"/>
+            <attribute name="EntityType" dataType="EntityTypeRecord" updateType="conditional"/>
+            <attribute name="ForceID" dataType="HLAfoundation.forceID" updateType="static"/>
+            <attribute name="NumberOf articulationParameters" dataType="HLAinteger16BE" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- Platform: Land/Sea/Air实体基类 -->
+        <objectClass name="Platform" sharing="publishSubscribe" base="Entity">
+            <attribute name="Location" dataType="WorldCoordinate" updateType="conditional"/>
+            <attribute name="Orientation" dataType="Orientation" updateType="conditional"/>
+            <attribute name="Velocity" dataType="VelocityVector" updateType="conditional"/>
+            <attribute name="Acceleration" dataType="AccelerationVector" updateType="conditional"/>
+            <attribute name="AngularVelocity" dataType="AngularVelocityVector" updateType="conditional"/>
+            <attribute name="DeadReckoningAlgorithm" dataType="DRMEnumerated" updateType="static"/>
+            <attribute name="EntityState" dataType="EntityStateEnumerated" updateType="conditional"/>
+            <attribute name="Health" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="Marking" dataType="HLAmarking" updateType="conditional"/>
+            <attribute name="SpatialDatabaseNumber" dataType="HLAinteger16BE" updateType="static"/>
+            <attribute name="GeneralizedWorldCoordinates" dataType="WorldCoordinate" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- LandPlatform: Ground vehicles, infantry -->
+        <objectClass name="LandPlatform" sharing="publishSubscribe" base="Platform">
+            <attribute name="GroundHeightAboveTerrain" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="ImmobilityDetection" dataType="HLAboolean" updateType="conditional"/>
+            <attribute name="TrajectoryComplete" dataType="HLAboolean" updateType="conditional"/>
+            <attribute name="WeaponVolumeList" dataType="ArticulationParameter" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- AirPlatform: Fixed-wing, rotary-wing, UAV -->
+        <objectClass name="AirPlatform" sharing="publishSubscribe" base="Platform">
+            <attribute name="Altitude" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="Speed" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="Stationary" dataType="HLAboolean" updateType="conditional"/>
+            <attribute name="VerticalSpeed" dataType="HLAfloat32" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- SeaPlatform: Surface vessels, submarines -->
+        <objectClass name="SeaPlatform" sharing="publishSubscribe" base="Platform">
+            <attribute name="Depth" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="PropulsionPlantStatus" dataType="HLAboolean" updateType="conditional"/>
+            <attribute name="NumberOfInstalledPropulsionPlants" dataType="HLAinteger16BE" updateType="static"/>
+        </objectClass>
+        
+        <!--munitions: Projectiles, missiles, bombs -->
+        <objectClass name="Munition" sharing="publishSubscribe" base="Entity">
+            <attribute name="Fusing" dataType="FusingRecord" updateType="static"/>
+            <attribute name="Warhead" dataType="HLAfloat32" updateType="static"/>
+            <attribute name="Location" dataType="WorldCoordinate" updateType="conditional"/>
+            <attribute name="Velocity" dataType="VelocityVector" updateType="conditional"/>
+            <attribute name="DetonationResult" dataType="DetonationResultEnumerated" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- Radio: Communications/IEW/IFF -->
+        <objectClass name="Radio" sharing="publishSubscribe" base="Entity">
+            <attribute name="RadioIdentifier" dataType="EntityIdentifier" updateType="static"/>
+            <attribute name="RadioType" dataType="RadioTypeRecord" updateType="static"/>
+            <attribute name="TransmitPower" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="Frequency" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="Modulation" dataType="ModulationRecord" updateType="conditional"/>
+            <attribute name="InputSource" dataType="HLAinteger16BE" updateType="conditional"/>
+            <attribute name="AntennaPatternType" dataType="HLAinteger16BE" updateType="static"/>
+            <attribute name="AntennaPattern" dataType="AntennaPatternRecord" updateType="conditional"/>
+            <attribute name="TransmitState" dataType="TransmitStateEnumerated" updateType="conditional"/>
+            <attribute name="ReceiveState" dataType="HLAboolean" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- Aggregate: Formations, units -->
+        <objectClass name="Aggregate" sharing="publishSubscribe" base="Entity">
+            <attribute name="AggregateState" dataType="AggregateStateEnumerated" updateType="conditional"/>
+            <attribute name="AggregateType" dataType="AggregateTypeRecord" updateType="static"/>
+            <attribute name="NumberOfSubordinates" dataType="HLAinteger16BE" updateType="conditional"/>
+            <attribute name="SubordinateIdentifierList" dataType="EntityIdentifier" updateType="conditional"/>
+            <attribute name="Formation" dataType="FormationRecord" updateType="conditional"/>
+            <attribute name="CenterOfMass" dataType="WorldCoordinate" updateType="conditional"/>
+            <attribute name="Displacement" dataType="Orientation" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- Environmental: Weather, terrain, sea state -->
+        <objectClass name="Environmental" sharing="publishSubscribe">
+            <attribute name="EnvironmentalType" dataType="EnvironmentalTypeRecord" updateType="static"/>
+            <attribute name="Extent" dataType="ExtentsRecord" updateType="conditional"/>
+            <attribute name="State" dataType="EnvironmentalStateEnumerated" updateType="conditional"/>
+            <attribute name="ModifiedExtent" dataType="ExtentsRecord" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- MissileWarning: Alert entity -->
+        <objectClass name="MissileWarning" sharing="publishSubscribe">
+            <attribute name="WarningID" dataType="HLAinteger32BE" updateType="conditional"/>
+            <attribute name="ThreatType" dataType="ThreatTypeEnumerated" updateType="conditional"/>
+            <attribute name="LaunchLocation" dataType="WorldCoordinate" updateType="conditional"/>
+            <attribute name="ImpactPrediction" dataType="ImpactPredictionRecord" updateType="conditional"/>
+            <attribute name="AlertLevel" dataType="AlertLevelEnumerated" updateType="conditional"/>
+            <attribute name="NCAApproval" dataType="HLAboolean" updateType="conditional"/>
+            <attribute name="TrackNumber" dataType="HLAinteger32BE" updateType="conditional"/>
+            <attribute name="SensorSource" dataType="SensorSourceEnumerated" updateType="conditional"/>
+        </objectClass>
+        
+        <!-- OPIRSighting: Satellite IR event -->
+        <objectClass name="OPIRSighting" sharing="publishSubscribe">
+            <attribute name="SatelliteID" dataType="EntityIdentifier" updateType="conditional"/>
+            <attribute name="SensorID" dataType="HLAinteger16BE" updateType="static"/>
+            <attribute name="FOV" dataType="FOVRecord" updateType="conditional"/>
+            <attribute name="DetectionLocation" dataType="WorldCoordinate" updateType="conditional"/>
+            <attribute name="DetectionIntensity" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="BackgroundTemperature" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="SignalToNoiseRatio" dataType="HLAfloat32" updateType="conditional"/>
+            <attribute name="DetectionTime" dataType="HLAtimestamp" updateType="conditional"/>
+            <attribute name="SatellitePosition" dataType="WorldCoordinate" updateType="conditional"/>
+        </objectClass>
+        
+    </objects>
+    
+    <interactions>
+        
+        <!-- Fire: Weapon firing event -->
+        <interactionClass name="HLAinteractionRoot" superclass="HLAinteractionRoot">
+            <attribute name="InteractionAcknowledgeFlag" dataType="HLAacknowledgeFlag" updateType="static"/>
+            <parameter name="ActuationIdentifier" dataType="HLAinteger32BE"/>
+        </interactionClass>
+        
+        <!-- WeaponFire: Munition launch -->
+        <interactionClass name="WeaponFire" sharing="publishSubscribe" base="HLAinteractionRoot">
+            <parameter name="FireEventID" dataType="FireEventRecord"/>
+            <parameter name="Munition" dataType="MunitionRecord"/>
+            <parameter name="Location" dataType="WorldCoordinate"/>
+            <parameter name="Velocity" dataType="VelocityVector"/>
+            <parameter name="FiringLocation" dataType="WorldCoordinate"/>
+            <parameter name="FiringEntityID" dataType="EntityIdentifier"/>
+            <parameter name="EventID" dataType="EventIdentifier"/>
+            <parameter name="MissionID" dataType="HLAinteger32BE"/>
+        </interactionClass>
+        
+        <!-- Detonation: Impact or warhead function -->
+        <interactionClass name="Detonation" sharing="publishSubscribe" base="HLAinteractionRoot">
+            <parameter name="DetonationEventID" dataType="DetonationEventRecord"/>
+            <parameter name="Munition" dataType="MunitionRecord"/>
+            <parameter name="ExplosionResult" dataType="DetonationResultEnumerated"/>
+            <parameter name="Location" dataType="WorldCoordinate"/>
+            <parameter name="Velocity" dataType="VelocityVector"/>
+            <parameter name="FiringEntityID" dataType="EntityIdentifier"/>
+            <parameter name="TargetEntityID" dataType="EntityIdentifier"/>
+            <parameter name="EventID" dataType="EventIdentifier"/>
+            <parameter name="WarheadFunction" dataType="WarheadFunctionEnumerated"/>
+            <parameter name="MunitionDetonationResult" dataType="MunitionDetonationRecord"/>
+        </interactionClass>
+        
+        <!-- Collision: Physical contact between entities -->
+        <interactionClass name="Collision" sharing="publishSubscribe" base="HLAinteractionRoot">
+            <parameter name="CollidingEntityID" dataType="EntityIdentifier"/>
+            <parameter name="CollisionType" dataType="CollisionTypeEnumerated"/>
+            <parameter name="EventID" dataType="EventIdentifier"/>
+            <parameter name="ImpactLocation" dataType="WorldCoordinate"/>
+            <parameter name="Velocity" dataType="VelocityVector"/>
+            <parameter name="CollidedWithEntityID" dataType="EntityIdentifier"/>
+        </interactionClass>
+        
+        <!-- TrackUpdate: Composite track from sensor fusion -->
+        <interactionClass name="TrackUpdate" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="TrackNumber" dataType="HLAinteger32BE"/>
+            <parameter name="TrackType" dataType="TrackTypeEnumerated"/>
+            <parameter name="Location" dataType="WorldCoordinate"/>
+            <parameter name="Velocity" dataType="VelocityVector"/>
+            <parameter name="ThreatLevel" dataType="ThreatLevelEnumerated"/>
+            <parameter name="Confidence" dataType="HLAfloat32"/>
+            <parameter name="SourceSensors" dataType="SensorSourceEnumerated"/>
+            <parameter name="LastUpdate" dataType="HLAtimestamp"/>
+        </interactionClass>
+        
+        <!-- AlertMessage: Missile warning alert -->
+        <interactionClass name="AlertMessage" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="AlertID" dataType="HLAinteger32BE"/>
+            <parameter name="AlertLevel" dataType="AlertLevelEnumerated"/>
+            <parameter name="ThreatType" dataType="ThreatTypeEnumerated"/>
+            <parameter name="LaunchPoint" dataType="WorldCoordinate"/>
+            <parameter name="ImpactPoint" dataType="WorldCoordinate"/>
+            <parameter name="TimeToImpact" dataType="HLAfloat32"/>
+            <parameter name="NCARequired" dataType="HLAboolean"/>
+            <parameter name="IssuingSensor" dataType="SensorSourceEnumerated"/>
+            <parameter name="JTIDSNet" dataType="HLAinteger16BE"/>
+            <parameter name="IRIGBMFlag" dataType="HLAboolean"/>
+        </interactionClass>
+        
+        <!-- OPIRSensorData: Raw satellite sensor frame -->
+        <interactionClass name="OPIRSensorData" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="SatelliteID" dataType="EntityIdentifier"/>
+            <parameter name="SensorID" dataType="HLAinteger16BE"/>
+            <parameter name="FrameNumber" dataType="HLAinteger32BE"/>
+            <parameter name="ScanMode" dataType="ScanModeEnumerated"/>
+            <parameter name="FOVCenter" dataType="WorldCoordinate"/>
+            <parameter name="FOVExtent" dataType="HLAfloat32"/>
+            <parameter name="PixelDataURL" dataType="HLAmessageData"/>
+            <parameter name="ProcessingFlags" dataType="HLAinteger16BE"/>
+            <parameter name="FrameTimestamp" dataType="HLAtimestamp"/>
+        </interactionClass>
+        
+        <!-- EnvironmentalReport: Environmental update -->
+        <interactionClass name="EnvironmentalReport" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="EnvironmentalID" dataType="HLAinteger32BE"/>
+            <parameter name="ReportType" dataType="EnvironmentalReportType"/>
+            <parameter name="Extent" dataType="ExtentsRecord"/>
+            <parameter name="Value" dataType="HLAfloat32"/>
+            <parameter name="Value2" dataType="HLAfloat32"/>
+            <parameter name="Value3" dataType="HLAfloat32"/>
+            <parameter name="补充" dataType="补充Record"/>
+        </interactionClass>
+        
+        <!-- SupplyRequest: Logistics/interop -->
+        <interactionClass name="SupplyRequest" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="RequestID" dataType="HLAinteger32BE"/>
+            <parameter name="SupplyType" dataType="SupplyTypeEnumerated"/>
+            <parameter name="Quantity" dataType="HLAinteger32BE"/>
+            <parameter name="Priority" dataType="HLAinteger16BE"/>
+            <parameter name="DestinationEntityID" dataType="EntityIdentifier"/>
+        </interactionClass>
+        
+        <!-- ElectronicEmission: IFF/SIGINT emissions -->
+        <interactionClass name="ElectronicEmission" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="EmittingEntityID" dataType="EntityIdentifier"/>
+            <parameter name="EmissionType" dataType="EmissionTypeRecord"/>
+            <parameter name="CenterFrequency" dataType="HLAfloat32"/>
+            <parameter name="Bandwidth" dataType="HLAfloat32"/>
+            <parameter name="PulseRepetitionFrequency" dataType="HLAfloat32"/>
+            <parameter name="Power" dataType="HLAfloat32"/>
+            <parameter name="Location" dataType="WorldCoordinate"/>
+        </interactionClass>
+        
+        <!-- CommandControl: NCA/C2 orders -->
+        <interactionClass name="CommandControl" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="OrderID" dataType="HLAinteger32BE"/>
+            <parameter name="CommandType" dataType="CommandTypeEnumerated"/>
+            <parameter name="IssuingEntityID" dataType="EntityIdentifier"/>
+            <parameter name="ReceivingEntityID" dataType="EntityIdentifier"/>
+            <parameter name="MissionAssignment" dataType="MissionRecord"/>
+            <parameter name="Priority" dataType="HLAinteger16BE"/>
+            <parameter name="TimeCritical" dataType="HLAboolean"/>
+        </interactionClass>
+        
+        <!-- DataQuery: Federation data request -->
+        <interactionClass name="DataQuery" sharing="publishSubscribe" superclass="HLAinteractionRoot">
+            <parameter name="QueryID" dataType="HLAinteger32BE"/>
+            <parameter name="QueryType" dataType="QueryTypeEnumerated"/>
+            <parameter name="RequiredClasses" dataType="HLAmessageData"/>
+            <parameter name="UpdateRate" dataType="HLAfloat32"/>
+            <parameter name="TimeLimit" dataType="HLAtimestamp"/>
+        </interactionClass>
+        
+    </interactions>
+    
+    <supplementalObjects>
+        
+        <!-- Enumerations for entity types -->
+        <enumerationClass name="ForceIdentifier">
+            <enumerator name="Other" value="0"/>
+            <enumerator name="Friendly" value="1"/>
+            <enumerator name="Opposing" value="2"/>
+            <enumerator name="Neutral" value="3"/>
+        </enumerationClass>
+        
+        <enumerationClass name="EntityStateEnumerated">
+            <enumerator name="Active" value="0"/>
+            <enumerator name="Deactivated" value="1"/>
+            <enumerator name="Destroyed" value="2"/>
+            <enumerator name="Damage" value="3"/>
+            <enumerator name="FailsOperational" value="4"/>
+        </enumerationClass>
+        
+        <enumerationClass name="DRMEnumerated">
+            <enumerator name="Static" value="0"/>
+            <enumerator name="DRM_FPM" value="1"/>
+            <enumerator name="DRM_RPM" value="2"/>
+            <enumerator name="DRM_RVM" value="3"/>
+            <enumerator name="DRM_FVM" value="4"/>
+            <enumerator name="DRM_VVW" value="5"/>
+            <enumerator name="DRM_VVW" value="6"/>
+        </enumerationClass>
+        
+        <enumerationClass name="ThreatTypeEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="SRBM" value="1"/>
+            <enumerator name="MRBM" value="2"/>
+            <enumerator name="IRBM" value="3"/>
+            <enumerator name="ICBM" value="4"/>
+            <enumerator name="LRBM" value="5"/>
+            <enumerator name="Aircraft" value="6"/>
+            <enumerator name="CruiseMissile" value="7"/>
+            <enumerator name="Artillery" value="8"/>
+            <enumerator name="Mortar" value="9"/>
+            <enumerator name="Rocket" value="10"/>
+        </enumerationClass>
+        
+        <enumerationClass name="AlertLevelEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="CONOPREP" value="1"/>
+            <enumerator name="IMMINENT" value="2"/>
+            <enumerator name="INCOMING" value="3"/>
+            <enumerator name="HOSTILE" value="4"/>
+        </enumerationClass>
+        
+        <enumerationClass name="SensorSourceEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="SBIRS_HIGH" value="1"/>
+            <enumerator name="SBIRS_LOW" value="2"/>
+            <enumerator name="NG_OPIR" value="3"/>
+            <enumerator name="AWACS" value="4"/>
+            <enumerator name=" Patriot" value="5"/>
+            <enumerator name="THAAD" value="6"/>
+            <enumerator name="AEGIS" value="7"/>
+            <enumerator name="GMD" value="8"/>
+        </enumerationClass>
+        
+        <enumerationClass name="DetonationResultEnumerated">
+            <enumerator name="Other" value="0"/>
+            <enumerator name="Impact" value="1"/>
+            <enumerator name="Detonation" value="2"/>
+            <enumerator name="None" value="3"/>
+            <enumerator name="Small" value="4"/>
+            <enumerator name="Medium" value="5"/>
+            <enumerator name="Large" value="6"/>
+            <enumerator name="KilledByGracefulDetonation" value="7"/>
+        </enumerationClass>
+        
+        <enumerationClass name="WarheadFunctionEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="HE_Fragmentation" value="1"/>
+            <enumerator name="HE_AP" value="2"/>
+            <enumerator name="HEAT" value="3"/>
+            <enumerator name="HESH" value="4"/>
+            <enumerator name="APFSDS" value="5"/>
+            <enumerator name="Nuclear" value="6"/>
+            <enumerator name="Chemical" value="7"/>
+            <enumerator name="Biological" value="8"/>
+            <enumerator name="FuelExplosive" value="9"/>
+            <enumerator name="EMP" value="10"/>
+        </enumerationClass>
+        
+        <enumerationClass name="TrackTypeEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="Missile" value="1"/>
+            <enumerator name="Aircraft" value="2"/>
+            <enumerator name="Surface" value="3"/>
+            <enumerator name="Subsurface" value="4"/>
+            <enumerator name="Space" value="5"/>
+            <enumerator name="Biological" value="6"/>
+            <enumerator name="Radiological" value="7"/>
+            <enumerator name="Geophysical" value="8"/>
+        </enumerationClass>
+        
+        <enumerationClass name="ThreatLevelEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="Negligible" value="1"/>
+            <enumerator name="Low" value="2"/>
+            <enumerator name="Medium" value="3"/>
+            <enumerator name="High" value="4"/>
+            <enumerator name="Severe" value="5"/>
+        </enumerationClass>
+        
+        <enumerationClass name="CommandTypeEnumerated">
+            <enumerator name="MissionAssignment" value="0"/>
+            <enumerator name="EngagementOrder" value="1"/>
+            <enumerator name="AirTaskingOrder" value="2"/>
+            <enumerator name="FireSupportCoordination" value="3"/>
+            <enumerator name="ZoneTransfer" value="4"/>
+            <enumerator name="Authentication" value="5"/>
+        </enumerationClass>
+        
+        <enumerationClass name="SupplyTypeEnumerated">
+            <enumerator name="Unknown" value="0"/>
+            <enumerator name="Ammo" value="1"/>
+            <enumerator name="Fuel" value="2"/>
+            <enumerator name="Food" value="3"/>
+            <enumerator name="Medical" value="4"/>
+            <enumerator name="RepairParts" value="5"/>
+            <enumerator name="ClassifiedMaterial" value="6"/>
+        </enumerationClass>
+        
+        <enumerationClass name="ScanModeEnumerated">
+            <enumerator name="Survey" value="0"/>
+            <enumerator name="SectorScan" value="1"/>
+            <enumerator name="SpotScan" value="2"/>
+            <enumerator name="SectorSpot" value="3"/>
+            <enumerator name="ContinuousRefresh" value="4"/>
+            <enumerator name="Geostationary" value="5"/>
+        </enumerationClass>
+        
+        <enumerationClass name="FormationType">
+            <enumerator name="Line" value="0"/>
+            <enumerator name="Column" value="1"/>
+            <enumerator name="Wedge" value="2"/>
+            <enumerator name="EchelonRight" value="3"/>
+            <enumerator name="EchelonLeft" value="4"/>
+            <enumerator name="Box" value="5"/>
+            <enumerator name="Vee" value="6"/>
+            <enumerator name="Diamond" value="7"/>
+        </enumerationClass>
+        
+        <enumerationClass name="AggregateStateEnumerated">
+            <enumerator name="Forming" value="0"/>
+            <enumerator name="Assembled" value="1"/>
+            <enumerator name="Dispersed" value="2"/>
+            <enumerator name="Engaged" value="3"/>
+            <enumerator name="Neutralized" value="4"/>
+            <enumerator name="Failed" value="5"/>
+        </enumerationClass>
+        
+    </supplementalObjects>
+    
+    <dataTypes>
+        
+        <!-- Entity Identifier: Site/Application/Entity tuple -->
+        <simpleDataType name="EntityIdentifier" representation="EntityIdentifierRecord" />
+        
+        <!-- World Coordinates: Geodetic/ECEF position -->
+        <simpleDataType name="WorldCoordinate" representation="WorldCoordinateRecord" />
+        
+        <!-- Velocity Vector: m/s in entity axis -->
+        <simpleDataType name="VelocityVector" representation="VelocityVectorRecord" />
+        
+        <!-- Orientation: Yaw/Pitch/Roll in radians -->
+        <simpleDataType name="Orientation" representation="OrientationRecord" />
+        
+        <!-- Acceleration Vector -->
+        <simpleDataType name="AccelerationVector" representation="AccelerationVectorRecord" />
+        
+        <!-- Angular Velocity Vector -->
+        <simpleDataType name="AngularVelocityVector" representation="AngularVelocityVectorRecord" />
+        
+        <!-- Entity Type Record: Kind/Domain/Country/Category/Subcategory/Specific -->
+        <simpleDataType name="EntityTypeRecord" representation="EntityTypeRecordData" />
+        
+        <!-- Munition Record -->
+        <simpleDataType name="MunitionRecord" representation="MunitionRecordData" />
+        
+        <!-- Fire Event Record -->
+        <simpleDataType name="FireEventRecord" representation="FireEventRecordData" />
+        
+        <!-- Detonation Event Record -->
+        <simpleDataType name="DetonationEventRecord" representation="DetonationEventRecordData" />
+        
+        <!-- Impact Prediction Record -->
+        <simpleDataType name="ImpactPredictionRecord" representation="ImpactPredictionRecordData" />
+        
+        <!-- Event Identifier -->
+        <simpleDataType name="EventIdentifier" representation="EventIdentifierRecordData" />
+        
+        <!-- Radio Type Record -->
+        <simpleDataType name="RadioTypeRecord" representation="RadioTypeRecordData" />
+        
+        <!-- Modulation Record -->
+        <simpleDataType name="ModulationRecord" representation="ModulationRecordData" />
+        
+        <!-- Antenna Pattern Record -->
+        <simpleDataType name="AntennaPatternRecord" representation="AntennaPatternRecordData" />
+        
+        <!-- Formation Record -->
+        <simpleDataType name="FormationRecord" representation="FormationRecordData" />
+        
+        <!-- Environmental Type Record -->
+        <simpleDataType name="EnvironmentalTypeRecord" representation="EnvironmentalTypeRecordData" />
+        
+        <!-- Extents Record: Bounding area/volume -->
+        <simpleDataType name="ExtentsRecord" representation="ExtentsRecordData" />
+        
+        <!-- FOV Record: Sensor field of view -->
+        <simpleDataType name="FOVRecord" representation="FOVRecordData" />
+        
+        <!-- Articulation Parameter -->
+        <simpleDataType name="ArticulationParameter" representation="ArticulationParameterRecordData" />
+        
+        <!-- Fusing Record -->
+        <simpleDataType name="FusingRecord" representation="FusingRecordData" />
+        
+        <!-- Environmental State Enumerated -->
+        <simpleDataType name="EnvironmentalStateEnumerated" representation="HLAinteger16BE" />
+        
+        <!-- Transmit State Enumerated -->
+        <simpleDataType name="TransmitStateEnumerated" representation="HLAinteger16BE" />
+        
+        <!-- Munition Detonation Record -->
+        <simpleDataType name="MunitionDetonationRecord" representation="MunitionDetonationRecordData" />
+        
+        <!-- Supplement Record -->
+        <simpleDataType name="SupplementRecord" representation="SupplementRecordData" />
+        
+        <!-- Command Type Enumerated -->
+        <simpleDataType name="CommandTypeEnumerated" representation="HLAinteger16BE" />
+        
+        <!-- Mission Record -->
+        <simpleDataType name="MissionRecord" representation="MissionRecordData" />
+        
+        <!-- Query Type Enumerated -->
+        <simpleDataType name="QueryTypeEnumerated" representation="HLAinteger16BE" />
+        
+        <!-- Environmental Report Type -->
+        <simpleDataType name="EnvironmentalReportType" representation="HLAinteger16BE" />
+        
+        <!-- Emission Type Record -->
+        <simpleDataType name="EmissionTypeRecord" representation="EmissionTypeRecordData" />
+        
+    </dataTypes>
+    
+</federationObjectModel>

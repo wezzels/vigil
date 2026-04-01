@@ -1,0 +1,45 @@
+#cloud-config
+# FORGE C2 Node VM cloud-init
+hostname: forge-c2-{instance_id}
+manage_etc_hosts: true
+
+package_update: true
+packages:
+  - qemu-guest-agent
+  - net-tools
+  - nginx
+  - postgresql-client
+
+write_files:
+  - path: /etc/systemd/system/forge-c2.service
+    content: |
+      [Unit]
+      Description=FORGE C2 Service
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/forge-c2
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /opt/forge/config.yaml
+    content: |
+      service: c2
+      kafka_brokers:
+        - kafka.gms.svc.cluster.local:9092
+      redis:
+        host: redis.gms.svc.cluster.local
+        port: 6379
+      alert_levels:
+        - CONOPREP
+        - IMMINENT
+        - INCOMING
+        - HOSTILE
+
+runcmd:
+  - systemctl enable forge-c2
+  - systemctl start forge-c2

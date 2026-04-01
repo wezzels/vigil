@@ -1,0 +1,77 @@
+---
+# Kafka client service (for apps to produce/consume mission events)
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: forge
+  labels:
+    app: kafka
+    component: messaging
+spec:
+  type: ExternalName
+  externalName: kafka.gms.svc.cluster.local
+  ports:
+    - name: plaintext
+      port: 9092
+      targetPort: 9092
+    - name: external
+      port: 9093
+      targetPort: 9093
+
+---
+# etcd service (for service discovery)
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: forge
+  labels:
+    app: etcd
+    component: discovery
+spec:
+  type: ExternalName
+  externalName: etcd.gms.svc.cluster.local
+  ports:
+    - name: client
+      port: 2379
+      targetPort: 2379
+    - name: peer
+      port: 2380
+      targetPort: 2380
+
+---
+# Redis service (for caching and pub/sub)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: forge
+  labels:
+    app: redis
+    component: cache
+spec:
+  type: ExternalName
+  externalName: redis.gms.svc.cluster.local
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+
+---
+# PostgreSQL service (for mission data catalog)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: forge
+  labels:
+    app: postgres
+    component: database
+spec:
+  type: ExternalName
+  externalName: postgres.gms.svc.cluster.local
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432

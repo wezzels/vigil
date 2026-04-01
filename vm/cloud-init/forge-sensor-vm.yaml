@@ -1,0 +1,47 @@
+#cloud-config
+# FORGE SBIRS/OPIR Sensor VM cloud-init
+hostname: forge-sensor-{instance_id}
+manage_etc_hosts: true
+
+package_update: true
+packages:
+  - qemu-guest-agent
+  - net-tools
+  - ethtool
+  - iperf3
+
+write_files:
+  - path: /etc/systemd/system/forge-sensor.service
+    content: |
+      [Unit]
+      Description=FORGE Sensor Service
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/forge-sensor
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    permissions: '0644'
+
+  - path: /opt/forge/config.yaml
+    content: |
+      service: sensor
+      kafka_brokers:
+        - kafka.gms.svc.cluster.local:9092
+      dis:
+        multicast: 239.255.0.1
+        port: 3000
+        site_id: {site_id}
+        application_id: {app_id}
+      sensor:
+        type: SBIRS
+        scan_mode: continuous
+
+runcmd:
+  - systemctl enable forge-sensor
+  - systemctl start forge-sensor

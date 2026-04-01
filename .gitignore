@@ -1,0 +1,39 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.tar.gz
+
+# Test binary
+*.test
+
+# Go workspace
+go.work
+
+# Build output
+build/
+dist/
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.log
+tmp/
+*.tmp
+
+# Docker
+.docker/
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
