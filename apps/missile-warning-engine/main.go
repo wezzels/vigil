@@ -7,7 +7,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"flag"
 	"fmt"
 	"log"
@@ -16,9 +15,12 @@ import (
 	"os"
 	"os/signal"
 	"sort"
+	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -29,328 +31,197 @@ const (
 	TrackTimeout = 120 * time.Second // Remove stale tracks
 )
 
+// --- Prometheus Metrics ---
 var (
-	kafkaBroker = getEnv("KAFKA_BROKERS", "kafka:9092")
-	redisAddr   = getEnv("REDIS_ADDR", "redis:6379")
-	port        = getEnv("PORT", "8080")
-	disSite     = uint16(mustAtoi(getEnv("DIS_SITE_ID", "1")))
-	disApp      = uint16(mustAtoi(getEnv("DIS_APP_ID", "2")))
+	tracksTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vimi_tracks_total",
+			Help: "Total tracks detected by missile type and alert level",
+		},
+		[]string{"missile_type", "alert_level"},
+	)
+	tracksActive = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "vimi_tracks_active",
+			Help: "Currently active tracks",
+		},
+	)
+	alertsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vimi_alerts_total",
+			Help: "Total alerts issued by level",
+		},
+		[]string{"level"},
+	)
+	alertsActive = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vimi_alerts_active",
+			Help: "Active alerts by level",
+		},
+		[]string{"level"},
+	)
+	sightingsProcessed = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "vimi_sightings_processed_total",
+			Help: "Total OPIR sightings processed",
+		},
+	)
+	kafkaConsumerLag = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vimi_kafka_consumer_lag",
+			Help: "Kafka consumer lag by topic/partition",
+		},
+		[]string{"topic", "partition"},
+	)
 )
 
-// AlertLevel from DoD CONOPREP/IMMINENT doctrine
-type AlertLevel int
+func init() {
+	prometheus.MustRegister(tracksTotal, tracksActive, alertsTotal, alertsActive, sightingsProcessed, kafkaConsumerLag)
+}
 
+// Alert levels
 const (
-	ALERT_UNKNOWN  AlertLevel = 0
-	ALERT_CONOPREP AlertLevel = 1 // CONOPREP: preparations detected (launch detected)
-	ALERT_IMMINENT AlertLevel = 2 // IMMINENT: impact predicted <15 min
-	ALERT_INCOMING AlertLevel = 3 // INCOMING: missile in-flight, terminal phase
-	ALERT_HOSTILE  AlertLevel = 4 // HOSTILE: impact <2 min
+	ALERT_UNKNOWN  = 0
+	ALERT_CONOPREP = 1 // Pre-conflict preparation
+	ALERT_IMMINENT = 2 // Launch detected, impact pending
+	ALERT_INCOMING = 3 // Missile in flight, tracking
+	ALERT_HOSTILE  = 4 // Confirmed hostile, NCA approval required
 )
 
-// ThreatType from STANAG 1247
-type ThreatType int
-
+// Threat types
 const (
-	THREAT_UNKNOWN     ThreatType = 0
-	THREAT_SRBM        ThreatType = 1 // Short-range: <1000km
-	THREAT_MRBM        ThreatType = 2 // Medium-range: 1000-3000km
-	THREAT_IRBM        ThreatType = 3 // Intermediate: 3000-5500km
-	THREAT_ICBM        ThreatType = 4 // Intercontinental: >5500km
-	THREAT_CRUISEMISSILE ThreatType = 5
-	THREAT_AIRCRAFT    ThreatType = 6
-	THREAT_ARTILLERY   ThreatType = 7
-	THREAT_MORTAR      ThreatType = 8
+	THREAT_UNKNOWN = 0
+	THREAT_SRBM    = 1 // Short-range ballistic missile (<1000km)
+	THREAT_MRBM    = 2 // Medium-range ballistic missile (1000-3000km)
+	THREAT_IRBM    = 3 // Intermediate-range ballistic missile (3000-5500km)
+	THREAT_ICBM    = 4 // Intercontinental ballistic missile (>5500km)
+	THREAT_SLBM    = 5 // Submarine-launched ballistic missile
+	THREAT_CRUISE  = 6 // Cruise missile
 )
 
-// ThreatTypeName returns the string name for a threat type
-func ThreatTypeName(t ThreatType) string {
-	names := []string{"Unknown", "SRBM", "MRBM", "IRBM", "ICBM", "Cruise Missile", "Aircraft", "Artillery", "Mortar"}
-	if t < 0 || int(t) >= len(names) {
-		return "Unknown"
+func ThreatTypeName(t int) string {
+	names := []string{"UNKNOWN", "SRBM", "MRBM", "IRBM", "ICBM", "SLBM", "CRUISE"}
+	if t < 0 || t >= len(names) {
+		return "UNKNOWN"
 	}
 	return names[t]
 }
 
-// OPIRSighting from opir-ingest
+// OPIR Satellite sighting from SBIRS
 type OPIRSighting struct {
-	SightingID     uint64    `json:"sighting_id"`
-	SatelliteID    uint32    `json:"satellite_id"`
-	SensorID       uint16    `json:"sensor_id"`
-	ScanMode       uint8     `json:"scan_mode"`
-	Timestamp      time.Time `json:"timestamp"`
-	DetectionLat   float64   `json:"detection_lat"`
-	DetectionLon   float64   `json:"detection_lon"`
-	DetectionAlt   float64   `json:"detection_alt"`
-	Intensity      float64   `json:"intensity"`
-	BackgroundTemp float64   `json:"background_temp"`
-	SNR            float64   `json:"snr"`
-	SatelliteLat   float64   `json:"satellite_lat"`
-	SatelliteLon   float64   `json:"satellite_lon"`
-	SatelliteAlt   float64   `json:"satellite_alt"`
-	FOVCenterLat   float64   `json:"fov_center_lat"`
-	FOVCenterLon   float64   `json:"fov_center_lon"`
-	FOVHalfAngle   float64   `json:"fov_half_angle"`
-	ProcessingFlags uint16    `json:"processing_flags"`
+	SatelliteID   int       `json:"satellite_id"`
+	Timestamp     time.Time `json:"timestamp"`
+	DetectionLat  float64   `json:"detection_lat"`
+	DetectionLon  float64   `json:"detection_lon"`
+	Intensity     float64   `json:"intensity"` // IR intensity in gigawatts
+	SNR           float64   `json:"snr"`        // Signal-to-noise ratio
 }
 
-// MissileTrack represents a tracked missile threat
+// MissileTrack represents a tracked ballistic missile
 type MissileTrack struct {
-	TrackNumber     uint32        `json:"track_number"`
-	ThreatType      ThreatType    `json:"threat_type"`
-	AlertLevel      AlertLevel    `json:"alert_level"`
-	LaunchLat       float64       `json:"launch_lat"`
-	LaunchLon       float64       `json:"launch_lon"`
-	LaunchTime      time.Time     `json:"launch_time"`
-	ImpactLat       float64       `json:"impact_lat"`
-	ImpactLon       float64       `json:"impact_lon"`
-	ImpactTime      time.Time     `json:"impact_time"`
-	TimeToImpact    float64       `json:"time_to_impact"` // seconds
-	Velocity        float64       `json:"velocity"`        // m/s
-	Heading         float64       `json:"heading"`         // degrees
-	Confidence      float64       `json:"confidence"`      // 0-1
-	LastUpdate      time.Time     `json:"last_update"`
-	DetectionCount  int           `json:"detection_count"`
-	SourceSensor    string        `json:"source_sensor"`
-	Sightings       []OPIRSighting `json:"sightings"`
-	
-	// Kalman filter state
-	posX, posY, posZ float64      // position estimate (m ECEF)
-	velX, velY, velZ float64      // velocity estimate (m/s)
-	posVar         float64         // position variance
-	velVar         float64         // velocity variance
+	TrackNumber    int       `json:"track_number"`
+	ThreatType     int       `json:"threat_type"`
+	AlertLevel     int       `json:"alert_level"`
+	LaunchLat      float64   `json:"launch_lat"`
+	LaunchLon      float64   `json:"launch_lon"`
+	ImpactLat      float64   `json:"impact_lat"`
+	ImpactLon      float64   `json:"impact_lon"`
+	LaunchTime     time.Time `json:"launch_time"`
+	TimeToImpact   float64   `json:"time_to_impact"` // seconds
+	Velocity       float64   `json:"velocity"`       // m/s
+	Confidence     float64   `json:"confidence"`     // 0.0-1.0
+	LastUpdate     time.Time `json:"last_update"`
+	DetectionCount int       `json:"detection_count"`
+	SourceSensor   string    `json:"source_sensor"`
+	Sightings      []OPIRSighting `json:"sightings"`
 }
 
-// Alert represents a disseminated alert
-type Alert struct {
-	AlertID       uint32    `json:"alert_id"`
-	AlertLevel    AlertLevel `json:"alert_level"`
-	ThreatType    ThreatType `json:"threat_type"`
-	TrackNumber   uint32    `json:"track_number"`
-	LaunchLat     float64   `json:"launch_lat"`
-	LaunchLon     float64   `json:"launch_lon"`
-	ImpactLat     float64   `json:"impact_lat"`
-	ImpactLon     float64   `json:"impact_lon"`
-	TimeToImpact  float64   `json:"time_to_impact"` // seconds
-	ImpactTime    time.Time `json:"impact_time"`
-	NCARequired   bool      `json:"nca_required"`
-	SourceSensor  string    `json:"source_sensor"`
-	Confidence    float64  `json:"confidence"`
-	IssuedAt      time.Time `json:"issued_at"`
-}
-
-// Kalman filter for ballistic trajectory estimation
-// State: [pos_x, pos_y, pos_z, vel_x, vel_y, vel_z] (ECEF, m and m/s)
-
-func estimateTrajectory(tr *MissileTrack) {
-	if len(tr.Sightings) < 2 {
-		return
-	}
-	
-	// Simple ballistic trajectory estimation
-	// For a ballistic missile: position = p0 + v*t + 0.5*a*t^2
-	// Acceleration is gravity + drag (simplified: just gravity in ECEF)
-	g := 9.81 // m/s^2 (downward)
-	
-	// Use latest and earliest sightings to estimate
-	first := tr.Sightings[0]
-	last := tr.Sightings[len(tr.Sightings)-1]
-	
-	dt := last.Timestamp.Sub(first.Timestamp).Seconds()
-	if dt < 1 {
-		dt = 1
-	}
-	
-	// Convert detections to ECEF
-	x1, y1, z1 := ecefFromGeodetic(first.DetectionLat, first.DetectionLon, first.DetectionAlt*1000)
-	x2, y2, z2 := ecefFromGeodetic(last.DetectionLat, last.DetectionLon, last.DetectionAlt*1000)
-	
-	// Velocity estimate
-	vx := (x2 - x1) / dt
-	vy := (y2 - y1) / dt
-	vz := (z2 - z1) / dt
-	tr.velX, tr.velY, tr.velZ = vx, vy, vz
-	
-	// Speed
-	tr.Velocity = math.Sqrt(vx*vx + vy*vy + vz*vz)
-	
-	// Heading (direction of travel on Earth's surface)
-	tr.Heading = math.Atan2(vy, vx) * 180 / math.Pi
-	if tr.Heading < 0 {
-		tr.Heading += 360
-	}
-	
-	// Estimate impact point (simplified: constant velocity extrapolation)
-	// Assume target is roughly opposite to launch direction
-	// This is a simplified "last known position + velocity" model
-	now := time.Now()
-	tRemaining := tr.TimeToImpact - now.Sub(tr.LaunchTime).Seconds()
-	
-	// Impact prediction using simple linear extrapolation
-	// In reality would use orbital mechanics + gravity
-	impactX := x2 + vx*tRemaining
-	impactY := y2 + vy*tRemaining
-	impactZ := z2 + vz*tRemaining - 0.5*g*tRemaining*tRemaining // add gravity drop
-	
-	tr.ImpactLat, tr.ImpactLon, _ = geodeticFromECEF(impactX, impactY, impactZ)
-	
-	// Estimate threat type from velocity
-	// SRBM: 1.5-3 km/s, MRBM: 3-4.5 km/s, IRBM: 4.5-6 km/s, ICBM: >6 km/s
-	vkm := tr.Velocity / 1000
-	switch {
-	case vkm < 1.5:
-		tr.ThreatType = THREAT_MORTAR
-	case vkm < 3:
-		tr.ThreatType = THREAT_SRBM
-	case vkm < 4.5:
-		tr.ThreatType = THREAT_MRBM
-	case vkm < 6:
-		tr.ThreatType = THREAT_IRBM
-	default:
-		tr.ThreatType = THREAT_ICBM
-	}
-	
-	// Confidence based on detection count and time span
-	tr.Confidence = math.Min(float64(tr.DetectionCount)/10.0, 1.0)
-	if dt > 60 {
-		tr.Confidence *= 0.8
-	}
-}
-
-func geodeticFromECEF(x, y, z float64) (lat, lon, alt float64) {
-	// WGS84 inverse
-	a := 6378137.0
-	f := 1 / 298.257223563
-	e2 := 2*f - f*f
-	
-	lon = math.Atan2(y, x)
-	p := math.Sqrt(x*x + y*y)
-	lat = math.Atan2(z, p*(1-e2))
-	
-	// Iterate to solve for geodetic latitude
-	for i := 0; i < 5; i++ {
-		N := a / math.Sqrt(1-e2*math.Sin(lat)*math.Sin(lat))
-		lat = math.Atan2(z+e2*N*math.Sin(lat), p)
-	}
-	
-	N := a / math.Sqrt(1-e2*math.Sin(lat)*math.Sin(lat))
-	alt = p/math.Cos(lat) - N
-	
-	return lat * 180/math.Pi, lon * 180/math.Pi, alt / 1000 // km
-}
-
-func ecefFromGeodetic(lat, lon, alt float64) (x, y, z float64) {
-	a := 6378137.0
-	f := 1 / 298.257223563
-	e2 := 2*f - f*f
-	
-	latRad := lat * math.Pi / 180
-	lonRad := lon * math.Pi / 180
-	
-	N := a / math.Sqrt(1-e2*math.Sin(latRad)*math.Sin(latRad))
-	x = (N + alt) * math.Cos(latRad) * math.Cos(lonRad)
-	y = (N + alt) * math.Cos(latRad) * math.Sin(lonRad)
-	z = (N*(1-e2) + alt) * math.Sin(latRad)
-	return
-}
-
-func (tr *MissileTrack) updateAlertLevel() {
-	// DoD alert level thresholds
-	tti := tr.TimeToImpact
-	
-	switch {
-	case tti < 120: // <2 min
-		tr.AlertLevel = ALERT_HOSTILE
-	case tti < 600: // <10 min
-		tr.AlertLevel = ALERT_INCOMING
-	case tti < 900: // <15 min
-		tr.AlertLevel = ALERT_IMMINENT
-	default:
-		tr.AlertLevel = ALERT_CONOPREP
-	}
-}
-
+// Track manager handles correlation and lifecycle
 type trackManager struct {
-	tracks    map[uint32]*MissileTrack
-	nextTrack uint32
-	alerts    []*Alert
+	nextTrack int
+	tracks    map[int]*MissileTrack
 }
 
 func newTrackManager() *trackManager {
-	return &trackManager{
-		tracks:    make(map[uint32]*MissileTrack),
-		nextTrack: 1,
-	}
+	return &trackManager{tracks: make(map[int]*MissileTrack)}
 }
 
-func (tm *trackManager) processSighting(s *OPIRSighting) {
-	// Filter: only process high-SNR detections that could be missile launches
-	if s.SNR < 3.0 || s.Intensity < 500 {
-		return
-	}
-	
-	now := time.Now()
-	
-	// Check if this detection matches an existing track (correlate)
-	var matched *MissileTrack
-	spatialThreshold := 500.0 // km
-	timeThreshold := 60.0    // seconds
-	
+// Find matching track based on trajectory correlation
+func (tm *trackManager) findMatching(s *OPIRSighting) *MissileTrack {
+	// Simplified: match by proximity to last known position
 	for _, tr := range tm.tracks {
-		if now.Sub(tr.LastUpdate) > TrackTimeout {
-			continue
-		}
+		// Check if this sighting is near the predicted track position
+		// using simple Euclidean distance on lat/lon
+		// In production, use Kalman filter for trajectory prediction
+		latErr := math.Abs(s.DetectionLat - tr.ImpactLat)
+		lonErr := math.Abs(s.DetectionLon - tr.ImpactLon)
 		
-		// Check spatial correlation
-		latDiff := s.DetectionLat - tr.LaunchLat
-		lonDiff := s.DetectionLon - tr.LaunchLon
-		dist := math.Sqrt(latDiff*latDiff + lonDiff*lonDiff) * 111.0 // rough km conversion
-		
-		timeDiff := math.Abs(s.Timestamp.Sub(tr.LastUpdate).Seconds())
-		
-		if dist < spatialThreshold && timeDiff < timeThreshold {
-			matched = tr
-			break
+		// Update impact prediction based on new sighting
+		if latErr < 5.0 && lonErr < 5.0 {
+			return tr
 		}
 	}
-	
+	return nil
+}
+
+func (tm *trackManager) update(s *OPIRSighting) {
+	matched := tm.findMatching(s)
+	now := time.Now()
+
 	if matched != nil {
-		// Add to existing track
-		matched.Sightings = append(matched.Sightings, *s)
+		// Update existing track with new sighting
 		matched.DetectionCount++
 		matched.LastUpdate = now
-		
-		// Re-estimate trajectory
-		estimateTrajectory(matched)
-		
-		// Update time to impact
-		if len(matched.Sightings) >= 3 {
-			// Use velocity to project impact
-			// TTI = distance_to_target / velocity_along_trajectory
-			// Simplified: assume impact in ~60-900 seconds based on range
-			// launchToNow := now.Sub(matched.LaunchTime).Seconds()
-			// Re-estimate based on time since launch and threat type
-			switch matched.ThreatType {
-			case THREAT_SRBM:
-				matched.TimeToImpact = matched.LaunchTime.Add(120 * time.Second).Sub(now).Seconds()
-			case THREAT_MRBM:
-				matched.TimeToImpact = matched.LaunchTime.Add(300 * time.Second).Sub(now).Seconds()
-			case THREAT_IRBM:
-				matched.TimeToImpact = matched.LaunchTime.Add(600 * time.Second).Sub(now).Seconds()
-			case THREAT_ICBM:
-				matched.TimeToImpact = matched.LaunchTime.Add(1800 * time.Second).Sub(now).Seconds()
-			default:
-				matched.TimeToImpact = 300
-			}
-			if matched.TimeToImpact < 0 {
-				matched.TimeToImpact = 0
+		matched.Sightings = append(matched.Sightings, *s)
+
+		// Update impact prediction using motion vector
+		// Simplified: linear extrapolation from sightings
+		if len(matched.Sightings) >= 2 {
+			prev := matched.Sightings[len(matched.Sightings)-2]
+			dt := s.Timestamp.Sub(prev.Timestamp).Seconds()
+			if dt > 0 {
+				dlat := (s.DetectionLat - prev.DetectionLat) / dt
+				dlon := (s.DetectionLon - prev.DetectionLon) / dt
+				// Project forward
+				matched.ImpactLat = s.DetectionLat + dlat*30 // 30 second prediction window
+				matched.ImpactLon = s.DetectionLon + dlon*30
+				
+				// Compute velocity
+				latKm := (s.DetectionLat - prev.DetectionLat) * 111.0
+				lonKm := (s.DetectionLon - prev.DetectionLon) * 111.0 * math.Cos(s.DetectionLat*math.Pi/180)
+				distKm := math.Sqrt(latKm*latKm + lonKm*lonKm)
+				matched.Velocity = distKm * 1000 / dt // m/s
 			}
 		}
-		
+
+		// Update confidence based on detection count and SNR
+		matched.Confidence = math.Min(0.99, float64(matched.DetectionCount)/10.0+0.1*(s.SNR/10.0))
+
+		// Update threat type estimate as confidence grows
+		if matched.DetectionCount >= 3 && matched.ThreatType == THREAT_UNKNOWN {
+			if matched.Velocity > 1500 {
+				matched.ThreatType = THREAT_ICBM
+			} else if matched.Velocity > 1000 {
+				matched.ThreatType = THREAT_IRBM
+			} else if matched.Velocity > 500 {
+				matched.ThreatType = THREAT_MRBM
+			} else {
+				matched.ThreatType = THREAT_SRBM
+			}
+		}
+
+		// Update alert level
+		matched.TimeToImpact = estimatedTimeToImpact(matched)
+
 		oldLevel := matched.AlertLevel
 		matched.updateAlertLevel()
-		
+
 		if matched.AlertLevel != oldLevel {
+			// Alert level escalation — record metric
+			alertsTotal.WithLabelValues(alertLevelName(matched.AlertLevel)).Inc()
+			alertsActive.WithLabelValues(alertLevelName(oldLevel)).Dec()
+			alertsActive.WithLabelValues(alertLevelName(matched.AlertLevel)).Inc()
+			
 			log.Printf("TRACK %d: %s %s → %s (tti=%.0fs vel=%.1fkm/s conf=%.0f%%)",
 				matched.TrackNumber, ThreatTypeName(matched.ThreatType),
 				alertLevelName(oldLevel), alertLevelName(matched.AlertLevel),
@@ -381,8 +252,14 @@ func (tm *trackManager) processSighting(s *OPIRSighting) {
 		} else {
 			tr.ThreatType = THREAT_SRBM
 		}
-		
+
 		tm.tracks[tr.TrackNumber] = tr
+		
+		// Track created metric
+		tracksTotal.WithLabelValues(ThreatTypeName(tr.ThreatType), alertLevelName(tr.AlertLevel)).Inc()
+		tracksActive.Inc()
+		alertsActive.WithLabelValues(alertLevelName(ALERT_CONOPREP)).Inc()
+		
 		log.Printf("NEW TRACK %d: %s detected by %s lat=%.3f lon=%.3f snr=%.1f",
 			tr.TrackNumber, ThreatTypeName(tr.ThreatType), tr.SourceSensor,
 			s.DetectionLat, s.DetectionLon, s.SNR)
@@ -393,153 +270,104 @@ func (tm *trackManager) cleanup() {
 	now := time.Now()
 	for num, tr := range tm.tracks {
 		if now.Sub(tr.LastUpdate) > TrackTimeout {
+			tracksActive.Dec()
 			log.Printf("TRACK %d: expired (last update %s)", num, tr.LastUpdate.Format("15:04:05"))
 			delete(tm.tracks, num)
 		}
 	}
 }
 
-func alertLevelName(l AlertLevel) string {
+func alertLevelName(l int) string {
 	names := []string{"UNKNOWN", "CONOPREP", "IMMINENT", "INCOMING", "HOSTILE"}
-	if l < 0 || int(l) >= len(names) {
+	if l < 0 || l >= len(names) {
 		return "UNKNOWN"
 	}
 	return names[l]
 }
 
-var kafkaWriter *kafka.Writer
-
-func publishAlert(a *Alert) error {
-	data, err := json.Marshal(a)
-	if err != nil {
-		return err
-	}
-	
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	
-	return kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Key:   []byte(fmt.Sprintf("alert-%d", a.TrackNumber)),
-		Value: data,
-		Headers: []kafka.Header{
-			{Key: "alert_level", Value: []byte(alertLevelName(a.AlertLevel))},
-			{Key: "threat_type", Value: []byte(ThreatTypeName(a.ThreatType))},
-		},
-	})
-}
-
-func publishTrack(tr *MissileTrack) error {
-	data, err := json.Marshal(tr)
-	if err != nil {
-		return err
-	}
-	
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	
-	return kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Key:   []byte(fmt.Sprintf("track-%d", tr.TrackNumber)),
-		Value: data,
-	})
-}
-
-func run(ctx context.Context) {
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBroker},
-		Topic:     TopicOPIR,
-		GroupID:   "missile-warning-engine",
-		MinBytes:  10e3,
-		MaxBytes:  10e6,
-		StartOffset: kafka.LastOffset,
-	})
-	defer reader.Close()
-	
-	cleanup := time.NewTicker(30 * time.Second)
-	defer cleanup.Stop()
-	
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-cleanup.C:
-			tm.cleanup()
-		default:
-			msg, err := reader.ReadMessage(ctx)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				log.Printf("Read error: %v", err)
-				continue
-			}
-			
-			var s OPIRSighting
-			if err := json.Unmarshal(msg.Value, &s); err != nil {
-				continue
-			}
-			
-			tm.processSighting(&s)
-			
-			// Publish all active tracks
-			for _, tr := range tm.tracks {
-				publishTrack(tr)
-			}
-		}
+func estimatedTimeToImpact(tr *MissileTrack) float64 {
+	// Simplified ballpark: use velocity and threat type
+	switch tr.ThreatType {
+	case THREAT_ICBM:
+		return 1800 // 30 min
+	case THREAT_IRBM:
+		return 600 // 10 min
+	case THREAT_MRBM:
+		return 300 // 5 min
+	case THREAT_SRBM:
+		return 120 // 2 min
+	default:
+		return 300
 	}
 }
 
-type HealthResponse struct {
-	Service     string    `json:"service"`
-	Version     string    `json:"version"`
-	Timestamp   time.Time `json:"timestamp"`
-	Status      string    `json:"status"`
-	ActiveTrack int       `json:"active_tracks"`
+func (tr *MissileTrack) updateAlertLevel() {
+	// Escalate based on detection count, time to impact, and confidence
+	if tr.DetectionCount >= 5 && tr.Confidence > 0.8 {
+		tr.AlertLevel = ALERT_HOSTILE
+	} else if tr.DetectionCount >= 4 && tr.Confidence > 0.6 {
+		tr.AlertLevel = ALERT_INCOMING
+	} else if tr.DetectionCount >= 2 {
+		tr.AlertLevel = ALERT_IMMINENT
+	} else {
+		tr.AlertLevel = ALERT_CONOPREP
+	}
+}
+
+type healthResponse struct {
+	Status    string `json:"status"`
+	Service   string `json:"service"`
+	Version   string `json:"version"`
+	Port      int    `json:"port"`
+	Uptime    string `json:"uptime"`
+	Tracks    int    `json:"tracks"`
+	StartTime int64  `json:"start_time"`
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	resp := HealthResponse{
-		Service:     "missile-warning-engine",
-		Version:     "0.1.0",
-		Timestamp:   time.Now().UTC(),
-		Status:      "healthy",
-		ActiveTrack: len(tm.tracks),
+	tracks := make([]*MissileTrack, 0, len(tm.tracks))
+	for _, tr := range tm.tracks {
+		tracks = append(tracks, tr)
+	}
+	resp := healthResponse{
+		Status:    "healthy",
+		Service:   "missile-warning-engine",
+		Version:   "1.0.0",
+		Port:      8080,
+		Uptime:    time.Since(time.Unix(startTime, 0)).String(),
+		Tracks:    len(tracks),
+		StartTime: startTime,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
-var tm *trackManager
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func mustAtoi(s string) int {
-	n, _ := strconv.Atoi(s)
-	return n
-}
+var (
+	kafkaBroker string
+	port        string
+	startTime   int64
+	tm          *trackManager
+)
 
 func main() {
+	flag.StringVar(&kafkaBroker, "kafka", "kafka:9092", "Kafka broker address")
+	flag.StringVar(&port, "port", "8080", "HTTP port")
 	flag.Parse()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	
-	tm = newTrackManager()
-	
-	kafkaWriter = &kafka.Writer{
-		Addr:     kafka.TCP(kafkaBroker),
-		Topic:    TopicAlerts,
-		Balancer: &kafka.LeastBytes{},
-	}
-	defer kafkaWriter.Close()
+
+	startTime = time.Now().Unix()
+
+	log.SetOutput(os.Stdout)
+	log.SetFlags(0)
+
+	// Prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
 	
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
 	go func() {
 		<-sigCh
 		log.Println("Shutting down...")
@@ -559,7 +387,7 @@ func main() {
 		})
 		json.NewEncoder(w).Encode(tracks)
 	})
-	
+
 	log.Printf("missile-warning-engine starting")
 	log.Printf("Kafka broker: %s", kafkaBroker)
 	log.Printf("Subscribing to: %s", TopicOPIR)
@@ -570,5 +398,63 @@ func main() {
 	log.Printf("HTTP server on %s", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func run(ctx context.Context) {
+	// Subscribe to OPIR sensor data
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:        []string{kafkaBroker},
+		Topic:          TopicOPIR,
+		GroupID:        "missile-warning-engine",
+		MinBytes:       1,
+		MaxBytes:       1e6,
+		MaxWait:        500 * time.Millisecond,
+		CommitInterval: time.Second,
+	})
+	defer reader.Close()
+
+	tm = newTrackManager()
+	cleanup := time.NewTicker(30 * time.Second)
+	defer cleanup.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-cleanup.C:
+			tm.cleanup()
+			// Update active tracks gauge
+			tracksActive.Set(float64(len(tm.tracks)))
+		default:
+			msg, err := reader.ReadMessage(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				continue
+			}
+
+			var sighting OPIRSighting
+			if err := json.Unmarshal(msg.Value, &sighting); err != nil {
+				log.Printf("ERROR parsing sighting: %v", err)
+				continue
+			}
+
+			sightingsProcessed.Inc()
+			tm.update(&sighting)
+
+			// Publish updated track
+			for _, tr := range tm.tracks {
+				trackJSON, _ := json.Marshal(tr)
+				writer := &kafka.Writer{
+					Addr:     kafka.TCP(kafkaBroker),
+					Topic:    TopicTracks,
+					Balancer: &kafka.LeastBytes{},
+				}
+				writer.WriteMessages(ctx, kafka.Message{Key: []byte(strconv.Itoa(tr.TrackNumber)), Value: trackJSON})
+				writer.Close()
+			}
+		}
 	}
 }

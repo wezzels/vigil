@@ -14,17 +14,62 @@ import (
 	"os"
 	"os/signal"
 	"sort"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
 const (
-	TopicAlerts    = "vimi.alerts"
-	TopicC2Out     = "vimi.c2.alerts"
-	TopicAlertLog  = "vimi.alert-log"
+	TopicAlerts   = "vimi.alerts"
+	TopicC2Out    = "vimi.c2.alerts"
+	TopicAlertLog = "vimi.alert-log"
 )
+
+// --- Prometheus Metrics ---
+var (
+	alertsReceived = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vimi_alerts_received_total",
+			Help: "Total alerts received from missile-warning-engine",
+		},
+		[]string{"level", "threat_type"},
+	)
+	alertsIssued = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vimi_alerts_issued_total",
+			Help: "Total C2 alerts issued by level",
+		},
+		[]string{"level", "precedence"},
+	)
+	alertsActive = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vimi_alerts_active",
+			Help: "Currently active alerts by level",
+		},
+		[]string{"level"},
+	)
+	ncaApprovalRequired = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "vimi_nca_approvals_total",
+			Help: "Alerts requiring NCA approval",
+		},
+	)
+	jtidsMessages = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vimi_jtids_messages_total",
+			Help: "JTIDS messages sent by net",
+		},
+		[]string{"net"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(alertsReceived, alertsIssued, alertsActive, ncaApprovalRequired, jtidsMessages)
+}
 
 // AlertLevel DoD doctrine
 type AlertLevel int
@@ -44,6 +89,8 @@ func (a AlertLevel) String() string {
 	}
 	return names[a]
 }
+
+func alertLevelName(a AlertLevel) string { return a.String() }
 
 // ThreatType
 type ThreatType int
@@ -85,7 +132,7 @@ type Alert struct {
 // C2Message is the disseminated alert to C2 systems
 type C2Message struct {
 	MessageID     string       `json:"message_id"`
-	 precedence   string       `json:"precedence"` // ROUTINE/PRIORITY/IMMEDIATE/OFFICER
+	precedence   string       `json:"precedence"` // ROUTINE/PRIORITY/IMMEDIATE/OFFICER
 	AlertLevel    AlertLevel   `json:"alert_level"`
 	ThreatType    ThreatType   `json:"threat_type"`
 	JTIDSNet      uint8        `json:"jtids_net"` // JTIDS network (0=broadcast)
@@ -169,177 +216,85 @@ func applyDoctrine(a *Alert) *C2Message {
 	}
 }
 
-// alertState tracks alert history for deduplication
+// alertState manages active and historical alerts
 type alertState struct {
-	alerts    map[uint32]*Alert
-	sent      map[uint32]time.Time
-	nextAlert uint32
+	mu     sync.Mutex
+	alerts map[uint32]*Alert
+	sent   map[uint32]time.Time
 }
 
 func newAlertState() *alertState {
 	return &alertState{
 		alerts: make(map[uint32]*Alert),
 		sent:   make(map[uint32]time.Time),
-		nextAlert: 1,
 	}
 }
 
-func (s *alertState) process(a *Alert) *C2Message {
-	// Check if we already sent a similar alert (debounce 30s)
-	for _, prev := range s.sent {
-		if time.Since(prev) < 30*time.Second && prev.Unix() == a.IssuedAt.Unix() {
-			return nil // duplicate, skip
+func (as *alertState) add(a *Alert) {
+	as.mu.Lock()
+	defer as.mu.Unlock()
+	// Check if this is an escalation
+	existing, ok := as.alerts[a.TrackNumber]
+	if ok {
+		if a.AlertLevel > existing.AlertLevel {
+			// Escalation — log it
+			log.Printf("ALERT: [%s  ] track=%d tti=%.0fs weapon=%s nca=%t",
+				a.AlertLevel.String(), a.TrackNumber, a.TimeToImpact,
+				a.ThreatType.String(), a.NCARequired)
+		}
+	} else {
+		// New alert
+		alertsReceived.WithLabelValues(a.AlertLevel.String(), a.ThreatType.String()).Inc()
+		alertsActive.WithLabelValues(a.AlertLevel.String()).Inc()
+		log.Printf("ALERT: [%s  ] track=%d tti=%.0fs weapon=%s nca=%t",
+			a.AlertLevel.String(), a.TrackNumber, a.TimeToImpact,
+			a.ThreatType.String(), a.NCARequired)
+	}
+	as.alerts[a.TrackNumber] = a
+}
+
+func (as *alertState) clearStale() int {
+	as.mu.Lock()
+	defer as.mu.Unlock()
+	cleared := 0
+	for num, a := range as.alerts {
+		if time.Since(a.IssuedAt) > 10*time.Minute {
+			alertsActive.WithLabelValues(a.AlertLevel.String()).Dec()
+			delete(as.alerts, num)
+			cleared++
 		}
 	}
-
-	a.AlertID = s.nextAlert
-	s.nextAlert++
-	s.alerts[a.AlertID] = a
-
-	// Apply doctrine and create C2 message
-	c2 := applyDoctrine(a)
-
-	// Mark as sent
-	s.sent[a.TrackNumber] = time.Now()
-
-	return c2
+	return cleared
 }
 
 var (
-	as            *alertState
-	kafkaWriter   *kafka.Writer
-	kafkaReader   *kafka.Reader
-	kafkaBroker   = getEnv("KAFKA_BROKERS", "kafka:9092")
-	port          = getEnv("PORT", "8084")
+	kafkaBroker string
+	port        string
+	kafkaWriter *kafka.Writer
+	as          *alertState
 )
 
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func run(ctx context.Context) {
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBroker},
-		Topic:     TopicAlerts,
-		GroupID:   "alert-dissemination",
-		MinBytes:  10e3,
-		MaxBytes:  10e6,
-		StartOffset: kafka.LastOffset,
-	})
-	defer reader.Close()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			msg, err := reader.ReadMessage(ctx)
-			if err != nil {
-				if ctx.Err() != nil {
-					return
-				}
-				continue
-			}
-
-			var a Alert
-			if err := json.Unmarshal(msg.Value, &a); err != nil {
-				continue
-			}
-
-			// Override types from headers
-			for _, h := range msg.Headers {
-				if h.Key == "alert_level" {
-					switch string(h.Value) {
-					case "CONOPREP":
-						a.AlertLevel = ALERT_CONOPREP
-					case "IMMINENT":
-						a.AlertLevel = ALERT_IMMINENT
-					case "INCOMING":
-						a.AlertLevel = ALERT_INCOMING
-					case "HOSTILE":
-						a.AlertLevel = ALERT_HOSTILE
-					}
-				}
-				if h.Key == "threat_type" {
-					switch string(h.Value) {
-					case "SRBM":
-						a.ThreatType = THREAT_SRBM
-					case "MRBM":
-						a.ThreatType = THREAT_MRBM
-					case "IRBM":
-						a.ThreatType = THREAT_IRBM
-					case "ICBM":
-						a.ThreatType = THREAT_ICBM
-					}
-				}
-			}
-
-			c2 := as.process(&a)
-			if c2 == nil {
-				continue // duplicate
-			}
-
-			// Publish C2 message
-			c2Data, _ := json.Marshal(c2)
-			ctx2, cancel := context.WithTimeout(ctx, 5*time.Second)
-			kafkaWriter.WriteMessages(ctx2, kafka.Message{
-				Key:   []byte(fmt.Sprintf("c2-%d", c2.TrackNumber)),
-				Value: c2Data,
-				Headers: []kafka.Header{
-					{Key: "alert_level", Value: []byte(c2.AlertLevel.String())},
-					{Key: "precedence", Value: []byte(c2.precedence)},
-					{Key: "nca_required", Value: []byte(fmt.Sprintf("%t", c2.NCAApproval))},
-				},
-			})
-			cancel()
-
-			// Also log to alert-log topic
-			logData, _ := json.Marshal(map[string]interface{}{
-				"alert":      a,
-				"c2_message": c2,
-				"log_time":   time.Now(),
-			})
-			kafkaWriter.WriteMessages(ctx, kafka.Message{
-				Key:   []byte(fmt.Sprintf("log-%d", a.AlertID)),
-				Value: logData,
-				Topic: TopicAlertLog,
-			})
-
-			log.Printf("ALERT: [%-10s] %s track=%d tti=%.0fs weapon=%s nca=%t",
-				c2.precedence, c2.AlertLevel.String(), c2.TrackNumber,
-				c2.TimeToImpact, c2.ThreatWeapon, c2.NCAApproval)
-		}
-	}
-}
-
-type HealthResponse struct {
-	Service   string    `json:"service"`
-	Version   string    `json:"version"`
-	Timestamp time.Time `json:"timestamp"`
-	Status    string    `json:"status"`
-	Sent      int       `json:"sent_alerts"`
-}
-
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	resp := HealthResponse{
-		Service:   "alert-dissemination",
-		Version:   "0.1.0",
-		Timestamp: time.Now().UTC(),
-		Status:    "healthy",
-		Sent:      len(as.sent),
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	as.mu.Lock()
+	defer as.mu.Unlock()
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"service":   "alert-dissemination",
+		"status":    "healthy",
+		"active":    len(as.alerts),
+		"timestamp": time.Now().UTC(),
+	})
 }
 
 func main() {
+	flag.StringVar(&kafkaBroker, "kafka", "kafka:9092", "Kafka broker")
+	flag.StringVar(&port, "port", "8084", "HTTP port")
 	flag.Parse()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	as = newAlertState()
+
+	// Prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
 
 	kafkaWriter = &kafka.Writer{
 		Addr:     kafka.TCP(kafkaBroker),
@@ -361,6 +316,8 @@ func main() {
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		as.mu.Lock()
+		defer as.mu.Unlock()
 		alerts := make([]*Alert, 0, len(as.alerts))
 		for _, a := range as.alerts {
 			alerts = append(alerts, a)
@@ -380,5 +337,76 @@ func main() {
 	log.Printf("HTTP server on %s", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func run(ctx context.Context) {
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{kafkaBroker},
+		Topic:    TopicAlerts,
+		GroupID:  "alert-dissemination",
+		MinBytes: 1,
+		MaxBytes: 1e6,
+	})
+	defer reader.Close()
+
+	cleanup := time.NewTicker(60 * time.Second)
+	defer cleanup.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-cleanup.C:
+			n := as.clearStale()
+			if n > 0 {
+				log.Printf("Cleared %d stale alerts", n)
+			}
+		default:
+			msg, err := reader.ReadMessage(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				continue
+			}
+
+			var alert Alert
+			if err := json.Unmarshal(msg.Value, &alert); err != nil {
+				log.Printf("ERROR parsing alert: %v", err)
+				continue
+			}
+
+			as.add(&alert)
+
+			// Apply doctrine and issue C2 message
+			c2 := applyDoctrine(&alert)
+			
+			c2JSON, _ := json.Marshal(c2)
+			if err := kafkaWriter.WriteMessages(ctx, kafka.Message{
+				Key:   []byte(fmt.Sprintf("%d", alert.TrackNumber)),
+				Value: c2JSON,
+			}); err != nil {
+				log.Printf("ERROR writing C2 message: %v", err)
+			} else {
+				alertsIssued.WithLabelValues(c2.AlertLevel.String(), c2.precedence).Inc()
+				jtidsMessages.WithLabelValues(fmt.Sprintf("%d", c2.JTIDSNet)).Inc()
+				if c2.NCAApproval {
+					ncaApprovalRequired.Inc()
+				}
+			}
+
+			// Also log to alert-log topic
+			logJSON, _ := json.Marshal(map[string]interface{}{
+				"type":      "alert",
+				"alert":     alert,
+				"c2":        c2,
+				"timestamp": time.Now().UTC(),
+			})
+			kafkaWriter.WriteMessages(ctx, kafka.Message{
+				Key:   []byte(fmt.Sprintf("%d-log", alert.TrackNumber)),
+				Value: logJSON,
+			})
+		}
 	}
 }
