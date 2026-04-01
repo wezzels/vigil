@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: data-catalog
-        image: ghcr.io/vimic/vimi/data-catalog:latest
-        imagePullPolicy: Always
+        image: vimi/data-catalog:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: catalog

@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: opir-ingest
-        image: ghcr.io/vimic/vimi/opir-ingest:latest
-        imagePullPolicy: Always
+        image: vimi/opir-ingest:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: ingest

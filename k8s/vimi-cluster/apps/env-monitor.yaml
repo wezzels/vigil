@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: env-monitor
-        image: ghcr.io/vimic/vimi/env-monitor:latest
-        imagePullPolicy: Always
+        image: vimi/env-monitor:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: monitor

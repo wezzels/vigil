@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: sensor-fusion
-        image: ghcr.io/vimic/vimi/sensor-fusion:latest
-        imagePullPolicy: Always
+        image: vimi/sensor-fusion:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: fusion

@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: dis-hla-gateway
-        image: ghcr.io/vimic/vimi/dis-hla-gateway:latest
-        imagePullPolicy: Always
+        image: vimi/dis-hla-gateway:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: gateway

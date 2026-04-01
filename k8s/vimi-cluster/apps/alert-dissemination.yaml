@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: alert-dissemination
-        image: ghcr.io/vimic/vimi/alert-dissemination:latest
-        imagePullPolicy: Always
+        image: vimi/alert-dissemination:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: dissemination

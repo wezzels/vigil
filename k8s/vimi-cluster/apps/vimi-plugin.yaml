@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: vimi-plugin
-        image: ghcr.io/vimic/vimi/vimi-plugin:latest
-        imagePullPolicy: Always
+        image: vimi/vimi-plugin:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: plugin

@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: replay-engine
-        image: ghcr.io/vimic/vimi/replay-engine:latest
-        imagePullPolicy: Always
+        image: vimi/replay-engine:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: engine

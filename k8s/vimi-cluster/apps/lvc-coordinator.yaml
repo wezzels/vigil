@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: lvc-coordinator
-        image: ghcr.io/vimic/vimi/lvc-coordinator:latest
-        imagePullPolicy: Always
+        image: vimi/lvc-coordinator:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: coordinator

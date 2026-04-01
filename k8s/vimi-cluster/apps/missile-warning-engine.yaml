@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: missile-warning-engine
-        image: ghcr.io/vimic/vimi/missile-warning-engine:latest
-        imagePullPolicy: Always
+        image: vimi/missile-warning-engine:latest
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: engine
