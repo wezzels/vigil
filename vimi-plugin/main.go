@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -525,7 +526,8 @@ func (p *PluginState) run(ctx context.Context) {
 }
 
 func (p *PluginState) serveHTTP() {
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/metrics", promhttp.Handler())
+http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"plugin":  PluginName,
 			"version": PluginVersion,

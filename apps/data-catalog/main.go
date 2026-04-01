@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -468,7 +469,8 @@ func main() {
 		cancel()
 	}()
 
-	http.HandleFunc("/health", healthHandler)
+	http.Handle("/metrics", promhttp.Handler())
+http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/v1/assets", func(w http.ResponseWriter, r *http.Request) {
 		q := &CatalogQuery{Limit: 100}
 		if t := r.URL.Query().Get("type"); t != "" {

@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -411,6 +412,7 @@ func main() {
 	}()
 
 	// HTTP endpoints
+		http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/ready", healthHandler)
 

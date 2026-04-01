@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -522,7 +523,8 @@ func main() {
 		cancel()
 	}()
 	
-	http.HandleFunc("/health", healthHandler)
+	http.Handle("/metrics", promhttp.Handler())
+http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/entities", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		entities := make([]*Entity, 0, len(em.entities))

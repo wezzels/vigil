@@ -132,6 +132,8 @@ kind: Service
 metadata:
   name: opir-ingest
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -197,6 +199,8 @@ kind: Service
 metadata:
   name: missile-warning-engine
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -262,6 +266,8 @@ kind: Service
 metadata:
   name: sensor-fusion
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -327,6 +333,8 @@ kind: Service
 metadata:
   name: lvc-coordinator
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -392,6 +400,8 @@ kind: Service
 metadata:
   name: alert-dissemination
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -457,6 +467,8 @@ kind: Service
 metadata:
   name: env-monitor
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -522,6 +534,8 @@ kind: Service
 metadata:
   name: replay-engine
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -587,6 +601,8 @@ kind: Service
 metadata:
   name: data-catalog
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -652,6 +668,8 @@ kind: Service
 metadata:
   name: dis-hla-gateway
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:
@@ -717,6 +735,8 @@ kind: Service
 metadata:
   name: vimi-plugin
   namespace: vimi
+  labels:
+    app: vimi
 spec:
   type: ClusterIP
   ports:

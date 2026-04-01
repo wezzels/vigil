@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -771,7 +772,8 @@ func main() {
 		cancel()
 	}()
 
-	http.HandleFunc("/health", healthHandler)
+	http.Handle("/metrics", promhttp.Handler())
+http.HandleFunc("/health", healthHandler)
 
 	// Manual translation endpoints for testing
 	http.HandleFunc("/translate/dis-to-hla", func(w http.ResponseWriter, r *http.Request) {
