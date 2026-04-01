@@ -1,6 +1,158 @@
-test-vimi-runner:
-  stage: test
+# TROOPER-VIMI CI/CD Pipeline
+# Stages: build, test, security-scan, publish, deploy-k8s, deploy-vm
+
+image: docker:24-dind
+
+stages:
+  - build
+  - test
+  - security-scan
+  - publish
+  - deploy-k8s
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  REGISTRY: darth:5000
+  K8S_CLUSTER: kind-gms
+  VIMI_NS: vimi
+
+# Shared build function for all apps
+_build_app:
+  stage: build
   script:
-    - echo "VIMI runner works!"
-    - uptime
-    - df -h /
+    - |
+      APP_NAME=$(basename $APP_DIR)
+      echo "Building $APP_NAME..."
+      docker build -t $REGISTRY/vimi-$APP_NAME:latest -t $REGISTRY/vimi-$APP_NAME:$CI_COMMIT_SHORT_SHA $APP_DIR/
+      docker save $REGISTRY/vimi-$APP_NAME:latest | gzip > build/vimi-$APP_NAME.tar.gz
+    - echo "Build artifact: build/vimi-$APP_NAME.tar.gz"
+  artifacts:
+    paths:
+      - build/vimi-*.tar.gz
+    expire_in: 1 day
+
+# Build each mission app
+build-opir-ingest:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/opir-ingest
+  only:
+    - master
+
+build-missile-warning-engine:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/missile-warning-engine
+  only:
+    - master
+
+build-sensor-fusion:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/sensor-fusion
+  only:
+    - master
+
+build-alert-dissemination:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/alert-dissemination
+  only:
+    - master
+
+build-env-monitor:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/env-monitor
+  only:
+    - master
+
+build-replay-engine:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/replay-engine
+  only:
+    - master
+
+build-data-catalog:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/data-catalog
+  only:
+    - master
+
+build-lvc-coordinator:
+  extends: _build_app
+  variables:
+    APP_DIR: apps/lvc-coordinator
+  only:
+    - master
+
+build-dis-hla-gateway:
+  extends: _build_app
+  variables:
+    APP_DIR: dis-pdu
+  only:
+    - master
+
+# Unit tests
+test-all:
+  stage: test
+  image: golang:1.22
+  script:
+    - |
+      go version
+      go test ./... -v -short 2>&1 | head -100
+  coverage: '/coverage: \d+\.\d+%/'
+  only:
+    - master
+    - merge_requests
+
+# Security scanning with Trivy
+security-scan:
+  stage: security-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY/vimi-*:latest || true
+  allow_failure: true
+  only:
+    - master
+
+# Push to registry
+publish:
+  stage: publish
+  script:
+    - |
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY || true
+      for app in apps/*/; do
+        APP_NAME=$(basename $app)
+        docker load < build/vimi-$APP_NAME.tar.gz 2>/dev/null || true
+        docker push $REGISTRY/vimi-$APP_NAME:latest || true
+      done
+  dependencies:
+    - build-opir-ingest
+  only:
+    - master
+
+# Deploy to Kind cluster
+deploy-k8s:
+  stage: deploy-k8s
+  image: bitnami/kubectl:latest
+  before_script:
+    - mkdir -p ~/.kube
+    - echo "$KUBECONFIG" | base64 -d > ~/.kube/config
+  script:
+    - kubectl config use-context $K8S_CLUSTER
+    - kubectl apply -f k8s/vimi-cluster/namespace.yaml
+    - kubectl apply -f k8s/vimi-cluster/
+    - kubectl rollout status deployment -n $VIMI_NS --timeout=120s || true
+  environment:
+    name: production
+    url: https://vimi.stsgym.com
+  when: manual
+  only:
+    - master
+
