@@ -1,4 +1,4 @@
-module github.com/vimic/vimi/replay-engine
+module github.com/vimic/vimi/vimi-plugin
 
 go 1.22
 

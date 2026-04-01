@@ -1,21 +1,21 @@
-// data-catalog — VIMI Data Catalog (JFCDS / OGC CSW)
+// data-catalog — VIMI Data Catalog Service
 // Phase 2: Mission Processing
-// Provides sensor metadata registry, observation discovery,
-// and OGC CSW-style query interface for mission data
+// Implements JFCDS data discovery and OGC CSW (Catalog Service for the Web)
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
+	"io"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"os/signal"
-	"regexp"
-	"sort"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -25,287 +25,328 @@ import (
 )
 
 const (
-	TopicSensorMeta  = "vimi.sensor.metadata"
-	TopicObservation = "vimi.observations"
-	TopicCatalog     = "vimi.catalog"
+	TopicTracks    = "vimi.fusion.tracks"
+	TopicAlerts    = "vimi.alerts"
+	TopicEnvEvents = "vimi.env.events"
+	RecordingsDir  = "/var/vimi/recordings"
 )
 
-// OGC CSW queryables
-type Queryables struct {
-	AnyText, Title, Abstract, Keywords, Creator, Publisher string
-	Contributor, Type, Format, Identifier, Source string
-	Spatial, Temporal, LatLonBox string
+// OGC CSW response containers
+type CSWGetRecordsResponse struct {
+	XMLName xml.Name `xml:"GetRecordsResponse"`
+	SearchStatus struct {
+		Timestamp string `xml:"timestamp,attr"`
+	} `xml:"SearchStatus"`
+	SearchResults struct {
+		NumberOfRecordsMatched string          `xml:"numberOfRecordsMatched,attr"`
+		NumberOfRecordsReturned string         `xml:"numberOfRecordsReturned,attr"`
+		NextRecord            string           `xml:"nextRecord,attr"`
+		Record                []CatalogRecord  `xml:"Record"`
+	} `xml:"SearchResults"`
 }
 
-// SensorType taxonomy
-type SensorType int
+type CatalogRecord struct {
+	XMLName   xml.Name `xml:"Record"`
+	Title     string   `xml:"Title"`
+	Abstract  string   `xml:"Abstract"`
+	Keywords  []string `xml:"Keywords>Keyword"`
+	Type      string   `xml:"Type"`
+	Format    string   `xml:"Format"`
+	Identifier string  `xml:"Identifier"`
+	BoundingBox struct {
+		Minx, Miny, Maxx, Maxy string `xml:"minx,attr,ymin,attr,maxx,attr,ymax,attr"`
+	} `xml:"BoundingBox"`
+	CRS       string `xml:"CRS"`
+	Created   string `xml:"Created"`
+	Modified  string `xml:"Modified"`
+}
+
+// Asset types
+type AssetType string
 
 const (
-	ST_EO SensorType = iota
-	ST_IR
-	ST_SAR
-	ST_RADAR
-	ST_ADS_B
-	ST_AIS
-	ST_HF
+	AssetTrack      AssetType = "track"
+	AssetAlert      AssetType = "alert"
+	AssetSensorData AssetType = "sensor-data"
+	AssetRecording  AssetType = "recording"
+	AssetEnvData    AssetType = "environmental"
+	AssetMapTile    AssetType = "map-tile"
 )
 
-func (s SensorType) String() string {
-	names := []string{"EO/IR", "IR", "SAR", "Radar", "ADS-B", "AIS", "HF"}
-	if s < 0 || int(s) >= len(names) {
-		return "Unknown"
-	}
-	return names[s]
+// DataAsset in the catalog
+type DataAsset struct {
+	ID           string     `json:"id"`
+	Type         AssetType  `json:"type"`
+	Name         string     `json:"name"`
+	Title        string     `json:"title"`
+	Description  string     `json:"description"`
+	Format       string     `json:"format"`
+	MimeType     string     `json:"mime_type"`
+	SizeBytes    int64      `json:"size_bytes"`
+	CoverageStart time.Time `json:"coverage_start"`
+	CoverageEnd   time.Time `json:"coverage_end"`
+	BBoxMinLat   float64    `json:"bbox_min_lat"`
+	BBoxMinLon   float64    `json:"bbox_min_lon"`
+	BBoxMaxLat   float64    `json:"bbox_max_lat"`
+	BBoxMaxLon   float64    `json:"bbox_max_lon"`
+	Classification string   `json:"classification"`
+	Caveats      []string   `json:"caveats"`
+	DataSource   string     `json:"data_source"`
+	CreatedAt    time.Time  `json:"created_at"`
+	ModifiedAt   time.Time  `json:"modified_at"`
+	SHA256       string     `json:"sha256,omitempty"`
+	Keywords     []string   `json:"keywords"`
+	RecordingID  string     `json:"recording_id,omitempty"`
+	PDUCount     uint64     `json:"pdu_count,omitempty"`
+	AccessURL    string     `json:"access_url,omitempty"`
+	ThumbnailURL string     `json:"thumbnail_url,omitempty"`
+	CRS          string     `json:"crs"`
 }
 
-// Sensor metadata
-type Sensor struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Type           SensorType `json:"type"`
-	Platform       string   `json:"platform"` // "SBIRS-High", "NRO", "AWACS", "Global Hawk"
-	Orbit          string   `json:"orbit"`    // "GEO", "LEO", "MEO", "AIR", "GROUND"
-	CoverageRegion string   `json:"coverage_region"`
-	CoverageType   string   `json:"coverage_type"` // "GLOBAL", "REGIONAL", "THEATER"
-	FOV            float64  `json:"fov_degrees"`  // Field of view
-	SpectralMin    float64  `json:"spectral_min_um"`  // microns
-	SpectralMax    float64  `json:"spectral_max_um"`
-	Resolution     float64  `json:"resolution_m"`    // meters
-	RevisitTime    float64  `json:"revisit_s"`       // seconds
-	Status         string   `json:"status"`    // "OPERATIONAL", "DEGRADED", "STANDBY"
-	Operator       string   `json:"operator"`  // "USSF", "USN", "USAF"
-	
-	// OGC CSW metadata
-	Title       string   `json:"title"`
-	Keywords    []string `json:"keywords"`
-	Description string   `json:"abstract"`
-	
-	// Bounding box
-	MinLat, MaxLat float64 `json:"min_lat,max_lat"`
-	MinLon, MaxLon float64 `json:"min_lon,max_lon"`
-	
-	LastUpdate time.Time `json:"last_update"`
+// Query filters
+type CatalogQuery struct {
+	Type           AssetType
+	Keywords       []string
+	Classification string
+	TimeStart      *time.Time
+	TimeEnd        *time.Time
+	BBox          *BoundingBox
+	Format         string
+	Limit          int
+	Offset         int
 }
 
-// Observation record
-type Observation struct {
-	ID           string    `json:"id"`
-	SensorID     string    `json:"sensor_id"`
-	ObsTime      time.Time `json:"observation_time"`
-	IngestTime   time.Time `json:"ingest_time"`
-	ProductType  string    `json:"product_type"`  // "L0", "L1A", "L1B", "L2", "L3"
-	FeatureType  string    `json:"feature_type"` // "IR_DETECTION", "TRACK", "ALERT", "IMAGE"
-	Region       string    `json:"region"`
-	Lat, Lon     float64   `json:"lat,lon"`
-	MinLat, MaxLat float64 `json:"min_lat,max_lat"`
-	MinLon, MaxLon float64 `json:"min_lon,max_lon"`
-	SizeBytes    int64     `json:"size_bytes"`
-	Format       string    `json:"format"`  // "DIS_PDU", "JSON", "MSG", "STANAG"
-	URI          string    `json:"uri"`    // Storage URI
-	Checksum     string    `json:"checksum"`
-	Validity     string    `json:"validity"` // "VALID", "DEGRADED", "CORRUPT"
-	
-	// JRMB data quality
-	QualityFlags uint32 `json:"quality_flags"`
-}
-
-// BoundingBox for OGC CSW WGS84 bounding box
 type BoundingBox struct {
-	MinLat float64 `json:"min_lat"`
-	MinLon float64 `json:"min_lon"`
-	MaxLat float64 `json:"max_lat"`
-	MaxLon float64 `json:"max_lon"`
+	MinLat, MinLon, MaxLat, MaxLon float64
 }
 
-// CatalogRecord is the searchable record
-type CatalogRecord struct {
-	ID          string   `json:"id"`
-	Type        string   `json:"type"` // "sensor" / "observation"
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Keywords    []string `json:"keywords"`
-	
-	// OGC CSW bounding box
-	WGS84BoundingBox BoundingBox `json:"wgs84_bounding_box"`
-	
-	// Temporal extent
-	TempExtentBegin time.Time `json:"temp_extent_begin"`
-	TempExtentEnd   time.Time `json:"temp_extent_end"`
-	
-	// Resource links
-	URLs []URL `json:"urls"`
-	
-	Updated time.Time `json:"updated"`
+// catalogState
+type catalogState struct {
+	assets    map[string]*DataAsset
+	nextID    uint64
+	indexByKW map[string][]string
 }
 
-type URL struct {
-	Protocol string `json:"protocol"`
-	URL     string `json:"url"`
-	Name    string `json:"name"`
-}
-
-type Catalog struct {
-	sensors      map[string]*Sensor
-	observations map[string]*Observation
-	records      []*CatalogRecord
-}
-
-func newCatalog() *Catalog {
-	return &Catalog{
-		sensors:      make(map[string]*Sensor),
-		observations: make(map[string]*Observation),
-		records:      make([]*CatalogRecord, 0),
+func newCatalogState() *catalogState {
+	return &catalogState{
+		assets:    make(map[string]*DataAsset),
+		nextID:    1,
+		indexByKW: make(map[string][]string),
 	}
 }
 
-// OGC CQL filter (simplified subset)
-func matchesFilter(record *CatalogRecord, filter string) bool {
-	if filter == "" {
-		return true
+func (cs *catalogState) addAsset(a *DataAsset) {
+	a.ID = fmt.Sprintf("urn:vimi:data:%d", cs.nextID)
+	cs.nextID++
+
+	if a.CreatedAt.IsZero() {
+		a.CreatedAt = time.Now()
+	}
+	a.ModifiedAt = time.Now()
+
+	if a.CRS == "" {
+		a.CRS = "EPSG:4326"
+	}
+	if a.Classification == "" {
+		a.Classification = "UNCLASSIFIED"
 	}
 
-	// Simple keyword search
-	filter = strings.ToLower(filter)
-	searchIn := strings.ToLower(record.Title + " " + record.Description + " " + strings.Join(record.Keywords, " "))
-	
-	// Support quoted phrases
-	quoted := regexp.MustCompile(`"([^"]+)"`)
-	for _, match := range quoted.FindAllStringSubmatch(filter, -1) {
-		if !strings.Contains(searchIn, strings.ToLower(match[1])) {
-			return false
-		}
-	}
+	cs.assets[a.ID] = a
 
-	// Support AND/OR
-	if strings.Contains(filter, " and ") {
-		parts := strings.Split(filter, " and ")
-		for _, part := range parts {
-			part = strings.TrimSpace(part)
-			part = quoted.ReplaceAllString(part, "")
-			if part != "" && !strings.Contains(searchIn, part) {
-				return false
-			}
-		}
-		return true
+	for _, kw := range a.Keywords {
+		kw = strings.ToLower(kw)
+		cs.indexByKW[kw] = append(cs.indexByKW[kw], a.ID)
 	}
-
-	return strings.Contains(searchIn, filter)
 }
 
-func (c *Catalog) search(filter string, bbox *struct{ MinLat, MinLon, MaxLat, MaxLon float64 }, start, end *time.Time, limit int) []*CatalogRecord {
-	var results []*CatalogRecord
+func (cs *catalogState) query(q *CatalogQuery) []*DataAsset {
+	var results []*DataAsset
 
-	for _, r := range c.records {
-		if !matchesFilter(r, filter) {
+	for _, a := range cs.assets {
+		if q.Type != "" && a.Type != q.Type {
 			continue
 		}
-
-		// BBOX filter
-		if bbox != nil {
-			if r.WGS84BoundingBox.MaxLat < bbox.MinLat || r.WGS84BoundingBox.MinLat > bbox.MaxLat ||
-				r.WGS84BoundingBox.MaxLon < bbox.MinLon || r.WGS84BoundingBox.MinLon > bbox.MaxLon {
+		if q.Classification != "" && a.Classification != q.Classification {
+			continue
+		}
+		if q.Format != "" && a.Format != q.Format && a.MimeType != q.Format {
+			continue
+		}
+		if q.TimeStart != nil && a.CoverageEnd.Before(*q.TimeStart) {
+			continue
+		}
+		if q.TimeEnd != nil && a.CoverageStart.After(*q.TimeEnd) {
+			continue
+		}
+		if q.BBox != nil {
+			if a.BBoxMaxLat < q.BBox.MinLat || a.BBoxMinLat > q.BBox.MaxLat ||
+				a.BBoxMaxLon < q.BBox.MinLon || a.BBoxMinLon > q.BBox.MaxLon {
 				continue
 			}
 		}
-
-		// Temporal filter
-		if start != nil && r.TempExtentEnd.Before(*start) {
-			continue
+		if len(q.Keywords) > 0 {
+			match := false
+			for _, qkw := range q.Keywords {
+				qkw = strings.ToLower(qkw)
+				if ids, ok := cs.indexByKW[qkw]; ok {
+					for _, id := range ids {
+						if id == a.ID {
+							match = true
+							break
+						}
+					}
+				}
+				if match {
+					break
+				}
+			}
+			if !match {
+				continue
+			}
 		}
-		if end != nil && r.TempExtentBegin.After(*end) {
-			continue
-		}
-
-		results = append(results, r)
+		results = append(results, a)
 	}
 
-	// Sort by updated time
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Updated.After(results[j].Updated)
-	})
-
-	if limit > 0 && len(results) > limit {
-		results = results[:limit]
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if results[j].ModifiedAt.After(results[i].ModifiedAt) {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
 	}
+
+	if q.Offset > 0 && q.Offset < len(results) {
+		results = results[q.Offset:]
+	}
+	if q.Limit > 0 && q.Limit < len(results) {
+		results = results[:q.Limit]
+	}
+
 	return results
 }
 
-func (c *Catalog) addSensor(s *Sensor) {
-	c.sensors[s.ID] = s
-
-	record := &CatalogRecord{
-		ID:          "sensor:" + s.ID,
-		Type:        "sensor",
-		Title:       s.Title,
-		Description: s.Description,
-		Keywords:    s.Keywords,
+func (cs *catalogState) loadRecordings() {
+	ents, err := os.ReadDir(RecordingsDir)
+	if err != nil {
+		return
 	}
-	record.WGS84BoundingBox = BoundingBox{
-		MinLat: s.MinLat, MinLon: s.MinLon,
-		MaxLat: s.MaxLat, MaxLon: s.MaxLon,
-	}
-	record.TempExtentBegin = s.LastUpdate
-	record.TempExtentEnd = s.LastUpdate.Add(24 * time.Hour) // Assume daily refresh
-	record.Updated = s.LastUpdate
 
-	c.records = append(c.records, record)
+	for _, ent := range ents {
+		if filepath.Ext(ent.Name()) != ".dispcap" {
+			continue
+		}
+		path := filepath.Join(RecordingsDir, ent.Name())
+		info, _ := os.Stat(path)
+
+		a := &DataAsset{
+			Type:          AssetRecording,
+			Name:          ent.Name(),
+			Title:         "DIS Recording: " + ent.Name(),
+			Description:   "Recorded DIS PDU capture",
+			Format:        "application/json",
+			MimeType:      "application/json",
+			SizeBytes:     info.Size(),
+			Classification: "UNCLASSIFIED",
+			DataSource:    "replay-engine",
+			Keywords:      []string{"dis", "pdu", "recording", "entity-state", "lvc"},
+			RecordingID:   ent.Name(),
+			AccessURL:     fmt.Sprintf("/api/v1/recordings/%s/download", ent.Name()),
+			CRS:           "EPSG:4326",
+			CoverageStart: info.ModTime().Add(-24 * time.Hour),
+			CoverageEnd:   info.ModTime(),
+		}
+
+		f, _ := os.Open(path)
+		if f != nil {
+			defer f.Close()
+			count := int64(0)
+			sc := bufio.NewScanner(f)
+			for sc.Scan() {
+				count++
+			}
+			a.PDUCount = uint64(count - 1)
+		}
+
+		cs.addAsset(a)
+	}
 }
 
-func (c *Catalog) addObservation(o *Observation) {
-	c.observations[o.ID] = o
-
-	sensor, ok := c.sensors[o.SensorID]
-	title := fmt.Sprintf("%s %s %s", o.ProductType, o.FeatureType, o.ObsTime.Format("20060102150405"))
-	if ok {
-		title = fmt.Sprintf("%s %s %s", sensor.Name, o.FeatureType, o.ObsTime.Format("20060102150405"))
+func handleGetRecords(w http.ResponseWriter, r *http.Request) {
+	var requestXML string
+	if r.Method == "POST" {
+		body, _ := io.ReadAll(r.Body)
+		requestXML = string(body)
+	} else {
+		requestXML = r.URL.RawQuery
 	}
 
-	record := &CatalogRecord{
-		ID:          "obs:" + o.ID,
-		Type:        "observation",
-		Title:       title,
-		Description: fmt.Sprintf("%s from %s, region %s", o.FeatureType, o.SensorID, o.Region),
-		Keywords:    []string{o.ProductType, o.FeatureType, o.Region, o.Format},
-	}
-	record.WGS84BoundingBox = BoundingBox{
-		MinLat: o.MinLat, MinLon: o.MinLon,
-		MaxLat: o.MaxLat, MaxLon: o.MaxLon,
-	}
-	record.TempExtentBegin = o.ObsTime
-	record.TempExtentEnd = o.ObsTime
-	record.Updated = o.IngestTime
+	var queryKeywords []string
+	var queryType string
+	var queryBBox *BoundingBox
 
-	if o.URI != "" {
-		record.URLs = append(record.URLs, URL{
-			Protocol: "HTTPS",
-			URL:      o.URI,
-			Name:     o.Format,
-		})
+	if strings.Contains(requestXML, "GetRecords") {
+		if strings.Contains(requestXML, "TypeName>Track</TypeName") {
+			queryType = "track"
+		} else if strings.Contains(requestXML, "TypeName>Alert</TypeName") {
+			queryType = "alert"
+		} else if strings.Contains(requestXML, "TypeName>Recording</TypeName") {
+			queryType = "recording"
+		}
+
+		for _, kw := range []string{"missile", "ballistic", "sbirs", "awacs", "dis", "entity"} {
+			if strings.Contains(strings.ToLower(requestXML), kw) {
+				queryKeywords = append(queryKeywords, kw)
+			}
+		}
+
+		if strings.Contains(requestXML, "BoundingBox") {
+			queryBBox = &BoundingBox{-90, -180, 90, 180}
+		}
 	}
 
-	c.records = append(c.records, record)
-}
-
-func (c *Catalog) getCapabilities() map[string]interface{} {
-	return map[string]interface{}{
-		"service":          "VIMI-DataCatalog",
-		"version":          "0.1.0",
-		"serviceType":      "OGC:CSW",
-		"serviceTypeVersion": []string{"2.0.2"},
-		"title":            "VIMI Joint Federated Common Data Services Catalog",
-		"abstract":         "Sensor registry and observation discovery for VIMI mission processing",
-		"keywords":         []string{"VIMI", "JFCDS", "sensor", "OPIR", "missile warning", "DIS"},
-		"operatesOn":      []string{"Sensor", "Observation"},
-		"queryables":       []string{"AnyText", "Title", "Abstract", "Keywords", "Creator", "Publisher", "Contributor", "Type", "Format", "Identifier", "Source", "Spatial", "Temporal", "LatLonBox"},
+	q := &CatalogQuery{
+		Type:      AssetType(queryType),
+		Keywords:  queryKeywords,
+		BBox:      queryBBox,
+		Limit:     100,
 	}
+
+	results := cs.query(q)
+
+	resp := CSWGetRecordsResponse{}
+	resp.SearchStatus.Timestamp = time.Now().UTC().Format(time.RFC3339)
+	resp.SearchResults.NumberOfRecordsMatched = strconv.Itoa(len(results))
+	resp.SearchResults.NumberOfRecordsReturned = strconv.Itoa(len(results))
+	resp.SearchResults.NextRecord = "0"
+
+	for _, a := range results {
+		rec := CatalogRecord{
+			Title:      a.Title,
+			Abstract:   a.Description,
+			Type:       string(a.Type),
+			Format:     a.MimeType,
+			Identifier: a.ID,
+			CRS:        a.CRS,
+			Created:    a.CreatedAt.Format(time.RFC3339),
+			Modified:   a.ModifiedAt.Format(time.RFC3339),
+		}
+		rec.Keywords = a.Keywords
+		rec.BoundingBox.Minx = strconv.FormatFloat(a.BBoxMinLon, 'f', 6, 64)
+		rec.BoundingBox.Miny = strconv.FormatFloat(a.BBoxMinLat, 'f', 6, 64)
+		rec.BoundingBox.Maxx = strconv.FormatFloat(a.BBoxMaxLon, 'f', 6, 64)
+		rec.BoundingBox.Maxy = strconv.FormatFloat(a.BBoxMaxLat, 'f', 6, 64)
+
+		resp.SearchResults.Record = append(resp.SearchResults.Record, rec)
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	xml.NewEncoder(w).Encode(resp)
 }
 
 var (
-	cat           *Catalog
-	kafkaWriter   *kafka.Writer
-	kafkaReaders  []*kafka.Reader
-	kafkaBroker   = getEnv("KAFKA_BROKERS", "kafka:9092")
-	port          = getEnv("PORT", "8087")
+	cs          *catalogState
+	kafkaBroker = getEnv("KAFKA_BROKERS", "kafka:9092")
+	port        = getEnv("PORT", "8087")
 )
 
 func getEnv(key, fallback string) string {
@@ -316,206 +357,94 @@ func getEnv(key, fallback string) string {
 }
 
 func run(ctx context.Context) {
-	topics := []string{TopicSensorMeta, TopicObservation}
-	for _, topic := range topics {
-		reader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers:   []string{kafkaBroker},
-			Topic:     topic,
-			GroupID:   "data-catalog",
-			MinBytes:  10e3,
-			MaxBytes:  10e6,
-			StartOffset: kafka.LastOffset,
-		})
-		kafkaReaders = append(kafkaReaders, reader)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:     []string{kafkaBroker},
+		Topic:        TopicTracks,
+		GroupID:     "data-catalog-tracks",
+		MinBytes:    10e3,
+		MaxBytes:    10e6,
+		StartOffset: kafka.LastOffset,
+	})
+	defer reader.Close()
+
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-ticker.C:
+			cs.loadRecordings()
 		default:
-			for _, reader := range kafkaReaders {
-				msg, err := reader.ReadMessage(ctx)
-				if err != nil {
-					continue
+			msg, err := reader.ReadMessage(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				continue
+			}
+
+			var track struct {
+				TrackNumber  uint32    `json:"track_number"`
+				FusedLat    float64   `json:"fused_lat"`
+				FusedLon    float64   `json:"fused_lon"`
+				FusedAlt    float64   `json:"fused_alt"`
+				ThreatLevel int       `json:"threat_level"`
+				Confidence  float64   `json:"confidence"`
+				UpdateCount int       `json:"update_count"`
+				LastUpdate  time.Time `json:"last_update"`
+				Sources     []string  `json:"sources"`
+			}
+			if json.Unmarshal(msg.Value, &track) == nil {
+				keywords := []string{"track", "fusion", fmt.Sprintf("threat-level-%d", track.ThreatLevel)}
+				for _, s := range track.Sources {
+					keywords = append(keywords, strings.ToLower(s))
+				}
+				if track.ThreatLevel >= 4 {
+					keywords = append(keywords, "hostile", "ballistic")
 				}
 
-				switch msg.Topic {
-				case TopicSensorMeta:
-					var s Sensor
-					if json.Unmarshal(msg.Value, &s) == nil {
-						cat.addSensor(&s)
-					}
-				case TopicObservation:
-					var o Observation
-					if json.Unmarshal(msg.Value, &o) == nil {
-						cat.addObservation(&o)
-					}
+				a := &DataAsset{
+					Type:          AssetTrack,
+					Name:          fmt.Sprintf("track-%d", track.TrackNumber),
+					Title:         fmt.Sprintf("Track #%d", track.TrackNumber),
+					Description:   fmt.Sprintf("Fused track from %d sources, threat level %d", len(track.Sources), track.ThreatLevel),
+					Format:        "application/json",
+					MimeType:      "application/json",
+					SizeBytes:     int64(len(msg.Value)),
+					Classification: "UNCLASSIFIED",
+					DataSource:    "sensor-fusion",
+					Keywords:      keywords,
+					CRS:           "EPSG:4326",
+					CoverageStart: track.LastUpdate.Add(-5 * time.Minute),
+					CoverageEnd:   track.LastUpdate,
+					BBoxMinLat:   track.FusedLat - 1,
+					BBoxMaxLat:   track.FusedLat + 1,
+					BBoxMinLon:   track.FusedLon - 1,
+					BBoxMaxLon:   track.FusedLon + 1,
 				}
+				cs.addAsset(a)
 			}
 		}
 	}
 }
 
-// CSW-style HTTP handlers
-
-func capabilitiesHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cat.getCapabilities())
-}
-
-func getRecordsHandler(w http.ResponseWriter, r *http.Request) {
-	filter := r.URL.Query().Get("filter")
-	bboxStr := r.URL.Query().Get("bbox")
-	startStr := r.URL.Query().Get("start")
-	endStr := r.URL.Query().Get("end")
-	maxStr := r.URL.Query().Get("max")
-
-	maxRecords := 100
-	if maxStr != "" {
-		if m, err := strconv.Atoi(maxStr); err == nil {
-			maxRecords = m
-		}
-	}
-
-	var bbox *struct{ MinLat, MinLon, MaxLat, MaxLon float64 }
-	if bboxStr != "" {
-		parts := strings.Split(bboxStr, ",")
-		if len(parts) == 4 {
-			bbox = &struct{ MinLat, MinLon, MaxLat, MaxLon float64 }{}
-			fmt.Sscanf(parts[0], "%f", &bbox.MinLon)
-			fmt.Sscanf(parts[1], "%f", &bbox.MinLat)
-			fmt.Sscanf(parts[2], "%f", &bbox.MaxLon)
-			fmt.Sscanf(parts[3], "%f", &bbox.MaxLat)
-		}
-	}
-
-	var start, end *time.Time
-	if startStr != "" {
-		if t, err := time.Parse(time.RFC3339, startStr); err == nil {
-			start = &t
-		}
-	}
-	if endStr != "" {
-		if t, err := time.Parse(time.RFC3339, endStr); err == nil {
-			end = &t
-		}
-	}
-
-	results := cat.search(filter, bbox, start, end, maxRecords)
-
-	resp := map[string]interface{}{
-		"recordsMatched": len(results),
-		"recordsReturned": len(results),
-		"records":         results,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
-
-func getRecordByIDHandler(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "id required", 400)
-		return
-	}
-
-	for _, s := range cat.sensors {
-		if "sensor:"+s.ID == id {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(s)
-			return
-		}
-	}
-	for _, o := range cat.observations {
-		if "obs:"+o.ID == id {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(o)
-			return
-		}
-	}
-	http.Error(w, "not found", 404)
-}
-
-func sensorsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	list := make([]*Sensor, 0, len(cat.sensors))
-	for _, s := range cat.sensors {
-		list = append(list, s)
-	}
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].LastUpdate.After(list[j].LastUpdate)
-	})
-	json.NewEncoder(w).Encode(list)
-}
-
-func observationsHandler(w http.ResponseWriter, r *http.Request) {
-	region := r.URL.Query().Get("region")
-	limitStr := r.URL.Query().Get("limit")
-	limit := 100
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil {
-			limit = l
-		}
-	}
-
-	list := make([]*Observation, 0)
-	for _, o := range cat.observations {
-		if region != "" && o.Region != region {
-			continue
-		}
-		list = append(list, o)
-	}
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].ObsTime.After(list[j].ObsTime)
-	})
-	if len(list) > limit {
-		list = list[:limit]
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(list)
-}
-
-func registerSensorHandler(w http.ResponseWriter, r *http.Request) {
-	var s Sensor
-	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-	cat.addSensor(&s)
-	w.WriteHeader(201)
-	json.NewEncoder(w).Encode(map[string]string{"status": "registered", "id": s.ID})
-}
-
-func ingestObservationHandler(w http.ResponseWriter, r *http.Request) {
-	var o Observation
-	if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-	cat.addObservation(&o)
-	w.WriteHeader(201)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ingested", "id": o.ID})
-}
-
 type HealthResponse struct {
-	Service       string    `json:"service"`
-	Version       string    `json:"version"`
-	Timestamp     time.Time `json:"timestamp"`
-	Status        string    `json:"status"`
-	Sensors       int       `json:"sensors"`
-	Observations  int       `json:"observations"`
+	Service     string    `json:"service"`
+	Version     string    `json:"version"`
+	Timestamp   time.Time `json:"timestamp"`
+	Status      string    `json:"status"`
+	TotalAssets int       `json:"total_assets"`
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	resp := HealthResponse{
-		Service:      "data-catalog",
-		Version:      "0.1.0",
-		Timestamp:    time.Now().UTC(),
-		Status:       "healthy",
-		Sensors:      len(cat.sensors),
-		Observations: len(cat.observations),
+		Service:     "data-catalog",
+		Version:     "0.1.0",
+		Timestamp:   time.Now().UTC(),
+		Status:      "healthy",
+		TotalAssets: len(cs.assets),
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
@@ -525,13 +454,8 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	cat = newCatalog()
-
-	kafkaWriter = &kafka.Writer{
-		Addr:     kafka.TCP(kafkaBroker),
-		Balancer: &kafka.LeastBytes{},
-	}
-	defer kafkaWriter.Close()
+	cs = newCatalogState()
+	cs.loadRecordings()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -545,16 +469,72 @@ func main() {
 	}()
 
 	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/csw/capabilities", capabilitiesHandler)
-	http.HandleFunc("/csw/records", getRecordsHandler)
-	http.HandleFunc("/csw/record", getRecordByIDHandler)
-	http.HandleFunc("/sensors", sensorsHandler)
-	http.HandleFunc("/sensors/register", registerSensorHandler)
-	http.HandleFunc("/observations", observationsHandler)
-	http.HandleFunc("/observations/ingest", ingestObservationHandler)
+	http.HandleFunc("/api/v1/assets", func(w http.ResponseWriter, r *http.Request) {
+		q := &CatalogQuery{Limit: 100}
+		if t := r.URL.Query().Get("type"); t != "" {
+			q.Type = AssetType(t)
+		}
+		if k := r.URL.Query().Get("keywords"); k != "" {
+			q.Keywords = strings.Split(k, ",")
+		}
+		if c := r.URL.Query().Get("classification"); c != "" {
+			q.Classification = c
+		}
+		if l := r.URL.Query().Get("limit"); l != "" {
+			q.Limit, _ = strconv.Atoi(l)
+		}
+		results := cs.query(q)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(results)
+	})
+
+	http.HandleFunc("/api/v1/assets/", func(w http.ResponseWriter, r *http.Request) {
+		id := filepath.Base(r.URL.Path)
+		a, ok := cs.assets[id]
+		if !ok {
+			http.Error(w, "not found", 404)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(a)
+	})
+
+	http.HandleFunc("/api/v1/recordings/", func(w http.ResponseWriter, r *http.Request) {
+		id := filepath.Base(r.URL.Path)
+		path := filepath.Join(RecordingsDir, id)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			http.Error(w, "not found", 404)
+			return
+		}
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", id))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		http.ServeFile(w, r, path)
+	})
+
+	http.HandleFunc("/csw", handleGetRecords)
+	http.HandleFunc("/csw/", handleGetRecords)
+
+	http.HandleFunc("/csw-endpoint", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("request") == "GetCapabilities" || r.URL.Query().Get("service") == "CSW" {
+			w.Header().Set("Content-Type", "application/xml")
+			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Capabilities version="2.0.2" xmlns="http://www.opengis.net/cat/csw/2.0.2">
+<ows:Sections xmlns:ows="http://www.opengis.net/ows">
+<ows:Section>ServiceIdentification</ows:Section>
+<ows:Section>ServiceProvider</ows:Section>
+<ows:Section>OperationsMetadata</ows:Section>
+<ows:Section>Filter_Capabilities</ows:Section>
+</ows:Sections>
+</Capabilities>`))
+			return
+		}
+		handleGetRecords(w, r)
+	})
 
 	log.Printf("data-catalog starting")
 	log.Printf("Kafka broker: %s", kafkaBroker)
+	log.Printf("OGC CSW endpoint: /csw")
+	log.Printf("REST API: /api/v1/assets")
 	go run(ctx)
 
 	addr := fmt.Sprintf(":%s", port)
@@ -563,6 +543,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-// Import math for sqrt
-var _ = math.Pow
