@@ -1,20 +1,20 @@
-# TROOPER-FORGE
+# TROOPER-VIMI
 
-**FORGE MDPAF Conversion Project** — DoD LVC Simulation Federation
+**VIMI MDPAF Conversion Project** — DoD LVC Simulation Federation
 
 DoD-aligned simulation and mission processing framework supporting Live, Virtual, and Constructive (LVC) training, OPIR satellite data fusion, missile warning workflows, and multi-federation interoperability via DIS/HLA/TENA/NETN protocols.
 
 ## Project Structure
 
 ```
-trooper-forge/
-├── FORGE-FOM/              # HLA Federation Object Model (IEEE 1516-2010)
+trooper-vimi/
+├── VIMI-FOM/              # HLA Federation Object Model (IEEE 1516-2010)
 │   └── FOM.xml             # Object/interaction class definitions
 ├── Dockerfiles/            # Base container images
 ├── k8s/                    # Kubernetes manifests
-│   └── forge-cluster/      # Kind/K8s namespace + services
+│   └── vimi-cluster/      # Kind/K8s namespace + services
 ├── vm/                     # VM templates + cloud-init
-│   └── cloud-init/         # cloud-init configs for FORGE VMs
+│   └── cloud-init/         # cloud-init configs for VIMI VMs
 ├── apps/                   # Mission processing microservices
 │   ├── opir-ingest/        # OPIR satellite data ingestion
 │   ├── missile-warning-engine/  # Threat detection + trajectory
@@ -35,7 +35,7 @@ trooper-forge/
 
 ### Prerequisites
 
-- Kubernetes/Kind cluster (namespace: `forge`)
+- Kubernetes/Kind cluster (namespace: `vimi`)
 - Kafka + etcd + Redis (available in `gms` namespace)
 - Docker for building app images
 - VIMIC for VM lifecycle management
@@ -43,22 +43,22 @@ trooper-forge/
 ### Deploy Base Services
 
 ```bash
-kubectl apply -f k8s/forge-cluster/namespace.yaml
-kubectl apply -f k8s/forge-cluster/base-services.yaml
+kubectl apply -f k8s/vimi-cluster/namespace.yaml
+kubectl apply -f k8s/vimi-cluster/base-services.yaml
 ```
 
 ### Build an App
 
 ```bash
 cd apps/opir-ingest
-docker build -t registry.stsgym.com/forge-opir-ingest:latest .
-docker push registry.stsgym.com/forge-opir-ingest:latest
+docker build -t registry.stsgym.com/vimi-opir-ingest:latest .
+docker push registry.stsgym.com/vimi-opir-ingest:latest
 ```
 
 ### Deploy to K8s
 
 ```bash
-kubectl apply -f k8s/forge-cluster/ -n forge
+kubectl apply -f k8s/vimi-cluster/ -n vimi
 ```
 
 ## Key Standards
@@ -82,6 +82,6 @@ kubectl apply -f k8s/forge-cluster/ -n forge
 
 ## Repository
 
-**GitLab:** `git@idm.wezzel.com:crab-meat-repos/trooper-forge.git`
+**GitLab:** `git@idm.wezzel.com:crab-meat-repos/trooper-vimi.git`
 
-*Note: Repo must be created manually (bot token has Guest access — cannot create via API). Create via web UI at https://idm.wezzel.com/crab-meat-repos/trooper-forge*
+*Note: Repo must be created manually (bot token has Guest access — cannot create via API). Create via web UI at https://idm.wezzel.com/crab-meat-repos/trooper-vimi*

@@ -1,14 +1,14 @@
 #!/bin/bash
-# forge-status.sh — CICERONE FORGE status command
-# Usage: cicerone forge status [--federation NAME]
+# vimi-status.sh — CICERONE VIMI status command
+# Usage: cicerone vimi status [--federation NAME]
 
 set -euo pipefail
 
-FEDERATION="${1:-TROOPER-FORGE}"
-NAMESPACE="${NAMESPACE:-forge}"
+FEDERATION="${1:-TROOPER-VIMI}"
+NAMESPACE="${NAMESPACE:-vimi}"
 KUBECTL="${KUBECTL:-kubectl}"
 
-echo "=== TROOPER-FORGE Status ==="
+echo "=== TROOPER-VIMI Status ==="
 echo "Federation: $FEDERATION"
 echo "Namespace: $NAMESPACE"
 echo ""

@@ -1,4 +1,4 @@
-// env-monitor - TROOPER-FORGE Mission Processing App
+// env-monitor - TROOPER-VIMI Mission Processing App
 // Phase 1: Core Infrastructure
 package main
 

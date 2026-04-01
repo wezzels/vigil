@@ -1,4 +1,4 @@
-// alert-dissemination - TROOPER-FORGE Mission Processing App
+// alert-dissemination - TROOPER-VIMI Mission Processing App
 // Phase 1: Core Infrastructure
 package main
 

@@ -2,13 +2,13 @@
 <federationObjectModel xmlns="http://www.openhla.org/fom"
                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                        xsi:schemaLocation="http://www.openhla.org/fom fom.xsd"
-                       name="TROOPER-FORGE-FOM"
+                       name="TROOPER-VIMI-FOM"
                        version="1.0"
                        releaseDate="2026-04-01"
                        modificatioinDate="2026-04-01">
     
     <!-- ============================================================ -->
-    <!-- TROOPER-FORGE Federation Object Model (FOM)                 -->
+    <!-- TROOPER-VIMI Federation Object Model (FOM)                 -->
     <!-- IEEE 1516-2010 HLA FOM for DoD LVC Simulation Federation     -->
     <!-- ============================================================ -->
     

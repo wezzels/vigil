@@ -1,4 +1,4 @@
-// data-catalog - TROOPER-FORGE Mission Processing App
+// data-catalog - TROOPER-VIMI Mission Processing App
 // Phase 1: Core Infrastructure
 package main
 

@@ -42,7 +42,7 @@ go build -o hla-bridge .
   --dis-port 3000 \
   --hla-host localhost \
   --hla-port 40000 \
-  --federation-name TROOPER-FORGE
+  --federation-name TROOPER-VIMI
 ```
 
 ## DIS PDU → HLA Mapping Rules

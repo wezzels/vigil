@@ -1,8 +1,8 @@
-// vimic-plugin — TROOPER-FORGE VIMIC Integration Module
-// Extends VIMIC with FORGE mission processing capabilities
+// vimic-plugin — TROOPER-VIMI VIMIC Integration Module
+// Extends VIMIC with VIMI mission processing capabilities
 //
-// This plugin adds FORGE-specific functionality to VIMIC:
-// - FORGE VM template management (SBIRS, C2, sensor nodes)
+// This plugin adds VIMI-specific functionality to VIMIC:
+// - VIMI VM template management (SBIRS, C2, sensor nodes)
 // - DIS protocol entity management via VIMIC UI
 // - Federation discovery and connection
 // - Alert dashboard integration
@@ -17,8 +17,8 @@ import (
     "time"
 )
 
-// FORGEComponent represents a FORGE mission app deployed on a VM
-type FORGEComponent struct {
+// VIMIComponent represents a VIMI mission app deployed on a VM
+type VIMIComponent struct {
     Name           string    // e.g. "opir-ingest-01"
     Type           string    // e.g. "opir-ingest", "missile-warning"
     VMRef          string    // VIMIC VM name
@@ -29,9 +29,9 @@ type FORGEComponent struct {
     LastHeartbeat  time.Time
 }
 
-// FORGEFederation represents a DIS/HLA federation
-type FORGEFederation struct {
-    Name           string    // e.g. "TROOPER-FORGE-RTO-01"
+// VIMIFederation represents a DIS/HLA federation
+type VIMIFederation struct {
+    Name           string    // e.g. "TROOPER-VIMI-RTO-01"
     Type           string    // "DIS", "HLA", "TENA", "NETN"
     MulticastGroup string    // e.g. "239.255.0.1"
     Port           uint16    // DIS port (default 3000)
@@ -39,7 +39,7 @@ type FORGEFederation struct {
     Participants   []string  // Site IDs of participants
 }
 
-// AlertLevel from FORGE alert system
+// AlertLevel from VIMI alert system
 type AlertLevel int
 
 const (
@@ -50,7 +50,7 @@ const (
     ALERT_HOSTILE   AlertLevel = 4  // HOSTILE: impact imminent
 )
 
-// MissileAlert represents a FORGE missile warning alert
+// MissileAlert represents a VIMI missile warning alert
 type MissileAlert struct {
     AlertID         uint32
     Level           AlertLevel
@@ -64,24 +64,24 @@ type MissileAlert struct {
     IssuedAt       time.Time
 }
 
-// VIMICPlugin extends VIMIC with FORGE capabilities
+// VIMICPlugin extends VIMIC with VIMI capabilities
 type VIMICPlugin struct {
-    Components map[string]*FORGEComponent
-    Federations map[string]*FORGEFederation
+    Components map[string]*VIMIComponent
+    Federations map[string]*VIMIFederation
     Alerts     []*MissileAlert
 }
 
-// New creates a new FORGE VIMIC plugin
+// New creates a new VIMI VIMIC plugin
 func New() *VIMICPlugin {
     return &VIMICPlugin{
-        Components: make(map[string]*FORGEComponent),
-        Federations: make(map[string]*FORGEFederation),
+        Components: make(map[string]*VIMIComponent),
+        Federations: make(map[string]*VIMIFederation),
         Alerts: []*MissileAlert{},
     }
 }
 
-// RegisterComponent adds a FORGE component to the plugin
-func (p *VIMICPlugin) RegisterComponent(c *FORGEComponent) error {
+// RegisterComponent adds a VIMI component to the plugin
+func (p *VIMICPlugin) RegisterComponent(c *VIMIComponent) error {
     if c.Name == "" || c.Type == "" {
         return fmt.Errorf("component name and type required")
     }
@@ -89,27 +89,27 @@ func (p *VIMICPlugin) RegisterComponent(c *FORGEComponent) error {
     return nil
 }
 
-// GetComponent returns a FORGE component by name
-func (p *VIMICPlugin) GetComponent(name string) *FORGEComponent {
+// GetComponent returns a VIMI component by name
+func (p *VIMICPlugin) GetComponent(name string) *VIMIComponent {
     return p.Components[name]
 }
 
 // ListComponents returns all registered components
-func (p *VIMICPlugin) ListComponents() []*FORGEComponent {
-    result := make([]*FORGEComponent, 0, len(p.Components))
+func (p *VIMICPlugin) ListComponents() []*VIMIComponent {
+    result := make([]*VIMIComponent, 0, len(p.Components))
     for _, c := range p.Components {
         result = append(result, c)
     }
     return result
 }
 
-// CreateFORGEVM creates a FORGE VM template XML for VIMIC
-func (p *VIMICPlugin) CreateFORGEVM(template string) (string, error) {
+// CreateVIMIVM creates a VIMI VM template XML for VIMIC
+func (p *VIMICPlugin) CreateVIMIVM(template string) (string, error) {
     templates := map[string]string{
-        "sbirs-sensor":    FORGESBIRSVMXML,
-        "c2-node":         FORGEC2VMXML,
-        "alert-processor": FORGEAlertVMXML,
-        "replay-server":   FORGEReplayVMXML,
+        "sbirs-sensor":    VIMISBIRSVMXML,
+        "c2-node":         VIMIC2VMXML,
+        "alert-processor": VIMIAlertVMXML,
+        "replay-server":   VIMIReplayVMXML,
     }
     xml, ok := templates[template]
     if !ok {
@@ -119,7 +119,7 @@ func (p *VIMICPlugin) CreateFORGEVM(template string) (string, error) {
 }
 
 // StartFederation initiates a DIS federation
-func (p *VIMICPlugin) StartFederation(f *FORGEFederation) error {
+func (p *VIMICPlugin) StartFederation(f *VIMIFederation) error {
     if f.MulticastGroup == "" {
         f.MulticastGroup = "239.255.0.1"
     }
@@ -141,9 +141,9 @@ func (p *VIMICPlugin) RecordAlert(a *MissileAlert) {
     p.Alerts = append(p.Alerts, a)
 }
 
-// FORGE VM Templates (minimal cloud-init enabled)
-const FORGESBIRSVMXML = `<domain type='kvm'>
-  <name>forge-sbirs-sensor</name>
+// VIMI VM Templates (minimal cloud-init enabled)
+const VIMISBIRSVMXML = `<domain type='kvm'>
+  <name>vimi-sbirs-sensor</name>
   <memory unit='MiB'>8192</memory>
   <vcpu>4</vcpu>
   <os>
@@ -158,13 +158,13 @@ const FORGESBIRSVMXML = `<domain type='kvm'>
   </interface>
   <disk type='file' device='disk'>
     <driver name='qemu' type='qcow2'/>
-    <source file='/var/lib/libvirt/images/forge-sbirs.qcow2'/>
+    <source file='/var/lib/libvirt/images/vimi-sbirs.qcow2'/>
     <target dev='vda' bus='virtio'/>
   </disk>
 </domain>`
 
-const FORGEC2VMXML = `<domain type='kvm'>
-  <name>forge-c2-node</name>
+const VIMIC2VMXML = `<domain type='kvm'>
+  <name>vimi-c2-node</name>
   <memory unit='MiB'>16384</memory>
   <vcpu>8</vcpu>
   <os>
@@ -179,13 +179,13 @@ const FORGEC2VMXML = `<domain type='kvm'>
   </interface>
   <disk type='file' device='disk'>
     <driver name='qemu' type='qcow2'/>
-    <source file='/var/lib/libvirt/images/forge-c2.qcow2'/>
+    <source file='/var/lib/libvirt/images/vimi-c2.qcow2'/>
     <target dev='vda' bus='virtio'/>
   </disk>
 </domain>`
 
-const FORGEAlertVMXML = `<domain type='kvm'>
-  <name>forge-alert-processor</name>
+const VIMIAlertVMXML = `<domain type='kvm'>
+  <name>vimi-alert-processor</name>
   <memory unit='MiB'>8192</memory>
   <vcpu>4</vcpu>
   <os>
@@ -200,13 +200,13 @@ const FORGEAlertVMXML = `<domain type='kvm'>
   </interface>
   <disk type='file' device='disk'>
     <driver name='qemu' type='qcow2'/>
-    <source file='/var/lib/libvirt/images/forge-alert.qcow2'/>
+    <source file='/var/lib/libvirt/images/vimi-alert.qcow2'/>
     <target dev='vda' bus='virtio'/>
   </disk>
 </domain>`
 
-const FORGEReplayVMXML = `<domain type='kvm">
-  <name>forge-replay-server</name>
+const VIMIReplayVMXML = `<domain type='kvm">
+  <name>vimi-replay-server</name>
   <memory unit='MiB'>32768</memory>
   <vcpu>16</vcpu>
   <os>
@@ -221,7 +221,7 @@ const FORGEReplayVMXML = `<domain type='kvm">
   </interface>
   <disk type='file' device='disk'>
     <driver name='qemu' type='qcow2'/>
-    <source file='/var/lib/libvirt/images/forge-replay.qcow2'/>
+    <source file='/var/lib/libvirt/images/vimi-replay.qcow2'/>
     <target dev='vda' bus='virtio'/>
   </disk>
 </domain>`

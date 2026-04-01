@@ -1,4 +1,4 @@
-// replay-engine - TROOPER-FORGE Mission Processing App
+// replay-engine - TROOPER-VIMI Mission Processing App
 // Phase 1: Core Infrastructure
 package main
 

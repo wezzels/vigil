@@ -1,6 +1,6 @@
 #cloud-config
-# FORGE SBIRS/OPIR Sensor VM cloud-init
-hostname: forge-sensor-{instance_id}
+# VIMI SBIRS/OPIR Sensor VM cloud-init
+hostname: vimi-sensor-{instance_id}
 manage_etc_hosts: true
 
 package_update: true
@@ -11,16 +11,16 @@ packages:
   - iperf3
 
 write_files:
-  - path: /etc/systemd/system/forge-sensor.service
+  - path: /etc/systemd/system/vimi-sensor.service
     content: |
       [Unit]
-      Description=FORGE Sensor Service
+      Description=VIMI Sensor Service
       After=network-online.target
       Wants=network-online.target
 
       [Service]
       Type=simple
-      ExecStart=/usr/local/bin/forge-sensor
+      ExecStart=/usr/local/bin/vimi-sensor
       Restart=always
       RestartSec=5
 
@@ -28,7 +28,7 @@ write_files:
       WantedBy=multi-user.target
     permissions: '0644'
 
-  - path: /opt/forge/config.yaml
+  - path: /opt/vimi/config.yaml
     content: |
       service: sensor
       kafka_brokers:
@@ -43,5 +43,5 @@ write_files:
         scan_mode: continuous
 
 runcmd:
-  - systemctl enable forge-sensor
-  - systemctl start forge-sensor
+  - systemctl enable vimi-sensor
+  - systemctl start vimi-sensor

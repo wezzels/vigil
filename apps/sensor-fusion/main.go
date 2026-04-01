@@ -1,4 +1,4 @@
-// sensor-fusion - TROOPER-FORGE Mission Processing App
+// sensor-fusion - TROOPER-VIMI Mission Processing App
 // Phase 1: Core Infrastructure
 package main
 

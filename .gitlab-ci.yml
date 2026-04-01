@@ -1,4 +1,4 @@
-# TROOPER-FORGE CI/CD Pipeline
+# TROOPER-VIMI CI/CD Pipeline
 # Stages: build, test, security-scan, publish, deploy-k8s, deploy-vm
 
 image: docker:24-dind
@@ -15,7 +15,7 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
   REGISTRY: registry.stsgym.com
   K8S_CLUSTER: kind-gms
-  FORGE_NS: forge
+  VIMI_NS: vimi
 
 # Shared build function for all apps
 _build_app:
@@ -24,12 +24,12 @@ _build_app:
     - |
       APP_NAME=$(basename $APP_DIR)
       echo "Building $APP_NAME..."
-      docker build -t $REGISTRY/forge-$APP_NAME:latest -t $REGISTRY/forge-$APP_NAME:$CI_COMMIT_SHORT_SHA $APP_DIR/
-      docker save $REGISTRY/forge-$APP_NAME:latest | gzip > build/forge-$APP_NAME.tar.gz
-    - echo "Build artifact: build/forge-$APP_NAME.tar.gz"
+      docker build -t $REGISTRY/vimi-$APP_NAME:latest -t $REGISTRY/vimi-$APP_NAME:$CI_COMMIT_SHORT_SHA $APP_DIR/
+      docker save $REGISTRY/vimi-$APP_NAME:latest | gzip > build/vimi-$APP_NAME.tar.gz
+    - echo "Build artifact: build/vimi-$APP_NAME.tar.gz"
   artifacts:
     paths:
-      - build/forge-*.tar.gz
+      - build/vimi-*.tar.gz
     expire_in: 1 day
 
 # Build each mission app
@@ -116,7 +116,7 @@ security-scan:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY/forge-*:latest || true
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY/vimi-*:latest || true
   allow_failure: true
   only:
     - master
@@ -129,8 +129,8 @@ publish:
       docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY || true
       for app in apps/*/; do
         APP_NAME=$(basename $app)
-        docker load < build/forge-$APP_NAME.tar.gz 2>/dev/null || true
-        docker push $REGISTRY/forge-$APP_NAME:latest || true
+        docker load < build/vimi-$APP_NAME.tar.gz 2>/dev/null || true
+        docker push $REGISTRY/vimi-$APP_NAME:latest || true
       done
   dependencies:
     - build-opir-ingest
@@ -146,12 +146,12 @@ deploy-k8s:
     - echo "$KUBECONFIG" | base64 -d > ~/.kube/config
   script:
     - kubectl config use-context $K8S_CLUSTER
-    - kubectl apply -f k8s/forge-cluster/namespace.yaml
-    - kubectl apply -f k8s/forge-cluster/
-    - kubectl rollout status deployment -n $FORGE_NS --timeout=120s || true
+    - kubectl apply -f k8s/vimi-cluster/namespace.yaml
+    - kubectl apply -f k8s/vimi-cluster/
+    - kubectl rollout status deployment -n $VIMI_NS --timeout=120s || true
   environment:
     name: production
-    url: https://forge.stsgym.com
+    url: https://vimi.stsgym.com
   when: manual
   only:
     - master

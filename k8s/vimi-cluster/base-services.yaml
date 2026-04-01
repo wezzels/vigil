@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kafka
-  namespace: forge
+  namespace: vimi
   labels:
     app: kafka
     component: messaging
@@ -25,7 +25,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: etcd
-  namespace: forge
+  namespace: vimi
   labels:
     app: etcd
     component: discovery
@@ -46,7 +46,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: forge
+  namespace: vimi
   labels:
     app: redis
     component: cache
@@ -64,7 +64,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: forge
+  namespace: vimi
   labels:
     app: postgres
     component: database

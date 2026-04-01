@@ -1,6 +1,6 @@
 #cloud-config
-# FORGE C2 Node VM cloud-init
-hostname: forge-c2-{instance_id}
+# VIMI C2 Node VM cloud-init
+hostname: vimi-c2-{instance_id}
 manage_etc_hosts: true
 
 package_update: true
@@ -11,22 +11,22 @@ packages:
   - postgresql-client
 
 write_files:
-  - path: /etc/systemd/system/forge-c2.service
+  - path: /etc/systemd/system/vimi-c2.service
     content: |
       [Unit]
-      Description=FORGE C2 Service
+      Description=VIMI C2 Service
       After=network-online.target
       Wants=network-online.target
 
       [Service]
       Type=simple
-      ExecStart=/usr/local/bin/forge-c2
+      ExecStart=/usr/local/bin/vimi-c2
       Restart=always
 
       [Install]
       WantedBy=multi-user.target
 
-  - path: /opt/forge/config.yaml
+  - path: /opt/vimi/config.yaml
     content: |
       service: c2
       kafka_brokers:
@@ -41,5 +41,5 @@ write_files:
         - HOSTILE
 
 runcmd:
-  - systemctl enable forge-c2
-  - systemctl start forge-c2
+  - systemctl enable vimi-c2
+  - systemctl start vimi-c2
