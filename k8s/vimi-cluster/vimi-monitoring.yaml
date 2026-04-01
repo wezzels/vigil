@@ -1,0 +1,112 @@
+---
+# Prometheus Operator ServiceMonitor for VIMI services
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vimi-apps
+  namespace: vimi
+  labels:
+    app: vimi
+    prometheus: vimi
+spec:
+  selector:
+    matchLabels:
+      app: vimi
+  namespaceSelector:
+    matchNames:
+    - vimi
+  endpoints:
+  - port: http
+    path: /health
+    interval: 15s
+    scrapeTimeout: 10s
+---
+# PrometheusRule for VIMI alerting rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vimi-alerts
+  namespace: vimi
+  labels:
+    app: vimi
+    prometheus: vimi
+spec:
+  groups:
+  - name: vimi.rules
+    rules:
+    - alert: VIMINoActiveTracks
+      expr: absent(vimi_tracks_total) or vimi_tracks_total == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "VIMI has no active threat tracks"
+        description: "No tracks detected in 5 minutes"
+    - alert: VIMIHostileTrack
+      expr: vimi_tracks{alert_level="HOSTILE"} > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "HOSTILE track detected"
+        description: "Track {{ $labels.track_id }} at alert level HOSTILE"
+    - alert: VIMIAlertImminent
+      expr: vimi_alerts{level="IMMINENT"} > 0
+      for: 30s
+      labels:
+        severity: warning
+      annotations:
+        summary: "IMMINENT alert issued"
+        description: "Missile impact predicted <15 minutes"
+    - alert: VIMIAlertIncoming
+      expr: vimi_alerts{level="INCOMING"} > 0
+      for: 10s
+      labels:
+        severity: critical
+      annotations:
+        summary: "INCOMING alert — missile in flight"
+        description: "Missile impact predicted <10 minutes"
+    - alert: VIMIAlertHostile
+      expr: vimi_alerts{level="HOSTILE"} > 0
+      for: 5s
+      labels:
+        severity: critical
+      annotations:
+        summary: "HOSTILE — NCA approval required"
+        description: "Immediate NCA notification required"
+    - alert: VIMIServiceDown
+      expr: up{job="vimi"} == 0
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "VIMI service down"
+        description: "{{ $labels.job }} is not responding"
+---
+# Prometheus scrape config (for non-Operator setups)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vimi-prometheus-scrape
+  namespace: vimi
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    scrape_configs:
+    - job_name: 'vimi'
+      static_configs:
+      - targets:
+        - opir-ingest:8081
+        - missile-warning-engine:8080
+        - sensor-fusion:8082
+        - lvc-coordinator:8083
+        - alert-dissemination:8084
+        - env-monitor:8085
+        - replay-engine:8086
+        - data-catalog:8087
+        - dis-hla-gateway:8090
+        - vimi-plugin:8091
+        labels:
+          group: 'vimi'

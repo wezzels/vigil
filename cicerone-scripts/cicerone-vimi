@@ -1,0 +1,435 @@
+#!/bin/bash
+# cicerone-vimi — CICERONE VIMI Extension Commands
+# Phase 3: Advanced Integration
+# Extends cicerone with VIMI mission processing commands
+#
+# Usage: cicerone vimi <command>
+#   cicerone vimi status              — VIMI stack health
+#   cicerone vimi tracks              — active threat tracks
+#   cicerone vimi alerts              — recent alerts
+#   cicerone vimi lvc                — LVC federation status
+#   cicerone vimi env                — environmental events
+#   cicerone vimi inject <type> <json> — inject test data
+#   cicerone vimi globe               — update 3D globe
+#   cicerone vimi recording start|stop — start/stop DIS recording
+#   cicerone vimi federation join|leave — join/leave HLA federation
+#
+# Configuration:
+#   VIMI_API_HOST  — VIMI plugin HTTP host (default: localhost:8091)
+#   VIMI_KAFKA     — Kafka broker (default: kafka:9092)
+
+set -euo pipefail
+
+VIMI_API_HOST="${VIMI_API_HOST:-localhost:8091}"
+VIMI_KAFKA="${VIMI_KAFKA:-kafka:9092}"
+KIND_CLUSTER="${KIND_CLUSTER:-kind-gms}"
+K8S_NAMESPACE="${K8S_NAMESPACE:-vimi}"
+
+# Colors
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info() { echo -e "${BLUE}[VIMI]${NC} $1"; }
+ok()   { echo -e "${GREEN}[✓]${NC} $1"; }
+warn() { echo -e "${YELLOW}[!]${NC} $1"; }
+err()  { echo -e "${RED}[✗]${NC} $1" >&2; }
+
+# API call helper
+api_get() {
+    curl -s "http://${VIMI_API_HOST}$1" 2>/dev/null || echo "{}"
+}
+
+api_post() {
+    curl -s -X POST "http://${VIMI_API_HOST}$1" \
+        -H "Content-Type: application/json" \
+        -d "$2" 2>/dev/null || echo "{}"
+}
+
+# ---- Commands ----
+
+cmd_status() {
+    echo -e "${BOLD}VIMI Mission Processing Stack${NC}"
+    echo "================================"
+    
+    local api_data
+    api_data=$(api_get "/health")
+    
+    local plugin_status="UNKNOWN"
+    plugin_status=$(echo "$api_data" | jq -r '.status // "unknown"')
+    local track_count=0
+    track_count=$(echo "$api_data" | jq -r '.tracks // 0')
+    local alert_count=0
+    alert_count=$(echo "$api_data" | jq -r '.alerts // 0')
+    
+    # Check Kafka connectivity
+    local kafka_ok="❌"
+    if timeout 2 bash -c "echo > /dev/tcp/localhost/9092" 2>/dev/null; then
+        kafka_ok="✅"
+    elif kubectl exec -n "$K8S_NAMESPACE" deploy/kafka -- sh -c 'echo > /dev/tcp/localhost/9092' 2>/dev/null; then
+        kafka_ok="✅"
+    fi
+    
+    # Check Kind cluster
+    local cluster_ok="❌"
+    if kubectl cluster-info --context "$KIND_CLUSTER" &>/dev/null; then
+        cluster_ok="✅"
+    fi
+    
+    # Check namespace
+    local ns_ok="❌"
+    if kubectl get namespace "$K8S_NAMESPACE" --context "$KIND_CLUSTER" &>/dev/null; then
+        ns_ok="✅"
+    fi
+    
+    echo ""
+    echo -e "  Plugin Status:  ${plugin_status^}"
+    echo -e "  Active Tracks:  ${track_count}"
+    echo -e "  Recent Alerts:  ${alert_count}"
+    echo ""
+    echo -e "  Kafka Broker:   ${kafka_ok} ${VIMI_KAFKA}"
+    echo -e "  K8s Cluster:    ${cluster_ok} ${KIND_CLUSTER}"
+    echo -e "  VIMI Namespace: ${ns_ok} ${K8S_NAMESPACE}"
+    echo ""
+    
+    # List deployed pods
+    echo -e "${BOLD}  Deployed Services:${NC}"
+    local pods
+    pods=$(kubectl get pods -n "$K8S_NAMESPACE" --context "$KIND_CLUSTER" \
+        -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.phase}{"\n"}{end}' 2>/dev/null || echo "")
+    
+    if [[ -n "$pods" ]]; then
+        while IFS=$'\t' read -r name phase; do
+            local icon="✅"
+            case "$phase" in
+                Running) icon="✅" ;;
+                Pending) icon="⏳" ;;
+                Failed)  icon="❌" ;;
+                *)       icon="⚠️" ;;
+            esac
+            printf "    %s %-30s %s\n" "$icon" "$name" "$phase"
+        done <<< "$pods"
+    else
+        echo -e "    ${YELLOW}No pods found in ${K8S_NAMESPACE}${NC}"
+    fi
+    echo ""
+}
+
+cmd_tracks() {
+    echo -e "${BOLD}Active Threat Tracks${NC}"
+    echo "======================="
+    echo ""
+    
+    local api_data
+    api_data=$(api_get "/api/globe/tracks")
+    
+    local count
+    count=$(echo "$api_data" | jq 'length')
+    
+    if [[ "$count" -eq 0 ]]; then
+        echo "  No active tracks"
+        return
+    fi
+    
+    printf "  %-8s %-10s %-8s %-12s %-15s %s\n" \
+        "TRACK" "LEVEL" "TYPE" "POSITION" "VELOCITY" "TTI"
+    echo "  $(printf '%.0s─' {1..75})"
+    
+    echo "$api_data" | jq -r '.[] |
+        "\u001b[2m\u001b[7m" + 
+        (.track_id | tostring | .[0:8]) + "\u001b[0m  " +
+        (.alert_level | .[0:10]) + "  " +
+        (.threat_type | .[0:8]) + "  " +
+        (([.lat, .lon] | map(if . then . else 0 end) | .[0:2] | map(tostring) | join(",")) | .[0:12]) + "  " +
+        (.velocity | tostring | .[0:15]) + " m/s  " +
+        (.tti_seconds | tostring | .[0:8]) + "s"
+    ' 2>/dev/null || echo "$api_data" | jq -r '.[] |
+        "\(.track_id)\t\(.alert_level)\t\(.threat_type)\t\(.lat),\(.lon)\t\(.velocity)m/s\t\(.tti_seconds)s"
+    ' | while IFS=$'\t' read -r id level type latlon vel tti; do
+        local color="$NC"
+        case "$level" in
+            HOSTILE) color="$RED" ;;
+            INCOMING) color="$YELLOW" ;;
+            IMMINENT) color="$YELLOW" ;;
+            CONOPREP) color="$BLUE" ;;
+        esac
+        printf "  %-8s ${color}%-10s${NC} %-8s %-12s %-15s %s\n" \
+            "$id" "$level" "$type" "$latlon" "$vel" "$tti"
+    done
+    
+    echo ""
+    echo "  Total: $count tracks"
+}
+
+cmd_alerts() {
+    echo -e "${BOLD}Recent Alerts${NC}"
+    echo "==============="
+    echo ""
+    
+    local api_data
+    api_data=$(api_get "/api/alerts")
+    
+    local count
+    count=$(echo "$api_data" | jq 'length')
+    
+    if [[ "$count" -eq 0 ]]; then
+        echo "  No recent alerts"
+        return
+    fi
+    
+    printf "  %-8s %-10s %-8s %-15s %s\n" \
+        "ALERT" "LEVEL" "TYPE" "IMPACT" "ISSUED"
+    echo "  $(printf '%.0s─' {1..60})"
+    
+    echo "$api_data" | jq -r '.[] |
+        "\(.alert_id)\t\(.level)\t\(.threat_type)\t\(.impact_lat),\(.impact_lon)\t\(.issued_at)" |
+    ' | while IFS=$'\t' read -r id level type impact issued; do
+        local color="$NC"
+        case "$level" in
+            HOSTILE) color="$RED" ;;
+            INCOMING) color="$RED" ;;
+            IMMINENT) color="$YELLOW" ;;
+        esac
+        printf "  %-8s ${color}%-10s${NC} %-8s %-15s %s\n" \
+            "$id" "$level" "$type" "$impact" "$issued"
+    done
+    
+    echo ""
+    echo "  Total: $count alerts"
+}
+
+cmd_lvc() {
+    echo -e "${BOLD}LVC Federation Status${NC}"
+    echo "========================"
+    echo ""
+    
+    local api_data
+    api_data=$(api_get "/api/lvc")
+    
+    local total live virtual constructive friendly opposing neutral tracks
+    total=$(echo "$api_data" | jq -r '.total_entities // 0')
+    live=$(echo "$api_data" | jq -r '.live_count // 0')
+    virtual=$(echo "$api_data" | jq -r '.virtual_count // 0')
+    constructive=$(echo "$api_data" | jq -r '.constructive_count // 0')
+    friendly=$(echo "$api_data" | jq -r '.friendly_count // 0')
+    opposing=$(echo "$api_data" | jq -r '.opposing_count // 0')
+    neutral=$(echo "$api_data" | jq -r '.neutral_count // 0')
+    tracks=$(echo "$api_data" | jq -r '.active_tracks // 0')
+    
+    echo "  Total Entities: $total"
+    echo ""
+    echo -e "  ${GREEN}Live${NC}         $live   (real-world assets)"
+    echo -e "  ${YELLOW}Virtual${NC}      $virtual   (operator-controlled)"
+    echo -e "  ${BLUE}Constructive${NC}  $constructive   (AI-generated)"
+    echo ""
+    echo "  Force Breakdown:"
+    echo -e "    Friendly:   $friendly"
+    echo -e "    ${RED}Opposing:${NC}   $opposing"
+    echo -e "    Neutral:    $neutral"
+    echo ""
+    echo "  Active Tracks: $tracks"
+}
+
+cmd_env() {
+    echo -e "${BOLD}Environmental Events${NC}"
+    echo "======================"
+    echo ""
+    
+    local api_data
+    api_data=$(api_get "/api/env/events")
+    
+    local count
+    count=$(echo "$api_data" | jq 'length')
+    
+    if [[ "$count" -eq 0 ]]; then
+        echo "  No active environmental events"
+        return
+    fi
+    
+    printf "  %-8s %-15s %-8s %-15s %s\n" \
+        "EVENT" "TYPE" "SEVERITY" "CENTER" "IMPACT"
+    echo "  $(printf '%.0s─' {1..70})"
+    
+    echo "$api_data" | jq -r '.[] |
+        "\(.event_id)\t\(.type)\t\(.severity)\t\(.center_lat),\(.center_lon)\tSBIRS:\(.sbirs_impact) AWACS:\(.awacs_impact)"
+    ' | while IFS=$'\t' read -r id type sev center impact; do
+        printf "  %-8s %-15s %-8s %-15s %s\n" \
+            "$id" "$type" "$sev" "$center" "$impact"
+    done
+    
+    echo ""
+    echo "  Total: $count events"
+}
+
+cmd_inject() {
+    local type="$1"
+    local json="$2"
+    
+    if [[ -z "$type" || -z "$json" ]]; then
+        err "Usage: cicerone vimi inject <type> <json>"
+        err "Types: track, alert, env"
+        return 1
+    fi
+    
+    info "Injecting $type: $json"
+    
+    local response
+    response=$(api_post "/api/cmd" "{\"cmd\":\"inject\",\"args\":[\"$type\",\"$json\"]}")
+    
+    local result
+    result=$(echo "$response" | jq -r '.result // .' 2>/dev/null)
+    
+    if [[ -n "$result" && "$result" != "{}" ]]; then
+        ok "$result"
+    else
+        err "Injection failed"
+    fi
+}
+
+cmd_globe() {
+    info "Sending tracks to 3D globe display..."
+    
+    local response
+    response=$(api_post "/api/cmd" '{"cmd":"globe","args":[]}')
+    
+    echo "$response"
+}
+
+cmd_recording() {
+    local action="$1"
+    
+    case "$action" in
+        start)
+            info "Starting DIS recording..."
+            # Would call replay-engine API
+            kubectl exec -n "$K8S_NAMESPACE" deploy/replay-engine -- \
+                cicerone vimi recording start 2>/dev/null || \
+            warn "Direct API call not implemented — use replay-engine API"
+            ;;
+        stop)
+            info "Stopping DIS recording..."
+            kubectl exec -n "$K8S_NAMESPACE" deploy/replay-engine -- \
+                cicerone vimi recording stop 2>/dev/null || \
+            warn "Direct API call not implemented — use replay-engine API"
+            ;;
+        list)
+            info "Available recordings:"
+            kubectl exec -n "$K8S_NAMESPACE" deploy/replay-engine -- \
+                cicerone vimi recording list 2>/dev/null || \
+            curl -s "http://${VIMI_API_HOST}/recordings" 2>/dev/null | \
+                jq -r '.[] | "  \(.id) — \(.name) (\(.pdu_count) PDUs, \(.file_size) bytes)"' || \
+            warn "Could not list recordings"
+            ;;
+        *)
+            err "Unknown recording action: $action"
+            echo "Usage: cicerone vimi recording start|stop|list"
+            return 1
+            ;;
+    esac
+}
+
+cmd_federation() {
+    local action="$1"
+    
+    case "$action" in
+        join)
+            info "Joining HLA federation..."
+            local fed_name="${2:-VIMI-Federation}"
+            local fed_ RTI="${3:-localhost:5000}"
+            ok "Would join federation ${fed_name} at ${RTI}"
+            warn "RTI connection not yet implemented"
+            ;;
+        leave)
+            info "Leaving HLA federation..."
+            ok "Would resign from federation"
+            warn "RTI connection not yet implemented"
+            ;;
+        status)
+            info "HLA Federation Status:"
+            local api_data
+            api_data=$(api_get "/api/federation")
+            echo "$api_data" | jq '.' 2>/dev/null || echo "  Federation API not available"
+            ;;
+        *)
+            err "Unknown federation action: $action"
+            echo "Usage: cicerone vimi federation join|leave|status [name] [rti-host]"
+            return 1
+            ;;
+    esac
+}
+
+# ---- Main ----
+
+show_help() {
+    cat << EOF
+${BOLD}CICERONE VIMI Extension${NC} — VIMI Mission Processing CLI
+
+${BOLD}USAGE${NC}
+    cicerone vimi <command>
+
+${BOLD}COMMANDS${NC}
+    ${BOLD}status${NC}              VIMI stack health and deployed services
+    ${BOLD}tracks${NC}              Active threat tracks on globe
+    ${BOLD}alerts${NC}              Recent missile warning alerts
+    ${BOLD}lvc${NC}                  LVC (Live/Virtual/Constructive) federation status
+    ${BOLD}env${NC}                 Active environmental events (cloud/rain/solar)
+    ${BOLD}inject${NC} <type> <json> Inject test data (track, alert, env)
+    ${BOLD}globe${NC}               Send tracks to 3D globe display
+    ${BOLD}recording${NC} start|stop|list  DIS recording management
+    ${BOLD}federation${NC} join|leave|status  HLA federation management
+    ${BOLD}help${NC}                Show this help
+
+${BOLD}EXAMPLES${NC}
+    cicerone vimi status
+    cicerone vimi tracks
+    cicerone vimi alerts
+    cicerone vimi lvc
+    cicerone vimi env
+    cicerone vimi inject track '{"track_id":1,"lat":35.6,"lon":-120.5}'
+    cicerone vimi globe
+    cicerone vimi recording start
+    cicerone vimi federation status
+
+${BOLD}ENVIRONMENT${NC}
+    VIMI_API_HOST   VIMI plugin HTTP host (default: localhost:8091)
+    VIMI_KAFKA      Kafka broker (default: kafka:9092)
+    KIND_CLUSTER    Kubernetes cluster context (default: kind-gms)
+    K8S_NAMESPACE   Kubernetes namespace (default: vimi)
+
+EOF
+}
+
+main() {
+    local command="${1:-}"
+    
+    # Check jq availability
+    if ! command -v jq &>/dev/null; then
+        err "jq is required but not installed"
+        exit 1
+    fi
+    
+    case "$command" in
+        status)     cmd_status ;;
+        tracks)     cmd_tracks ;;
+        alerts)     cmd_alerts ;;
+        lvc)        cmd_lvc ;;
+        env)        cmd_env ;;
+        inject)     cmd_inject "${2:-}" "${3:-}" ;;
+        globe)      cmd_globe ;;
+        recording)  cmd_recording "${2:-}" ;;
+        federation) cmd_federation "${2:-}" ;;
+        help|--help|-h) show_help ;;
+        '')          show_help ;;
+        *)
+            err "Unknown command: $command"
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

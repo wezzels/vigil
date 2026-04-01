@@ -1,0 +1,106 @@
+---
+# VIMI shared config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vimi-config
+  namespace: vimi
+data:
+  DIS_EXERCISE_ID: "1"
+  DIS_SITE_ID: "1"
+  KAFKA_BROKERS: "kafka:9092"
+  REDIS_ADDR: "redis:6379"
+  DATA_DIR: "/var/vimi/data"
+---
+# VIMI Ingress — external access to VIMI services
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vimi
+  namespace: vimi
+  labels:
+    app: vimi
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # VIMI mission processing routes
+      location ~ ^/vimi/api/ {
+        proxy_pass http://vimi-plugin:8091;
+      }
+      location ~ ^/vimi/csw {
+        proxy_pass http://data-catalog:8087;
+      }
+      location ~ ^/vimi/ {
+        return 404;
+      }
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - vimi.stsgym.com
+    secretName: vimi-tls
+  rules:
+  - host: vimi.stsgym.com
+    http:
+      paths:
+      - path: /api/v1/assets
+        pathType: Prefix
+        backend:
+          service:
+            name: data-catalog
+            port:
+              number: 8087
+      - path: /csw
+        pathType: Prefix
+        backend:
+          service:
+            name: data-catalog
+            port:
+              number: 8087
+      - path: /
+        backend:
+          service:
+            name: vimi-plugin
+            port:
+              number: 8091
+---
+# VIMI Ingress — vimi-plugin (Cicerone web interface)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vimi-plugin
+  namespace: vimi
+  labels:
+    app: vimi
+    component: vimi-plugin
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - vimi-plugin.stsgym.com
+    secretName: vimi-plugin-tls
+  rules:
+  - host: vimi-plugin.stsgym.com
+    http:
+      paths:
+      - path: /
+        backend:
+          service:
+            name: vimi-plugin
+            port:
+              number: 8091
+---
+# K8s Secret for VIMI sensitive config (JWT tokens, API keys)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vimi-secrets
+  namespace: vimi
+type: Opaque
+stringData:
+  # Add secrets here: JWT_SECRET, API_KEYS, etc.
+  # Values should be injected as env vars in deployments
