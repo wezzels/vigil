@@ -928,3 +928,48 @@ kubectl apply -f k8s/vimi-cluster/vimi-cluster.yaml
 **Repository:** `git@idm.wezzel.com:crab-meat-repos/trooper-vimi.git`
 **Deployed Namespace:** `vimi`
 **Deployed Cluster:** Kind/GMS (darth)
+
+## GitLab CI/CD Runner Setup
+
+### Get Runner Registration Token
+1. Log into GitLab: https://idm.wezzel.com
+2. Go to **Admin Area → CI/CD → Runners**
+3. Click **Register an instance runner**
+4. Copy the registration token
+
+### Register Runner
+On a machine with Docker and kubectl (e.g., miner or a dedicated runner VM):
+
+```bash
+# Install GitLab Runner
+curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
+sudo apt-get install gitlab-runner
+
+# Register with token
+sudo gitlab-runner register \
+  --url https://idm.wezzel.com \
+  --registration-token <TOKEN> \
+  --description "vimi-runner" \
+  --tag-list "vimi,k8s,docker" \
+  --executor docker \
+  --docker-image docker:24-dind \
+  --locked-to-project=false
+
+# Verify
+sudo gitlab-runner verify
+sudo gitlab-runner start
+```
+
+### Runner Requirements
+- Docker with DinD (docker:dind image) 
+- kubectl configured for kind-gms cluster
+- Access to push images to `registry.stsgym.com`
+- ~10GB disk for build artifacts
+
+### Pipeline Jobs
+The `.gitlab-ci.yml` defines:
+- `build-*` — build each of 10 apps as Docker images
+- `test-*` — run `go test ./...` per app
+- `security-scan` — trivy scan on all images
+- `publish` — push to `registry.stsgym.com`
+- `deploy-k8s` — `kubectl rollout restart` for updated apps
