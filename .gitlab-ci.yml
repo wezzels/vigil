@@ -183,11 +183,15 @@ publish:
   - master
 deploy-k8s:
   stage: deploy-k8s
-  image: bitnami/kubectl:latest
+  image: docker:24-dind
+  network_mode: kind
+  needs:
+  - publish
   before_script:
-  - kubectl version --client
+  - apk add --no-cache kubectl >/dev/null 2>&1
   script:
   - echo "$KUBECONFIG_BASE64" | base64 -d > /tmp/kubeconfig
+  - kubectl --kubeconfig /tmp/kubeconfig get nodes
   - kubectl --kubeconfig /tmp/kubeconfig config get-contexts
   - kubectl --kubeconfig /tmp/kubeconfig get pods -n vimi
   - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination
