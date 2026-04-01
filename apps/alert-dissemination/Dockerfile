@@ -1,14 +1,13 @@
 FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
+WORKDIR /build
+COPY go.mod go.sum* ./
 RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 go build -o /app/alert-dissemination .
+COPY *.go ./
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o alert-dissemination .
 
-FROM alpine:3.19
-RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /app
-COPY --from=builder /app/alert-dissemination .
-COPY docker-entrypoint.sh .
-RUN chmod +x docker-entrypoint.sh
-ENTRYPOINT ["./docker-entrypoint.sh"]
+FROM scratch
+COPY --from=builder /build/alert-dissemination /usr/local/bin/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+EXPOSE 8080
+ENV GIN_MODE=release
+ENTRYPOINT ["alert-dissemination"]
