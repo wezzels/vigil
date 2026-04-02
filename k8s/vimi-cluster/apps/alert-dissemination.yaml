@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: alert-dissemination
-        image: vimi/alert-dissemination:latest
-        imagePullPolicy: Always
+        image: darth:5000/vimi-alert-dissemination:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8084

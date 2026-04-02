@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: env-monitor
-        image: vimi/env-monitor:latest
-        imagePullPolicy: Always
+        image: darth:5000/vimi-env-monitor:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8085

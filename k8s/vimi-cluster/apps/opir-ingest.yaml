@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: opir-ingest
-        image: vimi/opir-ingest:latest
-        imagePullPolicy: Always
+        image: darth:5000/vimi-opir-ingest:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8080

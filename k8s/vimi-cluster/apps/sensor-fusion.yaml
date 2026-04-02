@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: sensor-fusion
-        image: vimi/sensor-fusion:latest
-        imagePullPolicy: Always
+        image: darth:5000/vimi-sensor-fusion:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8082

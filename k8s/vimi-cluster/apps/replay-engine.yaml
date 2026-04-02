@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: replay-engine
-        image: vimi/replay-engine:latest
-        imagePullPolicy: Always
+        image: darth:5000/vimi-replay-engine:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8086

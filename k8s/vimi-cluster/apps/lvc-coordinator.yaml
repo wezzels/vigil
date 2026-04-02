@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
       - name: lvc-coordinator
-        image: vimi/lvc-coordinator:latest
-        imagePullPolicy: Always
+        image: darth:5000/vimi-lvc-coordinator:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8083
