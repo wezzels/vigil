@@ -40,7 +40,7 @@ spec:
               key: DIS_APP_ID
               optional: true
         - name: PORT
-          value: coordinator
+          value: '9092'
         - name: POD_NAME
           valueFrom:
             fieldRef:
