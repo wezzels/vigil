@@ -21,7 +21,7 @@ spec:
       containers:
       - name: vimi-plugin
         image: vimi/vimi-plugin:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8080

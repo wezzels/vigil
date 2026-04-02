@@ -21,10 +21,10 @@ spec:
       containers:
       - name: data-catalog
         image: vimi/data-catalog:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - name: http
-          containerPort: 9092
+          containerPort: 8087
           protocol: TCP
         env:
         - name: KAFKA_BROKERS
@@ -40,7 +40,7 @@ spec:
               key: DIS_APP_ID
               optional: true
         - name: PORT
-          value: '9092'
+          value: '8087'
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -59,14 +59,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 9092
+            port: 8087
           initialDelaySeconds: 10
           periodSeconds: 30
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /health
-            port: 9092
+            port: 8087
           initialDelaySeconds: 5
           periodSeconds: 10
       restartPolicy: Always
@@ -83,8 +83,8 @@ spec:
   type: ClusterIP
   ports:
   - name: http
-    port: 9092
-    targetPort: 9092
+    port: 8087
+    targetPort: 8087
     protocol: TCP
   selector:
     app: vimi

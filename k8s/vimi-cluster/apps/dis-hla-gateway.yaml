@@ -21,7 +21,7 @@ spec:
       containers:
       - name: dis-hla-gateway
         image: vimi/dis-hla-gateway:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8080
