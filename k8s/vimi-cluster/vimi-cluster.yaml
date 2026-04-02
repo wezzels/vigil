@@ -1,11 +1,10 @@
----
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: vimi
   labels:
     name: vimi
     simulation-type: dod-lvc
+  name: vimi
 ---
 apiVersion: v1
 kind: Service
@@ -13,15 +12,15 @@ metadata:
   name: kafka
   namespace: vimi
 spec:
-  type: ExternalName
   externalName: kafka.gms.svc.cluster.local
   ports:
-  - port: 9092
+  - name: port-0
+    port: 9092
     protocol: TCP
-    name: port-0
-  - port: 9093
+  - name: port-1
+    port: 9093
     protocol: TCP
-    name: port-1
+  type: ExternalName
 ---
 apiVersion: v1
 kind: Service
@@ -29,15 +28,15 @@ metadata:
   name: etcd
   namespace: vimi
 spec:
-  type: ExternalName
   externalName: etcd.gms.svc.cluster.local
   ports:
-  - port: 2379
+  - name: port-0
+    port: 2379
     protocol: TCP
-    name: port-0
-  - port: 2380
+  - name: port-1
+    port: 2380
     protocol: TCP
-    name: port-1
+  type: ExternalName
 ---
 apiVersion: v1
 kind: Service
@@ -45,12 +44,12 @@ metadata:
   name: redis
   namespace: vimi
 spec:
-  type: ExternalName
   externalName: redis.gms.svc.cluster.local
   ports:
-  - port: 6379
+  - name: port-0
+    port: 6379
     protocol: TCP
-    name: port-0
+  type: ExternalName
 ---
 apiVersion: v1
 kind: Service
@@ -58,24 +57,24 @@ metadata:
   name: postgres
   namespace: vimi
 spec:
-  type: ExternalName
   externalName: postgres.gms.svc.cluster.local
   ports:
-  - port: 5432
+  - name: port-0
+    port: 5432
     protocol: TCP
-    name: port-0
+  type: ExternalName
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: vimi-config
-  namespace: vimi
 data:
+  DATA_DIR: /var/vimi/data
   DIS_EXERCISE_ID: '1'
   DIS_SITE_ID: '1'
   KAFKA_BROKERS: kafka:9092
   REDIS_ADDR: redis:6379
-  DATA_DIR: /var/vimi/data
+kind: ConfigMap
+metadata:
+  name: vimi-config
+  namespace: vimi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -95,47 +94,46 @@ spec:
         component: opir-ingest
     spec:
       containers:
-      - name: opir-ingest
-        image: vimi/opir-ingest:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8081
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8081'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/opir-ingest:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: opir-ingest
+        ports:
+        - containerPort: 8081
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: opir-ingest
-  namespace: vimi
   labels:
     app: vimi
+  name: opir-ingest
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8081
@@ -143,6 +141,7 @@ spec:
   selector:
     app: vimi
     component: opir-ingest
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -162,47 +161,46 @@ spec:
         component: missile-warning-engine
     spec:
       containers:
-      - name: missile-warning-engine
-        image: vimi/missile-warning-engine:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8080
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8080'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/missile-warning-engine:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: missile-warning-engine
+        ports:
+        - containerPort: 8080
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: missile-warning-engine
-  namespace: vimi
   labels:
     app: vimi
+  name: missile-warning-engine
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8080
@@ -210,6 +208,7 @@ spec:
   selector:
     app: vimi
     component: missile-warning-engine
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -229,47 +228,46 @@ spec:
         component: sensor-fusion
     spec:
       containers:
-      - name: sensor-fusion
-        image: vimi/sensor-fusion:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8082
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8082'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/sensor-fusion:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: sensor-fusion
+        ports:
+        - containerPort: 8082
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: sensor-fusion
-  namespace: vimi
   labels:
     app: vimi
+  name: sensor-fusion
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8082
@@ -277,6 +275,7 @@ spec:
   selector:
     app: vimi
     component: sensor-fusion
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -296,47 +295,46 @@ spec:
         component: lvc-coordinator
     spec:
       containers:
-      - name: lvc-coordinator
-        image: vimi/lvc-coordinator:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8083
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8083'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/lvc-coordinator:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: lvc-coordinator
+        ports:
+        - containerPort: 8083
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: lvc-coordinator
-  namespace: vimi
   labels:
     app: vimi
+  name: lvc-coordinator
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8083
@@ -344,6 +342,7 @@ spec:
   selector:
     app: vimi
     component: lvc-coordinator
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -363,47 +362,46 @@ spec:
         component: alert-dissemination
     spec:
       containers:
-      - name: alert-dissemination
-        image: vimi/alert-dissemination:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8084
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8084'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/alert-dissemination:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: alert-dissemination
+        ports:
+        - containerPort: 8084
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: alert-dissemination
-  namespace: vimi
   labels:
     app: vimi
+  name: alert-dissemination
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8084
@@ -411,6 +409,7 @@ spec:
   selector:
     app: vimi
     component: alert-dissemination
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -430,47 +429,46 @@ spec:
         component: env-monitor
     spec:
       containers:
-      - name: env-monitor
-        image: vimi/env-monitor:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8085
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8085'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/env-monitor:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: env-monitor
+        ports:
+        - containerPort: 8085
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: env-monitor
-  namespace: vimi
   labels:
     app: vimi
+  name: env-monitor
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8085
@@ -478,6 +476,7 @@ spec:
   selector:
     app: vimi
     component: env-monitor
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -497,47 +496,46 @@ spec:
         component: replay-engine
     spec:
       containers:
-      - name: replay-engine
-        image: vimi/replay-engine:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8086
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8086'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/replay-engine:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: replay-engine
+        ports:
+        - containerPort: 8086
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: replay-engine
-  namespace: vimi
   labels:
     app: vimi
+  name: replay-engine
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8086
@@ -545,6 +543,7 @@ spec:
   selector:
     app: vimi
     component: replay-engine
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -564,47 +563,46 @@ spec:
         component: data-catalog
     spec:
       containers:
-      - name: data-catalog
-        image: vimi/data-catalog:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8087
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8087'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/data-catalog:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: data-catalog
+        ports:
+        - containerPort: 8087
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: data-catalog
-  namespace: vimi
   labels:
     app: vimi
+  name: data-catalog
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8087
@@ -612,6 +610,7 @@ spec:
   selector:
     app: vimi
     component: data-catalog
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -631,47 +630,46 @@ spec:
         component: dis-hla-gateway
     spec:
       containers:
-      - name: dis-hla-gateway
-        image: vimi/dis-hla-gateway:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8090
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8090'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/dis-hla-gateway:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: dis-hla-gateway
+        ports:
+        - containerPort: 8090
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: dis-hla-gateway
-  namespace: vimi
   labels:
     app: vimi
+  name: dis-hla-gateway
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8090
@@ -679,6 +677,7 @@ spec:
   selector:
     app: vimi
     component: dis-hla-gateway
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -698,47 +697,46 @@ spec:
         component: vimi-plugin
     spec:
       containers:
-      - name: vimi-plugin
-        image: vimi/vimi-plugin:latest
-        imagePullPolicy: Never
-        ports:
-        - name: http
-          containerPort: 8091
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: PORT
           value: '8091'
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 256Mi
-            cpu: 200m
+        image: vimi/vimi-plugin:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: vimi-plugin
+        ports:
+        - containerPort: 8091
+          name: http
         readinessProbe:
           httpGet:
             path: /health
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: vimi-plugin
-  namespace: vimi
   labels:
     app: vimi
+  name: vimi-plugin
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8091
@@ -746,44 +744,45 @@ spec:
   selector:
     app: vimi
     component: vimi-plugin
+  type: ClusterIP
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: vimi-alerts
-  namespace: vimi
   labels:
     app: vimi
     prometheus: vimi
+  name: vimi-alerts
+  namespace: vimi
 spec:
   groups:
   - name: vimi.rules
     rules:
     - alert: VIMIHostileTrack
+      annotations:
+        summary: HOSTILE track detected
       expr: vimi_tracks{alert_level="HOSTILE"} > 0
       for: 1m
       labels:
         severity: critical
-      annotations:
-        summary: HOSTILE track detected
     - alert: VIMIAlertIncoming
+      annotations:
+        summary: "INCOMING alert \u2014 missile in flight"
       expr: vimi_alerts{level="INCOMING"} > 0
       for: 10s
       labels:
         severity: critical
-      annotations:
-        summary: "INCOMING alert \u2014 missile in flight"
     - alert: VIMIAlertHostile
+      annotations:
+        summary: "HOSTILE \u2014 NCA approval required"
       expr: vimi_alerts{level="HOSTILE"} > 0
       for: 5s
       labels:
         severity: critical
-      annotations:
-        summary: "HOSTILE \u2014 NCA approval required"
     - alert: VIMIServiceDown
+      annotations:
+        summary: 'VIMI service down: {{ $labels.job }}'
       expr: up{job="vimi"} == 0
       for: 2m
       labels:
         severity: warning
-      annotations:
-        summary: 'VIMI service down: {{ $labels.job }}'

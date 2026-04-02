@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: missile-warning-engine
-  namespace: vimi
   labels:
     app: vimi
     component: missile-warning-engine
+  name: missile-warning-engine
+  namespace: vimi
 spec:
   replicas: 1
   selector:
@@ -19,14 +19,7 @@ spec:
         component: missile-warning-engine
     spec:
       containers:
-      - name: missile-warning-engine
-        image: darth:5000/vimi-missile-warning-engine:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - name: http
-          containerPort: 8080
-          protocol: TCP
-        env:
+      - env:
         - name: KAFKA_BROKERS
           value: kafka:9092
         - name: REDIS_ADDR
@@ -36,8 +29,8 @@ spec:
         - name: DIS_APP_ID
           valueFrom:
             configMapKeyRef:
-              name: vimi-config
               key: DIS_APP_ID
+              name: vimi-config
               optional: true
         - name: PORT
           value: '8080'
@@ -49,13 +42,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        resources:
-          requests:
-            memory: 64Mi
-            cpu: 50m
-          limits:
-            memory: 512Mi
-            cpu: 500m
+        image: 172.17.0.1:5000/vimi-missile-warning-engine:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /health
@@ -63,29 +51,41 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 30
           timeoutSeconds: 5
+        name: missile-warning-engine
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /health
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: missile-warning-engine
-  namespace: vimi
   labels:
     app: vimi
     component: missile-warning-engine
+  name: missile-warning-engine
+  namespace: vimi
 spec:
-  type: ClusterIP
   ports:
   - name: http
     port: 8080
-    targetPort: 8080
     protocol: TCP
+    targetPort: 8080
   selector:
     app: vimi
     component: missile-warning-engine
+  type: ClusterIP
