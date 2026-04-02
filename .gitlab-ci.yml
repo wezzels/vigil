@@ -195,11 +195,16 @@ deploy-k8s:
   - echo "$KUBECONFIG_BASE64" | base64 -d > /tmp/kubeconfig
   - sed -i "s|https://[^:]*:6443|https://172.17.0.1:6443|g" /tmp/kubeconfig
   - kubectl --kubeconfig /tmp/kubeconfig cluster-info
-  - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination
-    env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do echo "Loading
-    $app into kind..."; docker save $REGISTRY/vimi-$app:latest | docker exec -i $(kubectl
-    --kubeconfig /tmp/kubeconfig get nodes -o jsonpath='{.items[0].metadata.name}')
-    ctr -n k8s.io images import - 2>/dev/null || true; done
+  - |
+    set -e
+    NODE_NAME=$(kubectl --kubeconfig /tmp/kubeconfig get nodes -o jsonpath='{.items[0].metadata.name}')
+    for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do
+      echo "Loading $app into kind..."
+      docker save $REGISTRY/vimi-$app:latest | docker exec -i $NODE_NAME ctr -n k8s.io images import - 2>/dev/null || true
+    done
+    echo "Restarting kubelet to re-evaluate loaded images..."
+    docker exec $NODE_NAME systemctl restart kubelet
+    sleep 15
   - kubectl --kubeconfig /tmp/kubeconfig get ns vimi 2>/dev/null || kubectl --kubeconfig
     /tmp/kubeconfig create ns vimi
   - kubectl --kubeconfig /tmp/kubeconfig apply -f k8s/vimi-cluster/apps/ --namespace
@@ -208,7 +213,7 @@ deploy-k8s:
     env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do kubectl
     --kubeconfig /tmp/kubeconfig set image deployment/$app $app=$REGISTRY/vimi-$app:latest
     -n vimi; done
-  - sleep 30
+  - sleep 15
   - kubectl --kubeconfig /tmp/kubeconfig rollout status deployment -n vimi --timeout=300s
     || true
   - kubectl --kubeconfig /tmp/kubeconfig get pods -n vimi
