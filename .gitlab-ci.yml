@@ -208,8 +208,10 @@ deploy-k8s:
     env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do kubectl
     --kubeconfig /tmp/kubeconfig set image deployment/$app $app=$REGISTRY/vimi-$app:latest
     -n vimi; done
-  - kubectl --kubeconfig /tmp/kubeconfig rollout status deployment -n vimi --timeout=120s
-    || true
+  - for app in opir-ingest missile-warning-engine sensor-fusion lvc-coordinator alert-dissemination
+    env-monitor replay-engine data-catalog dis-hla-gateway vimi-plugin; do kubectl
+    --kubeconfig /tmp/kubeconfig rollout restart deployment/$app -n vimi --timeout=60s;
+    done
   - kubectl --kubeconfig /tmp/kubeconfig get pods -n vimi
   environment:
     name: production
