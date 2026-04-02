@@ -42,7 +42,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: 172.17.0.1:5000/vimi-dis-hla-gateway:latest
+        image: darth:5000/vimi-dis-hla-gateway:latest
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
