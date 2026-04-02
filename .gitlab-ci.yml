@@ -214,6 +214,5 @@ deploy-k8s:
   environment:
     name: production
     url: https://vimi.stsgym.com
-  when: manual
   only:
   - master
