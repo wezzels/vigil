@@ -1,0 +1,20 @@
+# Kind cluster config to patch containerd settings
+# Run: kind create cluster --name gms --config kind-config/patch-containerd.yaml
+# Or apply to existing node:
+#   docker exec gms-control-plane sed -i 's/discard_unpacked_layers = true/discard_unpacked_layers = false/' /etc/containerd/config.toml
+#   docker exec gms-control-plane systemctl restart containerd kubelet
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraMounts:
+  - hostPath: /var/lib/containerd
+    containerPath: /var/lib/containerd
+  # This won't actually work for changing containerd config
+  # since the config is inside the container. 
+  # The recommended approach is to patch the config after node creation:
+  #
+  # 1. Create cluster: kind create cluster --name gms
+  # 2. Patch containerd: 
+  #    docker exec gms-control-plane sed -i 's/discard_unpacked_layers = true/discard_unpacked_layers = false/' /etc/containerd/config.toml
+  #    docker exec gms-control-plane systemctl restart containerd kubelet
