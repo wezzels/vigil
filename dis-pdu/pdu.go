@@ -4,7 +4,13 @@ package dis
 
 import (
 	"encoding/binary"
+	"errors"
 	"math"
+)
+
+// Errors
+var (
+	ErrPDUTooShort = errors.New("PDU data too short")
 )
 
 // PDU Types (IEEE 1278.1-2012 Table 7)
@@ -191,6 +197,47 @@ func DefaultEntityStatePDU() *EntityStatePDU {
 			CharacterSet: MarkingCharSetASCII,
 		},
 	}
+}
+
+// FirePDU represents a DIS Fire PDU (IEEE 1278.1-2012 §7.3.3)
+type FirePDU struct {
+	ProtocolVersion uint8
+	ExerciseID      uint8
+	PDUType         uint8
+	ProtocolFamily  uint8
+	Timestamp       uint32
+	Length          uint16
+	Padding         uint16
+	
+	FiringEntityID  EntityID
+	TargetEntityID  EntityID
+	MunitionID      EntityTypeRecord
+	EventID        EntityID
+	FireMissionIndex uint8
+	
+	Location        WorldCoordinate
+	Velocity        Vector3Float32
+	Range           float32
+}
+
+// DetonationPDU represents a DIS Detonation PDU (IEEE 1278.1-2012 §7.3.4)
+type DetonationPDU struct {
+	ProtocolVersion uint8
+	ExerciseID      uint8
+	PDUType         uint8
+	ProtocolFamily  uint8
+	Timestamp       uint32
+	Length          uint16
+	Padding         uint16
+	
+	FiringEntityID  EntityID
+	TargetEntityID  EntityID
+	MunitionID      EntityTypeRecord
+	EventID        EntityID
+	
+	Velocity        Vector3Float32
+	Location        WorldCoordinate
+	DetonationResult uint8
 }
 
 // Encode serializes the Entity State PDU to bytes
@@ -389,4 +436,246 @@ func DISToTimestamp(disTime uint32, hourStartUnix int64) int64 {
 	// Convert from 1/10 ms units to milliseconds
 	msSinceHour := int64(disTime) / 100
 	return hourStartUnix + msSinceHour
+}
+
+// DecodeEntityStatePDU deserializes bytes into EntityStatePDU
+func DecodeEntityStatePDU(data []byte) (*EntityStatePDU, error) {
+	if len(data) < 144 {
+		return nil, ErrPDUTooShort
+	}
+	
+	pdu := &EntityStatePDU{}
+	
+	// Header (12 bytes)
+	pdu.ProtocolVersion = data[0]
+	pdu.ExerciseID = data[1]
+	pdu.PDUType = data[2]
+	pdu.ProtocolFamily = data[3]
+	pdu.Timestamp = binary.BigEndian.Uint32(data[4:8])
+	pdu.Length = binary.BigEndian.Uint16(data[8:10])
+	pdu.Padding = binary.BigEndian.Uint16(data[10:12])
+	
+	// Entity ID (6 bytes)
+	pdu.EntityID.SiteID = binary.BigEndian.Uint16(data[12:14])
+	pdu.EntityID.ApplicationID = binary.BigEndian.Uint16(data[14:16])
+	pdu.EntityID.EntityID = binary.BigEndian.Uint16(data[16:18])
+	
+	// Force ID (1 byte)
+	pdu.ForceID = data[18]
+	
+	// Number of articulation parameters (1 byte)
+	pdu.NumArticulationParams = data[19]
+	
+	// Entity Type (8 bytes)
+	pdu.EntityType = EntityTypeRecord{
+		EntityKind: data[20],
+		Domain: data[21],
+		Country: binary.BigEndian.Uint16(data[22:24]),
+		Category: data[24],
+		Subcategory: data[25],
+		Specific: data[26],
+		Extra: data[27],
+	}
+	
+	// Alternative Entity Type (8 bytes)
+	pdu.AltEntityType = EntityTypeRecord{
+		EntityKind: data[28],
+		Domain: data[29],
+		Country: binary.BigEndian.Uint16(data[30:32]),
+		Category: data[32],
+		Subcategory: data[33],
+		Specific: data[34],
+		Extra: data[35],
+	}
+	
+	// Linear Velocity (12 bytes)
+	pdu.LinearVelocity = Vector3Float32{
+		X: math.Float32frombits(binary.BigEndian.Uint32(data[36:40])),
+		Y: math.Float32frombits(binary.BigEndian.Uint32(data[40:44])),
+		Z: math.Float32frombits(binary.BigEndian.Uint32(data[44:48])),
+	}
+	
+	// Location (24 bytes)
+	pdu.Location = WorldCoordinate{
+		X: math.Float64frombits(binary.BigEndian.Uint64(data[48:56])),
+		Y: math.Float64frombits(binary.BigEndian.Uint64(data[56:64])),
+		Z: math.Float64frombits(binary.BigEndian.Uint64(data[64:72])),
+	}
+	
+	// Orientation (12 bytes)
+	pdu.Orientation = EulerAngles{
+		Psi: math.Float32frombits(binary.BigEndian.Uint32(data[72:76])),
+		Theta: math.Float32frombits(binary.BigEndian.Uint32(data[76:80])),
+		Phi: math.Float32frombits(binary.BigEndian.Uint32(data[80:84])),
+	}
+	
+	// Entity Appearance (4 bytes)
+	pdu.Appearance = binary.BigEndian.Uint32(data[84:88])
+	
+	// Dead Reckoning Algorithm (1 byte)
+	pdu.DeadReckoningAlgorithm = data[88]
+	
+	// Entity Marking (12 bytes)
+	pdu.Marking.Characters[0] = data[89]
+	copy(pdu.Marking.Characters[:], data[89:100])
+	pdu.Marking.CharacterSet = data[100]
+	
+	// Capabilities (4 bytes)
+	pdu.Capabilities = binary.BigEndian.Uint32(data[101:105])
+	
+	// Variable parameters (variable)
+	offset := 112
+	numParams := pdu.NumArticulationParams
+	for i := uint8(0); i < numParams; i++ {
+		if offset+16 > len(data) {
+			break
+		}
+		param := VariableParameter{
+			RecordType: data[offset],
+		}
+		copy(param.Data[:], data[offset+1:offset+16])
+		pdu.VariableParams = append(pdu.VariableParams, param)
+		offset += 16
+	}
+	
+	return pdu, nil
+}
+
+// DecodeFirePDU deserializes bytes into FirePDU
+func DecodeFirePDU(data []byte) (*FirePDU, error) {
+	if len(data) < 96 {
+		return nil, ErrPDUTooShort
+	}
+	
+	pdu := &FirePDU{}
+	
+	// Header (12 bytes)
+	pdu.ProtocolVersion = data[0]
+	pdu.ExerciseID = data[1]
+	pdu.PDUType = data[2]
+	pdu.ProtocolFamily = data[3]
+	pdu.Timestamp = binary.BigEndian.Uint32(data[4:8])
+	pdu.Length = binary.BigEndian.Uint16(data[8:10])
+	
+	// Firing Entity ID (6 bytes)
+	pdu.FiringEntityID = EntityID{
+		SiteID:       binary.BigEndian.Uint16(data[12:14]),
+		ApplicationID: binary.BigEndian.Uint16(data[14:16]),
+		EntityID:     binary.BigEndian.Uint16(data[16:18]),
+	}
+	
+	// Target Entity ID (6 bytes)
+	pdu.TargetEntityID = EntityID{
+		SiteID:       binary.BigEndian.Uint16(data[18:20]),
+		ApplicationID: binary.BigEndian.Uint16(data[20:22]),
+		EntityID:     binary.BigEndian.Uint16(data[22:24]),
+	}
+	
+	// Munition ID (8 bytes)
+	pdu.MunitionID = EntityTypeRecord{
+		EntityKind: data[24],
+		Domain: data[25],
+		Country: binary.BigEndian.Uint16(data[26:28]),
+		Category: data[28],
+		Subcategory: data[29],
+		Specific: data[30],
+		Extra: data[31],
+	}
+	
+	// Event ID (6 bytes)
+	pdu.EventID = EntityID{
+		SiteID:       binary.BigEndian.Uint16(data[32:34]),
+		ApplicationID: binary.BigEndian.Uint16(data[34:36]),
+		EntityID:     binary.BigEndian.Uint16(data[36:38]),
+	}
+	
+	// Fire Mission Index (1 byte)
+	pdu.FireMissionIndex = data[38]
+	
+	// Location (24 bytes)
+	pdu.Location = WorldCoordinate{
+		X: math.Float64frombits(binary.BigEndian.Uint64(data[40:48])),
+		Y: math.Float64frombits(binary.BigEndian.Uint64(data[48:56])),
+		Z: math.Float64frombits(binary.BigEndian.Uint64(data[56:64])),
+	}
+	
+	// Velocity (12 bytes)
+	pdu.Velocity = Vector3Float32{
+		X: math.Float32frombits(binary.BigEndian.Uint32(data[64:68])),
+		Y: math.Float32frombits(binary.BigEndian.Uint32(data[68:72])),
+		Z: math.Float32frombits(binary.BigEndian.Uint32(data[72:76])),
+	}
+	
+	// Range (4 bytes)
+	pdu.Range = math.Float32frombits(binary.BigEndian.Uint32(data[76:80]))
+	
+	return pdu, nil
+}
+
+// DecodeDetonationPDU deserializes bytes into DetonationPDU
+func DecodeDetonationPDU(data []byte) (*DetonationPDU, error) {
+	if len(data) < 128 {
+		return nil, ErrPDUTooShort
+	}
+	
+	pdu := &DetonationPDU{}
+	
+	// Header (12 bytes)
+	pdu.ProtocolVersion = data[0]
+	pdu.ExerciseID = data[1]
+	pdu.PDUType = data[3]
+	pdu.ProtocolFamily = data[4]
+	pdu.Timestamp = binary.BigEndian.Uint32(data[4:8])
+	pdu.Length = binary.BigEndian.Uint16(data[8:10])
+	
+	// Firing Entity ID (6 bytes)
+	pdu.FiringEntityID = EntityID{
+		SiteID:       binary.BigEndian.Uint16(data[12:14]),
+		ApplicationID: binary.BigEndian.Uint16(data[14:16]),
+		EntityID:     binary.BigEndian.Uint16(data[16:18]),
+	}
+	
+	// Target Entity ID (6 bytes)
+	pdu.TargetEntityID = EntityID{
+		SiteID:       binary.BigEndian.Uint16(data[18:20]),
+		ApplicationID: binary.BigEndian.Uint16(data[20:22]),
+		EntityID:     binary.BigEndian.Uint16(data[22:24]),
+	}
+	
+	// Munition ID (8 bytes)
+	pdu.MunitionID = EntityTypeRecord{
+		EntityKind: data[24],
+		Domain: data[25],
+		Country: binary.BigEndian.Uint16(data[26:28]),
+		Category: data[28],
+		Subcategory: data[29],
+		Specific: data[30],
+		Extra: data[31],
+	}
+	
+	// Event ID (6 bytes)
+	pdu.EventID = EntityID{
+		SiteID:       binary.BigEndian.Uint16(data[32:34]),
+		ApplicationID: binary.BigEndian.Uint16(data[34:36]),
+		EntityID:     binary.BigEndian.Uint16(data[36:38]),
+	}
+	
+	// Velocity (12 bytes)
+	pdu.Velocity = Vector3Float32{
+		X: math.Float32frombits(binary.BigEndian.Uint32(data[48:52])),
+		Y: math.Float32frombits(binary.BigEndian.Uint32(data[52:56])),
+		Z: math.Float32frombits(binary.BigEndian.Uint32(data[56:60])),
+	}
+	
+	// Location (24 bytes)
+	pdu.Location = WorldCoordinate{
+		X: math.Float64frombits(binary.BigEndian.Uint64(data[60:68])),
+		Y: math.Float64frombits(binary.BigEndian.Uint64(data[68:76])),
+		Z: math.Float64frombits(binary.BigEndian.Uint64(data[76:84])),
+	}
+	
+	// Detonation Result (1 byte)
+	pdu.DetonationResult = data[84]
+	
+	return pdu, nil
 }

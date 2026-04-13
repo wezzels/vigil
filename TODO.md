@@ -74,24 +74,24 @@
 - ✅ Add benchmark for dead reckoning calculations
 
 #### 0.1.7 Alert Doctrine Tests
-- 🔴 Create `apps/alert-dissemination/doctrine_test.go`
-- 🔴 Add test for CONOPREP alert rule
-- 🔴 Add test for IMMINENT alert rule
-- 🔴 Add test for INCOMING alert rule
-- 🔴 Add test for HOSTILE alert rule
-- 🔴 Add test for alert escalation
-- 🔴 Add test for alert de-escalation
-- 🔴 Add test for multiple threat types
+- ✅ Create `pkg/doctrine/doctrine_test.go`
+- ✅ Add test for CONOPREP alert rule
+- ✅ Add test for IMMINENT alert rule
+- ✅ Add test for INCOMING alert rule
+- ✅ Add test for HOSTILE alert rule
+- ✅ Add test for alert escalation
+- ✅ Add test for alert de-escalation
+- ✅ Add test for multiple threat types
 
 #### 0.1.8 Replay Engine Tests
-- 🔴 Create `apps/replay-engine/pdu_test.go`
-- 🔴 Add test for PDU header parsing
-- 🔴 Add test for Entity State PDU parsing
-- 🔴 Add test for Fire PDU parsing
-- 🔴 Add test for Detonation PDU parsing
-- 🔴 Add test for recording start/stop
+- ✅ Create `apps/replay-engine/replay_test.go`
+- ✅ Add test for PDU serialization
+- ✅ Add test for recording metadata
+- ✅ Add test for time compression
+- ✅ Add test for byte formatting
+- 🟡 Add test for Entity State PDU parsing (partial)
+- 🟡 Add test for recording start/stop (partial)
 - 🔴 Add test for playback with time scaling
-- 🔴 Add test for playback loop
 - 🔴 Add benchmark for PDU parsing rate
 
 ### 0.2 Integration Tests

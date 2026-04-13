@@ -1,6 +1,7 @@
 package dis
 
 import (
+	"encoding/binary"
 	"math"
 	"testing"
 )
@@ -364,5 +365,177 @@ func BenchmarkECEFToGeodetic(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ECEFToGeodetic(1000000.0, 2000000.0, 3000000.0)
+	}
+}
+
+// TestEntityStatePDUDecoding tests Entity State PDU decoding
+func TestEntityStatePDUDecoding(t *testing.T) {
+	// Create and encode a PDU
+	pdu := DefaultEntityStatePDU()
+	pdu.ExerciseID = 42
+	pdu.EntityID = EntityID{SiteID: 1, ApplicationID: 2, EntityID: 100}
+	pdu.ForceID = ForceIDFriendly
+	pdu.Location = WorldCoordinate{X: 1000000.0, Y: 2000000.0, Z: 3000000.0}
+	pdu.Orientation = EulerAngles{Psi: 0.1, Theta: 0.2, Phi: 0.3}
+	pdu.LinearVelocity = Vector3Float32{X: 10.0, Y: 20.0, Z: 30.0}
+	
+	data := pdu.Encode()
+	
+	// Decode it back
+	decoded, err := DecodeEntityStatePDU(data)
+	if err != nil {
+		t.Fatalf("Failed to decode PDU: %v", err)
+	}
+	
+	// Verify fields
+	if decoded.ProtocolVersion != 7 {
+		t.Errorf("Protocol version mismatch: expected 7, got %d", decoded.ProtocolVersion)
+	}
+	if decoded.ExerciseID != 42 {
+		t.Errorf("Exercise ID mismatch: expected 42, got %d", decoded.ExerciseID)
+	}
+	if decoded.PDUType != PDUTypeEntityState {
+		t.Errorf("PDU type mismatch: expected %d, got %d", PDUTypeEntityState, decoded.PDUType)
+	}
+	if decoded.EntityID.SiteID != 1 {
+		t.Errorf("Site ID mismatch: expected 1, got %d", decoded.EntityID.SiteID)
+	}
+	if decoded.EntityID.ApplicationID != 2 {
+		t.Errorf("Application ID mismatch: expected 2, got %d", decoded.EntityID.ApplicationID)
+	}
+	if decoded.EntityID.EntityID != 100 {
+		t.Errorf("Entity ID mismatch: expected 100, got %d", decoded.EntityID.EntityID)
+	}
+	if decoded.ForceID != ForceIDFriendly {
+		t.Errorf("Force ID mismatch: expected %d, got %d", ForceIDFriendly, decoded.ForceID)
+	}
+}
+
+// TestFirePDUDecoding tests Fire PDU decoding
+func TestFirePDUDecoding(t *testing.T) {
+	// Create a minimal Fire PDU
+	data := make([]byte, 96)
+	
+	// Header
+	data[0] = 7  // Protocol version
+	data[1] = 42 // Exercise ID
+	data[2] = PDUTypeFire
+	data[3] = 2  // Protocol family (Warfare)
+	
+	// Firing entity ID
+	binary.BigEndian.PutUint16(data[12:14], 1)  // Site
+	binary.BigEndian.PutUint16(data[14:16], 2)  // App
+	binary.BigEndian.PutUint16(data[16:18], 100) // Entity
+	
+	// Target entity ID
+	binary.BigEndian.PutUint16(data[18:20], 3)  // Site
+	binary.BigEndian.PutUint16(data[20:22], 4)  // App
+	binary.BigEndian.PutUint16(data[22:24], 200) // Entity
+	
+	// Location
+	binary.BigEndian.PutUint64(data[40:48], math.Float64bits(1000000.0))
+	binary.BigEndian.PutUint64(data[48:56], math.Float64bits(2000000.0))
+	binary.BigEndian.PutUint64(data[56:64], math.Float64bits(3000000.0))
+	
+	decoded, err := DecodeFirePDU(data)
+	if err != nil {
+		t.Fatalf("Failed to decode Fire PDU: %v", err)
+	}
+	
+	if decoded.ExerciseID != 42 {
+		t.Errorf("Exercise ID mismatch: expected 42, got %d", decoded.ExerciseID)
+	}
+	if decoded.FiringEntityID.SiteID != 1 {
+		t.Errorf("Firing site ID mismatch: expected 1, got %d", decoded.FiringEntityID.SiteID)
+	}
+	if decoded.TargetEntityID.EntityID != 200 {
+		t.Errorf("Target entity ID mismatch: expected 200, got %d", decoded.TargetEntityID.EntityID)
+	}
+}
+
+// TestDetonationPDUDecoding tests Detonation PDU decoding
+func TestDetonationPDUDecoding(t *testing.T) {
+	// Create a minimal Detonation PDU
+	data := make([]byte, 128)
+	
+	// Header
+	data[0] = 7  // Protocol version
+	data[1] = 42 // Exercise ID
+	data[2] = PDUTypeDetonation
+	data[3] = 2  // Protocol family (Warfare)
+	
+	// Firing entity ID
+	binary.BigEndian.PutUint16(data[12:14], 1)  // Site
+	binary.BigEndian.PutUint16(data[14:16], 2)  // App
+	binary.BigEndian.PutUint16(data[16:18], 100) // Entity
+	
+	// Target entity ID
+	binary.BigEndian.PutUint16(data[18:20], 3)  // Site
+	binary.BigEndian.PutUint16(data[20:22], 4)  // App
+	binary.BigEndian.PutUint16(data[22:24], 200) // Entity
+	
+	// Location
+	binary.BigEndian.PutUint64(data[60:68], math.Float64bits(1000000.0))
+	binary.BigEndian.PutUint64(data[68:76], math.Float64bits(2000000.0))
+	binary.BigEndian.PutUint64(data[76:84], math.Float64bits(3000000.0))
+	
+	// Detonation result
+	data[84] = 1 // Entity impact
+	
+	decoded, err := DecodeDetonationPDU(data)
+	if err != nil {
+		t.Fatalf("Failed to decode Detonation PDU: %v", err)
+	}
+	
+	if decoded.ExerciseID != 42 {
+		t.Errorf("Exercise ID mismatch: expected 42, got %d", decoded.ExerciseID)
+	}
+	if decoded.FiringEntityID.SiteID != 1 {
+		t.Errorf("Firing site ID mismatch: expected 1, got %d", decoded.FiringEntityID.SiteID)
+	}
+	if decoded.TargetEntityID.EntityID != 200 {
+		t.Errorf("Target entity ID mismatch: expected 200, got %d", decoded.TargetEntityID.EntityID)
+	}
+}
+
+// TestPDUTooShort tests error handling for short PDUs
+func TestPDUPDTooShort(t *testing.T) {
+	// Too short for Entity State PDU
+	data := make([]byte, 100) // Need 144
+	
+	_, err := DecodeEntityStatePDU(data)
+	if err == nil {
+		t.Error("Expected error for short PDU, got nil")
+	}
+	if err != ErrPDUTooShort {
+		t.Errorf("Expected ErrPDUTooShort, got %v", err)
+	}
+	
+	// Too short for Fire PDU
+	data = make([]byte, 50) // Need 96
+	_, err = DecodeFirePDU(data)
+	if err == nil {
+		t.Error("Expected error for short Fire PDU, got nil")
+	}
+	
+	// Too short for Detonation PDU
+	data = make([]byte, 100) // Need 128
+	_, err = DecodeDetonationPDU(data)
+	if err == nil {
+		t.Error("Expected error for short Detonation PDU, got nil")
+	}
+}
+
+// BenchmarkEntityStatePDUDecoding benchmarks PDU decoding
+func BenchmarkEntityStatePDUDecoding(b *testing.B) {
+	pdu := DefaultEntityStatePDU()
+	pdu.ExerciseID = 42
+	pdu.EntityID = EntityID{SiteID: 1, ApplicationID: 2, EntityID: 100}
+	pdu.Location = WorldCoordinate{X: 1000000.0, Y: 2000000.0, Z: 3000000.0}
+	data := pdu.Encode()
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DecodeEntityStatePDU(data)
 	}
 }
