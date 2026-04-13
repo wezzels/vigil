@@ -1,5 +1,10 @@
 # VIGIL
 
+[![CI](https://github.com/wezzels/vigil/workflows/CI/badge.svg)](https://github.com/wezzels/vigil/actions/workflows/ci.yaml)
+[![Coverage](https://codecov.io/gh/wezzels/vigil/branch/main/graph/badge.svg)](https://codecov.io/gh/wezzels/vigil)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wezzels/vigil)](https://goreportcard.com/report/github.com/wezzels/vigil)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **LVC Simulation Federation** — DoD Missile Warning & Sensor Fusion Platform
 
 VIGIL is a DoD-aligned simulation and mission processing framework supporting Live, Virtual, and Constructive (LVC) training, OPIR satellite data fusion, missile warning workflows, and multi-federation interoperability via DIS/HLA/TENA/NETN protocols.

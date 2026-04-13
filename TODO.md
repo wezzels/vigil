@@ -15,9 +15,9 @@
 #### 0.1.1 DIS PDU Encoding Tests
 - ✅ Create `dis-pdu/pdu_test.go`
 - ✅ Add test for Entity State PDU encoding
-- 🔴 Add test for Entity State PDU decoding
+- ✅ Add test for Entity State PDU decoding
 - ✅ Add test for Fire PDU encoding
-- 🔴 Add test for Detonation PDU encoding
+- ✅ Add test for Detonation PDU encoding
 - ✅ Add test for PDU timestamp conversion
 - ✅ Add test for ECEF↔Geodetic coordinate conversion
 - ✅ Add benchmark for PDU encoding performance
@@ -136,33 +136,33 @@
 ### 0.3 CI/CD Pipeline
 
 #### 0.3.1 GitHub Actions
-- 🔴 Create `.github/workflows/ci.yaml`
-- 🔴 Add checkout step
-- 🔴 Add Go setup step
-- 🔴 Add cache configuration
-- 🔴 Add test step
-- 🔴 Add coverage upload
+- ✅ Create `.github/workflows/ci.yaml`
+- ✅ Add checkout step
+- ✅ Add Go setup step
+- ✅ Add cache configuration
+- ✅ Add test step
+- ✅ Add coverage upload
 
 #### 0.3.2 Linting
-- 🔴 Create `.golangci.yml`
-- 🔴 Enable errcheck linter
-- 🔴 Enable govet linter
-- 🔴 Enable staticcheck linter
-- 🔴 Enable unused linter
-- 🔴 Enable ineffassign linter
-- 🔴 Add lint step to CI
+- ✅ Create `.golangci.yml`
+- ✅ Enable errcheck linter
+- ✅ Enable govet linter
+- ✅ Enable staticcheck linter
+- ✅ Enable unused linter
+- ✅ Enable ineffassign linter
+- ✅ Add lint step to CI
 
 #### 0.3.3 Security Scanning
-- 🔴 Add gosec to CI
+- ✅ Add gosec to CI
 - 🔴 Add dependency scanning
 - 🔴 Add SAST scanning
-- 🔴 Configure security policy
+- ✅ Configure security policy
 
 #### 0.3.4 Coverage Reporting
-- 🔴 Add coverage calculation
-- 🔴 Add codecov integration
+- ✅ Add coverage calculation
+- ✅ Add codecov integration
 - 🔴 Add coverage badge to README
-- 🔴 Set coverage threshold (80%)
+- ✅ Set coverage threshold (80%)
 
 #### 0.3.5 Docker Builds
 - 🔴 Create `.github/workflows/docker.yaml`

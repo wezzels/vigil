@@ -1,0 +1,108 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-created-time: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - typecheck
+    - gosimple
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    - prealloc
+    - exportloopref
+    - gocritic
+    - dupl
+    - gocyclo
+    - gosec
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    enable-all: true
+
+  staticcheck:
+    checks: ["all"]
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/wezzels/vigil
+
+  gosec:
+    excludes:
+      - G104  # Audit errors not checked
+      - G304  # File path provided by taint input
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  misspell:
+    locale: US
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-first-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - dupl
+        - gosec
+
+    # Exclude known issues in generated files
+    - path: \.pb\.go
+      linters:
+        - govet
+        - staticcheck
+        - unused
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false

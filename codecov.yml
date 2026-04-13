@@ -1,0 +1,32 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: false
+  require_base: yes
+  require_head: yes
+
+ignore:
+  - "pkg/**/*_test.go"
+  - "**/*_gen.go"
+  - "**/*.pb.go"
+  - "vendor/**/*"
+  - "docs/**/*"
+
+flag_management:
+  default_rules:
+    carryforward: true
+
+github_checks:
+  annotations: true
