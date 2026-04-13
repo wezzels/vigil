@@ -287,16 +287,17 @@
 - ✅ Add unit tests
 
 #### 1.2.5 Track Correlation
-- 🔴 Create `pkg/sensors/radar/correlation.go`
-- 🔴 Implement track merging logic
-- 🔴 Implement track scoring
-- 🔴 Add unit tests
+- ✅ Create `pkg/sensors/radar/correlation.go`
+- ✅ Implement track merging logic
+- ✅ Implement track scoring
+- ✅ Add unit tests
 
 #### 1.2.6 Unit Tests
 - ✅ Create `pkg/sensors/radar/radar_test.go`
 - ✅ Create `pkg/sensors/radar/sbx_uewr_test.go`
+- ✅ Create `pkg/sensors/radar/correlation_test.go`
 - ✅ Add mock feed tests
-- 🔴 Add correlation tests
+- ✅ Add correlation tests
 
 ### 1.3 Sensor Fusion Enhancement
 
