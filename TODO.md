@@ -42,15 +42,15 @@
 - ✅ Add benchmark for JPDA with 100+ tracks
 
 #### 0.1.4 Kalman Filter Tests
-- 🔴 Create `apps/sensor-fusion/kalman_test.go`
-- 🔴 Add test for Kalman predict step
-- 🔴 Add test for Kalman update step
-- 🔴 Add test for extended Kalman (EKF) predict
-- 🔴 Add test for extended Kalman (EKF) update
+- ✅ Create `apps/sensor-fusion/kalman_test.go`
+- ✅ Add test for Kalman predict step
+- ✅ Add test for Kalman update step
+- ✅ Add test for extended Kalman (EKF) predict
+- ✅ Add test for extended Kalman (EKF) update
 - 🔴 Add test for unscented Kalman (UKF) sigma points
-- 🔴 Add test for measurement noise handling
-- 🔴 Add test for process noise handling
-- 🔴 Add benchmark for Kalman update rate
+- ✅ Add test for measurement noise handling
+- ✅ Add test for process noise handling
+- ✅ Add benchmark for Kalman update rate
 
 #### 0.1.5 Track Manager Tests
 - 🔴 Create `apps/missile-warning-engine/trackmanager_test.go`
