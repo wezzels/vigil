@@ -52,20 +52,6 @@ const (
 	ForceIDNeutral3      = 9
 )
 
-// Dead Reckoning Models (IEEE 1278.1-2012 Table 48)
-const (
-	DRMStatic            = 0  // No dead reckoning
-	DRMFPW              = 1  // World, position only (Frozen)
-	DRMRPW              = 2  // World, position only (RPW)
-	DRMRVW              = 3  // World, position + velocity (RVW)
-	DRMFVW              = 4  // World, position + velocity (FVW)
-	DRMFPB              = 5  // Body, position only (FPB)
-	DRMRPB              = 6  // Body, position only (RPB)
-	DRMRVB              = 7  // Body, position + velocity (RVB)
-	DRMFVB              = 8  // Body, position + velocity (FVB)
-	DRMRPWOrbit         = 9  // World, orbit (RPW)
-)
-
 // EntityMarkingCharSet (IEEE 1278.1-2012)
 const (
 	MarkingCharSetASCII    = 1

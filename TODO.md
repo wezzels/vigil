@@ -64,14 +64,14 @@
 - 🔴 Add test for track cleanup
 
 #### 0.1.6 Dead Reckoning Tests
-- 🔴 Create `apps/lvc-coordinator/deadreckoning_test.go`
-- 🔴 Add test for DRM_FVM (Fixed Velocity)
-- 🔴 Add test for DRM_RPW (Rest of World)
-- 🔴 Add test for DRM_RVW (Relative Velocity)
-- 🔴 Add test for position extrapolation accuracy
-- 🔴 Add test for velocity decay
-- 🔴 Add test for orientation interpolation
-- 🔴 Add benchmark for dead reckoning calculations
+- ✅ Create `dis-pdu/deadreckoning_test.go`
+- ✅ Add test for DRM_FVM (Fixed Velocity)
+- ✅ Add test for DRM_RPW (Rest of World)
+- ✅ Add test for DRM_RVW (Relative Velocity)
+- ✅ Add test for position extrapolation accuracy
+- ✅ Add test for velocity decay
+- ✅ Add test for orientation interpolation
+- ✅ Add benchmark for dead reckoning calculations
 
 #### 0.1.7 Alert Doctrine Tests
 - 🔴 Create `apps/alert-dissemination/doctrine_test.go`
