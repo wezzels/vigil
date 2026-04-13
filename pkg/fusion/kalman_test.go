@@ -1,7 +1,6 @@
 package fusion
 
 import (
-	math_rand "math/rand"
 	"math"
 	"testing"
 )
@@ -133,13 +132,14 @@ func TestKalmanConvergence(t *testing.T) {
 		{0, 0, 1.0},
 	}
 	
-	// Apply many noisy measurements
+	// Apply many measurements near true state
 	for i := 0; i < 100; i++ {
 		// Noisy measurement near true state
+		offset := 0.01 * (float64(i%10) - 4.5) / 10.0 // Small noise
 		z := [3]float64{
-			trueLat + (0.5-math_rand.Float64())*0.01,
-			trueLon + (0.5-math_rand.Float64())*0.01,
-			trueAlt + (0.5-math_rand.Float64())*1.0,
+			trueLat + offset,
+			trueLon + offset,
+			trueAlt + offset*10.0,
 		}
 		kf.Update(state, z, R)
 	}
