@@ -302,12 +302,12 @@
 ### 1.3 Sensor Fusion Enhancement
 
 #### 1.3.1 Multi-Hypothesis Tracking
-- 🔴 Create `apps/sensor-fusion/mht/`
-- 🔴 Implement hypothesis generation
-- 🔴 Implement hypothesis scoring
-- 🔴 Implement hypothesis pruning
-- 🔴 Implement track confirmation
-- 🔴 Add unit tests
+- ✅ Create `pkg/mht/`
+- ✅ Implement hypothesis generation
+- ✅ Implement hypothesis scoring
+- ✅ Implement hypothesis pruning
+- ✅ Implement track confirmation
+- ✅ Add unit tests
 
 #### 1.3.2 Track Scoring
 - 🔴 Create `apps/sensor-fusion/scoring.go`
