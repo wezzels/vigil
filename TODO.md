@@ -310,11 +310,11 @@
 - ✅ Add unit tests
 
 #### 1.3.2 Track Scoring
-- 🔴 Create `apps/sensor-fusion/scoring.go`
-- 🔴 Implement score calculation
-- 🔴 Implement score decay
-- 🔴 Implement confidence bounds
-- 🔴 Add unit tests
+- ✅ Create `pkg/fusion/scoring.go`
+- ✅ Implement score calculation
+- ✅ Implement score decay
+- ✅ Implement confidence bounds
+- ✅ Add unit tests
 
 #### 1.3.3 Sensor Registration
 - 🔴 Create `pkg/geo/registration.go`
