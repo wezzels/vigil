@@ -13,14 +13,14 @@
 ### 0.1 Unit Tests
 
 #### 0.1.1 DIS PDU Encoding Tests
-- 🔴 Create `dis-pdu/pdu_test.go`
-- 🔴 Add test for Entity State PDU encoding
+- ✅ Create `dis-pdu/pdu_test.go`
+- ✅ Add test for Entity State PDU encoding
 - 🔴 Add test for Entity State PDU decoding
-- 🔴 Add test for Fire PDU encoding
+- ✅ Add test for Fire PDU encoding
 - 🔴 Add test for Detonation PDU encoding
-- 🔴 Add test for PDU timestamp conversion
-- 🔴 Add test for ECEF↔Geodetic coordinate conversion
-- 🔴 Add benchmark for PDU encoding performance
+- ✅ Add test for PDU timestamp conversion
+- ✅ Add test for ECEF↔Geodetic coordinate conversion
+- ✅ Add benchmark for PDU encoding performance
 
 #### 0.1.2 Coordinate Transform Tests
 - 🔴 Create `pkg/coords/coords_test.go`
