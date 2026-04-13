@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # Test infrastructure
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: vigil-kafka-test
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: vigil-zookeeper-test
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: vigil-redis-test
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vigil-postgres-test
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: vigil
+      POSTGRES_PASSWORD: vigil_test
+      POSTGRES_DB: vigil_test
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "vigil"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test services
+  opir-ingest:
+    build:
+      context: .
+      dockerfile: apps/opir-ingest/Dockerfile
+    container_name: vigil-opir-test
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_TOPIC: opir-detections
+      LOG_LEVEL: debug
+    command: ["--test-mode"]
+
+  sensor-fusion:
+    build:
+      context: .
+      dockerfile: apps/sensor-fusion/Dockerfile
+    container_name: vigil-fusion-test
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+    command: ["--test-mode"]
+
+  missile-warning:
+    build:
+      context: .
+      dockerfile: apps/missile-warning-engine/Dockerfile
+    container_name: vigil-warning-test
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+    command: ["--test-mode"]
+
+networks:
+  default:
+    name: vigil-test-network

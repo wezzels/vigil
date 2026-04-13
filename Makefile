@@ -58,6 +58,15 @@ test-short:
 	@echo "Running short tests..."
 	$(GOTEST) -v -short -race ./...
 
+## test-integration: Run integration tests
+test-integration:
+	@echo "Running integration tests..."
+	$(GOTEST) -v -tags=integration -race ./...
+
+## test-all: Run all tests including integration
+test-all: test test-integration
+	@echo "All tests complete"
+
 ## coverage: Generate test coverage report
 coverage:
 	@echo "Generating coverage report..."
