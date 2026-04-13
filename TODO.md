@@ -317,21 +317,21 @@
 - ✅ Add unit tests
 
 #### 1.3.3 Sensor Registration
-- 🔴 Create `pkg/geo/registration.go`
-- 🔴 Implement bias estimation
-- 🔴 Implement bias correction
-- 🔴 Add unit tests
+- ✅ Create `pkg/geo/registration.go`
+- ✅ Implement bias estimation
+- ✅ Implement bias correction
+- ✅ Add unit tests
 
 #### 1.3.4 Time Alignment
-- 🔴 Create `pkg/geo/timealign.go`
-- 🔴 Implement interpolation
-- 🔴 Implement extrapolation
-- 🔴 Add unit tests
+- ✅ Create `pkg/geo/timealign.go`
+- ✅ Implement interpolation
+- ✅ Implement extrapolation
+- ✅ Add unit tests
 
 #### 1.3.5 Unit Tests
-- 🔴 Create `apps/sensor-fusion/mht/mht_test.go`
-- 🔴 Add MHT tests
-- 🔴 Add scoring tests
+- ✅ Create `pkg/mht/mht_test.go`
+- ✅ Add MHT tests
+- ✅ Add scoring tests
 
 ### 1.4 Mode Switching
 
