@@ -336,26 +336,26 @@
 ### 1.4 Mode Switching
 
 #### 1.4.1 Mode Implementation
-- 🔴 Create `pkg/mode/mode.go`
-- 🔴 Implement mode enum
-- 🔴 Implement mode switching
-- 🔴 Add configuration
+- ✅ Create `pkg/mode/mode.go`
+- ✅ Implement mode enum
+- ✅ Implement mode switching
+- ✅ Add configuration
 
 #### 1.4.2 Replay Mode
-- 🔴 Create `pkg/mode/replay.go`
-- 🔴 Implement replay from file
-- 🔴 Implement time scaling
-- 🔴 Add unit tests
+- ✅ Create `pkg/mode/replay.go`
+- ✅ Implement replay from file
+- ✅ Implement time scaling
+- ✅ Add unit tests
 
 #### 1.4.3 Hybrid Mode
-- 🔴 Create `pkg/mode/hybrid.go`
-- 🔴 Implement real + simulated mixing
-- 🔴 Add unit tests
+- ✅ Create `pkg/mode/hybrid.go`
+- ✅ Implement real + simulated mixing
+- ✅ Add unit tests
 
 #### 1.4.4 Configuration
-- 🔴 Add mode configuration to each service
-- 🔴 Add environment variable support
-- 🔴 Add hot-reload support
+- ✅ Add mode configuration to each service
+- ✅ Add environment variable support
+- ✅ Add hot-reload support
 
 ---
 
