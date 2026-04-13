@@ -275,16 +275,16 @@
 - ✅ Add unit tests
 
 #### 1.2.3 SBX Radar Adapter
-- 🔴 Create `pkg/sensors/radar/sbx.go`
-- 🔴 Implement connection establishment
-- 🔴 Implement track parsing
-- 🔴 Add unit tests
+- ✅ Create `pkg/sensors/radar/sbx.go`
+- ✅ Implement connection establishment
+- ✅ Implement track parsing
+- ✅ Add unit tests
 
 #### 1.2.4 UEWR Adapter
-- 🔴 Create `pkg/sensors/radar/uewr.go`
-- 🔴 Implement connection establishment
-- 🔴 Implement track parsing
-- 🔴 Add unit tests
+- ✅ Create `pkg/sensors/radar/uewr.go`
+- ✅ Implement connection establishment
+- ✅ Implement track parsing
+- ✅ Add unit tests
 
 #### 1.2.5 Track Correlation
 - 🔴 Create `pkg/sensors/radar/correlation.go`
@@ -294,6 +294,7 @@
 
 #### 1.2.6 Unit Tests
 - ✅ Create `pkg/sensors/radar/radar_test.go`
+- ✅ Create `pkg/sensors/radar/sbx_uewr_test.go`
 - ✅ Add mock feed tests
 - 🔴 Add correlation tests
 
