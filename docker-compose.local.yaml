@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: vigil-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - vigil-zookeeper-data:/var/lib/zookeeper/data
+      - vigil-zookeeper-logs:/var/lib/zookeeper/log
+
+  # Kafka for mission events
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: vigil-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://10.0.0.117:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    volumes:
+      - vigil-kafka-data:/var/lib/kafka/data
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: vigil-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - vigil-redis-data:/data
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for mission data
+  postgres:
+    image: postgres:15-alpine
+    container_name: vigil-postgres
+    environment:
+      POSTGRES_USER: vimi
+      POSTGRES_PASSWORD: vimi2024
+      POSTGRES_DB: vimi
+    ports:
+      - "5433:5432"
+    volumes:
+      - vigil-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  vigil-zookeeper-data:
+  vigil-zookeeper-logs:
+  vigil-kafka-data:
+  vigil-redis-data:
+  vigil-postgres-data:
