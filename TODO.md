@@ -31,15 +31,15 @@
 - 🔴 Add benchmark for coordinate transforms
 
 #### 0.1.3 JPDA Association Tests
-- 🔴 Create `apps/sensor-fusion/jpda_test.go`
-- 🔴 Add test for single-target single-measurement association
-- 🔴 Add test for single-target multi-measurement association
-- 🔴 Add test for multi-target single-measurement association
-- 🔴 Add test for multi-target multi-measurement association
-- 🔴 Add test for clutter rejection
-- 🔴 Add test for track initiation
-- 🔴 Add test for track deletion
-- 🔴 Add benchmark for JPDA with 100+ tracks
+- ✅ Create `apps/sensor-fusion/jpda_test.go`
+- ✅ Add test for single-target single-measurement association
+- ✅ Add test for single-target multi-measurement association
+- ✅ Add test for multi-target single-measurement association
+- ✅ Add test for multi-target multi-measurement association
+- ✅ Add test for clutter rejection
+- ✅ Add test for track initiation
+- ✅ Add test for track deletion
+- ✅ Add benchmark for JPDA with 100+ tracks
 
 #### 0.1.4 Kalman Filter Tests
 - 🔴 Create `apps/sensor-fusion/kalman_test.go`
