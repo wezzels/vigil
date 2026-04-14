@@ -516,15 +516,15 @@
 ### 2.4 Link 16 Bridge
 
 #### 2.4.1 J-Series Parsing
-- 🔴 Create `pkg/link16/jseries/parser.go`
-- 🔴 Implement J-series header parsing
-- 🔴 Implement J-series body parsing
-- 🔴 Add unit tests
+- ✅ Create `pkg/link16/jseries/parser.go`
+- ✅ Implement J-series header parsing
+- ✅ Implement J-series body parsing
+- ✅ Add unit tests
 
 #### 2.4.2 J-Series Generation
-- 🔴 Create `pkg/link16/jseries/generate.go`
-- 🔴 Implement J-series encoding
-- 🔴 Add unit tests
+- ✅ Create `pkg/link16/jseries/generate.go` (in parser.go)
+- ✅ Implement J-series encoding
+- ✅ Add unit tests
 
 #### 2.4.3 J3.2 Support
 - 🔴 Create `pkg/link16/j32.go`
