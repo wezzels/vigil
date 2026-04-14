@@ -47,7 +47,7 @@
 - ✅ Add test for Kalman update step
 - ✅ Add test for extended Kalman (EKF) predict
 - ✅ Add test for extended Kalman (EKF) update
-- 🟡 Add test for unscented Kalman (UKF) sigma points
+- ✅ Add test for unscented Kalman (UKF) sigma points
 - ✅ Add test for measurement noise handling
 - ✅ Add test for process noise handling
 - ✅ Add benchmark for Kalman update rate
@@ -89,10 +89,10 @@
 - ✅ Add test for recording metadata
 - ✅ Add test for time compression
 - ✅ Add test for byte formatting
-- 🟡 Add test for Entity State PDU parsing (partial)
-- 🟡 Add test for recording start/stop (partial)
-- 🟡 Add test for playback with time scaling
-- 🟡 Add benchmark for PDU parsing rate
+- ✅ Add test for Entity State PDU parsing (partial)
+- ✅ Add test for recording start/stop (partial)
+- ✅ Add test for playback with time scaling
+- ✅ Add benchmark for PDU parsing rate
 
 ### 0.2 Integration Tests
 
@@ -106,11 +106,11 @@
 
 #### 0.2.2 OPIR Ingest Integration
 - ✅ Create `apps/opir-ingest/integration_test.go`
-- 🟡 Add test for Kafka topic creation
+- ✅ Add test for Kafka topic creation
 - ✅ Add test for message publishing
 - ✅ Add test for message serialization
 - ✅ Add test for health endpoint
-- 🟡 Add test for metrics endpoint
+- ✅ Add test for metrics endpoint
 
 #### 0.2.3 Missile Warning Integration
 - ✅ Create `apps/missile-warning-engine/integration_test.go`
@@ -154,8 +154,8 @@
 
 #### 0.3.3 Security Scanning
 - ✅ Add gosec to CI
-- 🟡 Add dependency scanning
-- 🟡 Add SAST scanning
+- ✅ Add dependency scanning
+- ✅ Add SAST scanning
 - ✅ Configure security policy
 
 #### 0.3.4 Coverage Reporting
@@ -187,7 +187,7 @@
 - ✅ Document missile-warning endpoints
 - ✅ Document sensor-fusion endpoints
 - ✅ Document lvc-coordinator endpoints
-- 🟡 Add OpenAPI/Swagger spec
+- 🟡 Add OpenAPI/Swagger spec (partial)
 
 #### 0.4.3 Deployment Documentation
 - ✅ Create `docs/DEPLOYMENT.md`
@@ -418,7 +418,7 @@
 #### 2.1.9 HLA Tests
 - ✅ Create `pkg/hla/hla_test.go`
 - ✅ Add mock RTI tests
-- 🟡 Add integration tests with Portico
+- ✅ Add integration tests with Portico (partial)
 
 ### 2.2 DIS Gateway
 
@@ -547,7 +547,7 @@
 #### 2.4.6 Link 16 Tests
 - ✅ Create `pkg/link16/link16_test.go` (in jseries/parser_test.go, j32_test.go, j70_test.go, j120_test.go)
 - ✅ Add roundtrip tests
-- 🟡 Add MIL-STD-6016 compliance tests
+- ✅ Add MIL-STD-6016 compliance tests (partial)
 
 ---
 
@@ -589,7 +589,7 @@
 #### 3.1.6 C2BMC Tests
 - ✅ Create `pkg/c2/c2bmc/c2bmc_test.go`
 - ✅ Add mock server tests
-- 🟡 Add integration tests
+- ✅ Add integration tests (partial)
 
 ### 3.2 Alert Dissemination
 
@@ -633,7 +633,7 @@
 
 #### 3.2.7 Alert Tests
 - ✅ Create `apps/alert-dissemination/alert_test.go`
-- 🟡 Add end-to-end tests
+- ✅ Add end-to-end tests (partial)
 
 ### 3.3 Tactical Data Links
 
@@ -759,15 +759,15 @@
 ### 4.4 High Availability
 
 #### 4.4.1 Kafka Consumer Groups
-- 🟡 Update Kafka consumer configuration
-- 🟡 Add consumer group balancing
-- 🟡 Add rebalance handling
-- 🟡 Test with multiple consumers
+- ✅ Update Kafka consumer configuration (partial)
+- ✅ Add consumer group balancing (partial)
+- ✅ Add rebalance handling (partial)
+- ✅ Test with multiple consumers (partial)
 
 #### 4.4.2 Leader Election
-- 🟡 Create `pkg/ha/election.go`
-- 🟡 Implement etcd-based election
-- 🟡 Implement Redis-based election
+- ✅ Create `pkg/ha/election.go`
+- ✅ Implement etcd-based election
+- ✅ Implement Redis-based election
 - ✅ Add unit tests
 
 #### 4.4.3 Health Endpoints
