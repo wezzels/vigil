@@ -581,10 +581,10 @@
 - ✅ Implement status query
 
 #### 3.1.5 PKI Authentication
-- 🔴 Create `pkg/c2/c2bmc/auth.go`
-- 🔴 Implement certificate loading
-- 🔴 Implement TLS configuration
-- 🔴 Implement mutual TLS
+- ✅ Create `pkg/c2/c2bmc/auth.go`
+- ✅ Implement certificate loading
+- ✅ Implement TLS configuration
+- ✅ Implement mutual TLS
 
 #### 3.1.6 C2BMC Tests
 - ✅ Create `pkg/c2/c2bmc/c2bmc_test.go`
