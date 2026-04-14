@@ -437,30 +437,30 @@
 - ✅ Add unit tests
 
 #### 2.2.3 Exercise Management
-- 🔴 Create `pkg/dis/exercise.go`
-- 🔴 Implement exercise ID handling
-- 🔴 Implement site/application ID management
-- 🔴 Implement entity ID allocation
-- 🔴 Add unit tests
+- ✅ Create `pkg/dis/exercise.go`
+- ✅ Implement exercise ID handling
+- ✅ Implement site/application ID management
+- ✅ Implement entity ID allocation
+- ✅ Add unit tests
 
 #### 2.2.4 Entity State PDU
-- 🔴 Create `pkg/dis/pdu/entity_state.go`
-- 🔴 Implement full PDU encoding
-- 🔴 Implement full PDU decoding
-- 🔴 Implement all dead reckoning algorithms
-- 🔴 Add unit tests
+- ✅ Create `pkg/dis/pdu/entity_state.go` (already in dis-pdu)
+- ✅ Implement full PDU encoding
+- ✅ Implement full PDU decoding
+- ✅ Implement all dead reckoning algorithms
+- ✅ Add unit tests
 
 #### 2.2.5 Fire PDU
-- 🔴 Create `pkg/dis/pdu/fire.go`
-- 🔴 Implement Fire PDU encoding
-- 🔴 Implement Fire PDU decoding
-- 🔴 Add unit tests
+- ✅ Create `pkg/dis/pdu/fire.go` (already in dis-pdu)
+- ✅ Implement Fire PDU encoding
+- ✅ Implement Fire PDU decoding
+- ✅ Add unit tests
 
 #### 2.2.6 Detonation PDU
-- 🔴 Create `pkg/dis/pdu/detonation.go`
-- 🔴 Implement Detonation PDU encoding
-- 🔴 Implement Detonation PDU decoding
-- 🔴 Add unit tests
+- ✅ Create `pkg/dis/pdu/detonation.go` (already in dis-pdu)
+- ✅ Implement Detonation PDU encoding
+- ✅ Implement Detonation PDU decoding
+- ✅ Add unit tests
 
 #### 2.2.7 Electromagnetic Emission PDU
 - 🔴 Create `pkg/dis/pdu/emission.go`
