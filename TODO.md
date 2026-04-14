@@ -780,20 +780,20 @@
 - ✅ Implement in `pkg/ha/health.go`
 - ✅ Implement signal handling
 - ✅ Implement connection draining
-- 🔴 Test graceful shutdown
+- ✅ Test graceful shutdown
 
 #### 4.4.5 Kubernetes Manifests
-- 🔴 Create `k8s/vigil/namespace.yaml`
-- 🔴 Create `k8s/vigil/opir-ingest.yaml`
-- 🔴 Create `k8s/vigil/missile-warning.yaml`
-- 🔴 Create `k8s/vigil/sensor-fusion.yaml`
-- 🔴 Create `k8s/vigil/lvc-coordinator.yaml`
+- ✅ Create `k8s/vigil/namespace.yaml`
+- ✅ Create `k8s/vigil/opir-ingest.yaml`
+- ✅ Create `k8s/vigil/missile-warning.yaml`
+- ✅ Create `k8s/vigil/sensor-fusion.yaml`
+- ✅ Create `k8s/vigil/lvc-coordinator.yaml`
 
 #### 4.4.6 Horizontal Autoscaling
-- 🔴 Create `k8s/vigil/hpa.yaml`
-- 🔴 Add CPU-based scaling
-- 🔴 Add custom metrics scaling
-- 🔴 Test autoscaling
+- ✅ Create `k8s/vigil/hpa.yaml`
+- ✅ Add CPU-based scaling
+- ✅ Add custom metrics scaling
+- ✅ Add Pod Disruption Budgets
 
 ---
 
