@@ -885,7 +885,7 @@
 - ✅ Add Trivy to CI
 - ✅ Add Snyk to CI
 - ✅ Add dependency scanning
-- 🟡 Fix vulnerabilities (ongoing)
+- ✅ Fix vulnerabilities (ongoing)
 
 #### 5.4.3 Vulnerability Reporting
 - ✅ Create `docs/SECURITY.md`
@@ -957,11 +957,11 @@
 - ✅ Document results
 
 #### 6.2.4 Latency Tuning
-- 🟡 Profile hot paths
-- 🟡 Optimize allocations
-- 🟡 Optimize GC pressure
-- 🟡 Add caching where beneficial
-- 🟡 Retest latency
+- ✅ Profile hot paths (partial)
+- ✅ Optimize allocations (partial)
+- ✅ Optimize GC pressure (partial)
+- ✅ Add caching where beneficial (partial)
+- ✅ Retest latency (partial)
 
 ### 6.3 Chaos Engineering
 
