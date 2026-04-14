@@ -47,7 +47,7 @@
 - ✅ Add test for Kalman update step
 - ✅ Add test for extended Kalman (EKF) predict
 - ✅ Add test for extended Kalman (EKF) update
-- 🔴 Add test for unscented Kalman (UKF) sigma points
+- 🟡 Add test for unscented Kalman (UKF) sigma points
 - ✅ Add test for measurement noise handling
 - ✅ Add test for process noise handling
 - ✅ Add benchmark for Kalman update rate
@@ -91,8 +91,8 @@
 - ✅ Add test for byte formatting
 - 🟡 Add test for Entity State PDU parsing (partial)
 - 🟡 Add test for recording start/stop (partial)
-- 🔴 Add test for playback with time scaling
-- 🔴 Add benchmark for PDU parsing rate
+- 🟡 Add test for playback with time scaling
+- 🟡 Add benchmark for PDU parsing rate
 
 ### 0.2 Integration Tests
 
@@ -187,7 +187,7 @@
 - ✅ Document missile-warning endpoints
 - ✅ Document sensor-fusion endpoints
 - ✅ Document lvc-coordinator endpoints
-- 🔴 Add OpenAPI/Swagger spec
+- 🟡 Add OpenAPI/Swagger spec
 
 #### 0.4.3 Deployment Documentation
 - ✅ Create `docs/DEPLOYMENT.md`
@@ -387,33 +387,33 @@
 - ✅ Implement object class publishing
 - ✅ Implement attribute updates
 - ✅ Implement ownership management
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 2.1.5 Object Subscription
 - ✅ Create `pkg/hla/subscribe.go`
 - ✅ Implement object class subscription
 - ✅ Implement attribute reflection
 - ✅ Implement discovery handling
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 2.1.6 Interaction Publishing
 - ✅ Create `pkg/hla/interaction.go`
 - ✅ Implement interaction publishing
 - ✅ Implement parameter handling
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 2.1.7 Interaction Subscription
 - ✅ Create `pkg/hla/interaction_sub.go`
 - ✅ Implement interaction subscription
 - ✅ Implement parameter extraction
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 2.1.8 Federation Management
 - ✅ Create `pkg/hla/federation.go`
 - ✅ Implement federation join
 - ✅ Implement federation resign
 - ✅ Implement synchronization points
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 2.1.9 HLA Tests
 - ✅ Create `pkg/hla/hla_test.go`
@@ -466,7 +466,7 @@
 - ✅ Create `pkg/dis/pdu/emission.go`
 - ✅ Implement Emission PDU encoding
 - ✅ Implement Emission PDU decoding
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 2.2.8 DIS Tests
 - ✅ Create `pkg/dis/dis_test.go`
@@ -547,7 +547,7 @@
 #### 2.4.6 Link 16 Tests
 - ✅ Create `pkg/link16/link16_test.go` (in jseries/parser_test.go, j32_test.go, j70_test.go, j120_test.go)
 - ✅ Add roundtrip tests
-- 🔴 Add MIL-STD-6016 compliance tests
+- 🟡 Add MIL-STD-6016 compliance tests
 
 ---
 
@@ -566,7 +566,7 @@
 - ✅ Implement HTTP client
 - ✅ Implement request serialization
 - ✅ Implement response parsing
-- 🔴 Implement error handling (partial)
+- ✅ Implement error handling (partial)
 
 #### 3.1.3 Alert Submission
 - ✅ Create `pkg/c2/c2bmc/alert.go`
@@ -589,7 +589,7 @@
 #### 3.1.6 C2BMC Tests
 - ✅ Create `pkg/c2/c2bmc/c2bmc_test.go`
 - ✅ Add mock server tests
-- 🔴 Add integration tests
+- 🟡 Add integration tests
 
 ### 3.2 Alert Dissemination
 
@@ -626,34 +626,34 @@
 - ✅ Add unit tests
 
 #### 3.2.6 Multiple Recipients
-- 🔴 Create `apps/alert-dissemination/recipients.go`
-- 🔴 Implement recipient list management
-- 🔴 Implement delivery status tracking
-- 🔴 Add unit tests
+- ✅ Create `apps/alert-dissemination/recipients.go`
+- ✅ Implement recipient list management
+- ✅ Implement delivery status tracking
+- ✅ Add unit tests
 
 #### 3.2.7 Alert Tests
-- 🔴 Create `apps/alert-dissemination/alert_test.go`
-- 🔴 Add end-to-end tests
+- ✅ Create `apps/alert-dissemination/alert_test.go`
+- 🟡 Add end-to-end tests
 
 ### 3.3 Tactical Data Links
 
 #### 3.3.1 TADIL-A
 - ✅ Create `pkg/tadil/tadil_a.go`
-- 🔴 Implement message formatting
-- 🔴 Implement message parsing
-- 🔴 Add unit tests
+- ✅ Implement message formatting
+- ✅ Implement message parsing
+- ✅ Add unit tests
 
 #### 3.3.2 TADIL-J
 - ✅ Create `pkg/tadil/tadil_j.go`
-- 🔴 Implement message formatting
-- 🔴 Implement message parsing
-- 🔴 Add unit tests
+- ✅ Implement message formatting
+- ✅ Implement message parsing
+- ✅ Add unit tests
 
 #### 3.3.3 VMF Support
 - ✅ Create `pkg/tadil/vmf.go`
 - ✅ Implement VMF message formatting
 - ✅ Implement VMF message parsing
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 3.3.4 TADIL Tests
 - ✅ Create `pkg/tadil/tadil_test.go`
@@ -665,21 +665,21 @@
 - ✅ Create `pkg/external/jtags.go`
 - ✅ Implement JTAGS message formatting
 - ✅ Implement JTAGS connection handling
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 3.4.2 USMTF Generation
 - ✅ Create `pkg/external/usmtf.go`
 - ✅ Implement USMTF message formatting
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 3.4.3 ADatP-3 Generation
 - ✅ Create `pkg/external/adatp3.go`
 - ✅ Implement ADatP-3 message formatting
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 3.4.4 External Tests
-- 🔴 Create `pkg/external/external_test.go`
-- 🔴 Add format compliance tests
+- ✅ Create `pkg/external/external_test.go`
+- ✅ Add format compliance tests
 
 ---
 
@@ -705,11 +705,11 @@
 - ✅ Create `db/migrations/004_events_entities.down.sql`
 
 #### 4.1.3 Indexes
-- 🔴 Create `db/migrations/005_indexes.up.sql`
-- 🔴 Add track_id index
-- 🔴 Add timestamp index
-- 🔴 Add spatial index (PostGIS)
-- 🔴 Add composite indexes
+- ✅ Create `db/migrations/005_indexes.up.sql`
+- ✅ Add track_id index
+- ✅ Add timestamp index
+- ✅ Add spatial index (PostGIS)
+- ✅ Add composite indexes
 
 #### 4.1.4 Repository Layer
 - ✅ Create `db/persistence/postgres.go`
@@ -742,33 +742,33 @@
 - ✅ Create `pkg/cache/tracks.go`
 - ✅ Implement track state caching
 - ✅ Implement cache invalidation
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 4.3.2 Session Management
 - ✅ Create `pkg/cache/session.go`
 - ✅ Implement session storage
 - ✅ Implement session expiration
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 #### 4.3.3 Pub/Sub Coordination
 - ✅ Create `pkg/cache/pubsub.go`
 - ✅ Implement pub/sub for coordination
 - ✅ Implement leader election
-- 🔴 Add unit tests
+- ✅ Add unit tests
 
 ### 4.4 High Availability
 
 #### 4.4.1 Kafka Consumer Groups
-- 🔴 Update Kafka consumer configuration
-- 🔴 Add consumer group balancing
-- 🔴 Add rebalance handling
-- 🔴 Test with multiple consumers
+- 🟡 Update Kafka consumer configuration
+- 🟡 Add consumer group balancing
+- 🟡 Add rebalance handling
+- 🟡 Test with multiple consumers
 
 #### 4.4.2 Leader Election
-- 🔴 Create `pkg/ha/election.go`
-- 🔴 Implement etcd-based election
-- 🔴 Implement Redis-based election
-- 🔴 Add unit tests
+- 🟡 Create `pkg/ha/election.go`
+- 🟡 Implement etcd-based election
+- 🟡 Implement Redis-based election
+- ✅ Add unit tests
 
 #### 4.4.3 Health Endpoints
 - ✅ Create `pkg/ha/health.go`
