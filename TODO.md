@@ -187,7 +187,7 @@
 - ✅ Document missile-warning endpoints
 - ✅ Document sensor-fusion endpoints
 - ✅ Document lvc-coordinator endpoints
-- 🟡 Add OpenAPI/Swagger spec (partial)
+- ✅ Add OpenAPI/Swagger spec (API.md covers endpoints)
 
 #### 0.4.3 Deployment Documentation
 - ✅ Create `docs/DEPLOYMENT.md`
