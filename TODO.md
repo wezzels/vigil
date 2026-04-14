@@ -383,23 +383,23 @@
 - ✅ Add unit tests
 
 #### 2.1.4 Object Publishing
-- 🔴 Create `pkg/hla/publish.go`
-- 🔴 Implement object class publishing
-- 🔴 Implement attribute updates
-- 🔴 Implement ownership management
+- ✅ Create `pkg/hla/publish.go`
+- ✅ Implement object class publishing
+- ✅ Implement attribute updates
+- ✅ Implement ownership management
 - 🔴 Add unit tests
 
 #### 2.1.5 Object Subscription
-- 🔴 Create `pkg/hla/subscribe.go`
-- 🔴 Implement object class subscription
-- 🔴 Implement attribute reflection
-- 🔴 Implement discovery handling
+- ✅ Create `pkg/hla/subscribe.go`
+- ✅ Implement object class subscription
+- ✅ Implement attribute reflection
+- ✅ Implement discovery handling
 - 🔴 Add unit tests
 
 #### 2.1.6 Interaction Publishing
-- 🔴 Create `pkg/hla/interaction.go`
-- 🔴 Implement interaction publishing
-- 🔴 Implement parameter handling
+- ✅ Create `pkg/hla/interaction.go`
+- ✅ Implement interaction publishing
+- ✅ Implement parameter handling
 - 🔴 Add unit tests
 
 #### 2.1.7 Interaction Subscription
@@ -409,16 +409,16 @@
 - 🔴 Add unit tests
 
 #### 2.1.8 Federation Management
-- 🔴 Create `pkg/hla/federation.go`
-- 🔴 Implement federation join
-- 🔴 Implement federation resign
-- 🔴 Implement synchronization points
+- ✅ Create `pkg/hla/federation.go`
+- ✅ Implement federation join
+- ✅ Implement federation resign
+- ✅ Implement synchronization points
 - 🔴 Add unit tests
 
 #### 2.1.9 HLA Tests
-- 🔴 Create `pkg/hla/hla_test.go`
-- 🔴 Add mock RTI tests
-- 🔴 Add integration tests with Portico
+- ✅ Create `pkg/hla/hla_test.go`
+- ✅ Add mock RTI tests
+- 🟡 Add integration tests with Portico
 
 ### 2.2 DIS Gateway
 
