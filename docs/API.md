@@ -1,535 +1,410 @@
 # VIGIL API Documentation
 
-## Overview
+## Base URL
 
-VIGIL provides RESTful APIs for all microservices. Each service exposes health, metrics, and service-specific endpoints.
+```
+https://vigil.local/api/v1
+```
 
-## Common Endpoints
+## Authentication
 
-All services implement these common endpoints:
+All endpoints require authentication via one of:
+- **mTLS**: Client certificate validation
+- **JWT**: Bearer token in Authorization header
+- **API Key**: X-API-Key header
 
-### Health Check
+## Endpoints
+
+### Tracks
+
+#### List Tracks
 
 ```http
-GET /health
+GET /tracks
 ```
 
-Returns service health status.
+**Parameters:**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| limit | int | query | Maximum tracks to return (default: 100) |
+| offset | int | query | Pagination offset |
+| source | string | query | Filter by source (OPIR, RADAR, SBIRS) |
+| status | string | query | Filter by status (active, dropped) |
 
 **Response:**
-```json
-{
-  "status": "healthy",
-  "uptime": 3600,
-  "checks": {
-    "kafka": "ok",
-    "redis": "ok",
-    "postgres": "ok"
-  },
-  "version": "0.0.1"
-}
-```
 
-### Metrics
-
-```http
-GET /metrics
-```
-
-Returns Prometheus-formatted metrics.
-
-**Response:**
-```
-# HELP vigil_tracks_processed Total tracks processed
-# TYPE vigil_tracks_processed counter
-vigil_tracks_processed{service="sensor-fusion"} 12345
-
-# HELP vigil_processing_latency Processing latency in milliseconds
-# TYPE vigil_processing_latency histogram
-vigil_processing_latency_bucket{le="10"} 100
-vigil_processing_latency_bucket{le="50"} 450
-vigil_processing_latency_bucket{le="100"} 800
-```
-
-## OPIR Ingest API
-
-### POST /api/v1/detections
-
-Submit an OPIR detection.
-
-**Request:**
-```json
-{
-  "sensor_id": "SBIRS-GEO-1",
-  "timestamp": 1700000000000,
-  "latitude": 38.8977,
-  "longitude": -77.0365,
-  "altitude": 50000.0,
-  "velocity": 3000.0,
-  "heading": 45.0,
-  "confidence": 0.95,
-  "signature": "IR-BOOSTER-001"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "accepted",
-  "detection_id": "DET-001",
-  "timestamp": 1700000000000
-}
-```
-
-### GET /api/v1/status
-
-Get ingestion status.
-
-**Response:**
-```json
-{
-  "detections_received": 12345,
-  "detections_published": 12340,
-  "errors": 5,
-  "last_detection": 1700000000000,
-  "processing_rate": 100.5
-}
-```
-
-## Sensor Fusion API
-
-### POST /api/v1/tracks/correlate
-
-Submit tracks for correlation.
-
-**Request:**
 ```json
 {
   "tracks": [
     {
-      "source_id": "SBIRS-GEO-1",
-      "latitude": 38.8977,
-      "longitude": -77.0365,
-      "altitude": 50000.0,
-      "velocity_x": 300.0,
-      "velocity_y": 0.0,
-      "velocity_z": 0.0,
-      "confidence": 0.95
-    },
-    {
-      "source_id": "RADAR-1",
-      "latitude": 38.8980,
-      "longitude": -77.0370,
-      "altitude": 50050.0,
-      "velocity_x": 295.0,
-      "velocity_y": 5.0,
-      "velocity_z": 0.0,
-      "confidence": 0.92
-    }
-  ]
-}
-```
-
-**Response:**
-```json
-{
-  "correlated_track": {
-    "track_id": "TRACK-001",
-    "track_number": 1001,
-    "latitude": 38.8978,
-    "longitude": -77.0367,
-    "altitude": 50025.0,
-    "velocity_x": 297.5,
-    "velocity_y": 2.5,
-    "velocity_z": 0.0,
-    "confidence": 0.94,
-    "source_count": 2,
-    "variance": 0.001
-  }
-}
-```
-
-### GET /api/v1/tracks
-
-Get all active tracks.
-
-**Query Parameters:**
-- `limit`: Maximum tracks to return (default: 100)
-- `offset`: Pagination offset
-- `source`: Filter by source
-
-**Response:**
-```json
-{
-  "tracks": [
-    {
-      "track_id": "TRACK-001",
-      "track_number": 1001,
-      "latitude": 38.8978,
-      "longitude": -77.0367,
-      "altitude": 50025.0,
-      "heading": 45.0,
-      "speed": 300.0,
-      "confidence": 0.94,
-      "source_count": 2,
-      "last_update": 1700000000000
+      "id": "track-001",
+      "track_number": "TN001",
+      "source": "OPIR",
+      "position": {
+        "latitude": 34.0522,
+        "longitude": -118.2437,
+        "altitude": 10000.0
+      },
+      "velocity": {
+        "x": 100.0,
+        "y": 200.0,
+        "z": 50.0
+      },
+      "identity": "hostile",
+      "quality": "high",
+      "confidence": 0.95,
+      "created_at": "2026-04-14T12:00:00Z",
+      "updated_at": "2026-04-14T12:01:00Z"
     }
   ],
-  "total": 1,
+  "total": 150,
   "limit": 100,
   "offset": 0
 }
 ```
 
-### GET /api/v1/tracks/{track_id}
+#### Get Track
 
-Get specific track by ID.
+```http
+GET /tracks/{id}
+```
 
 **Response:**
+
 ```json
 {
-  "track_id": "TRACK-001",
-  "track_number": 1001,
-  "latitude": 38.8978,
-  "longitude": -77.0367,
-  "altitude": 50025.0,
+  "id": "track-001",
+  "track_number": "TN001",
+  "source": "OPIR",
+  "position": {
+    "latitude": 34.0522,
+    "longitude": -118.2437,
+    "altitude": 10000.0
+  },
   "velocity": {
-    "x": 297.5,
-    "y": 2.5,
-    "z": 0.0
+    "x": 100.0,
+    "y": 200.0,
+    "z": 50.0
   },
-  "heading": 45.0,
-  "speed": 300.0,
-  "confidence": 0.94,
-  "source_count": 2,
-  "sources": ["SBIRS-GEO-1", "RADAR-1"],
-  "variance": {
-    "lat": 0.001,
-    "lon": 0.001,
-    "alt": 10.0
-  },
-  "last_update": 1700000000000,
-  "created_at": 1699999000000
+  "identity": "hostile",
+  "quality": "high",
+  "confidence": 0.95,
+  "created_at": "2026-04-14T12:00:00Z",
+  "updated_at": "2026-04-14T12:01:00Z"
 }
 ```
 
-## Missile Warning Engine API
+#### Create Track
 
-### GET /api/v1/alerts
+```http
+POST /tracks
+```
 
-Get active alerts.
+**Request:**
 
-**Query Parameters:**
-- `level`: Filter by alert level (CONOPREP, IMMINENT, INCOMING, HOSTILE)
-- `threat_type`: Filter by threat type
-- `limit`: Maximum alerts to return
+```json
+{
+  "track_number": "TN001",
+  "source": "OPIR",
+  "position": {
+    "latitude": 34.0522,
+    "longitude": -118.2437,
+    "altitude": 10000.0
+  },
+  "velocity": {
+    "x": 100.0,
+    "y": 200.0,
+    "z": 50.0
+  },
+  "identity": "unknown"
+}
+```
+
+**Response:** `201 Created`
+
+#### Update Track
+
+```http
+PUT /tracks/{id}
+```
+
+**Request:**
+
+```json
+{
+  "position": {
+    "latitude": 34.0530,
+    "longitude": -118.2440,
+    "altitude": 10100.0
+  },
+  "velocity": {
+    "x": 105.0,
+    "y": 205.0,
+    "z": 55.0
+  }
+}
+```
+
+**Response:** `200 OK`
+
+#### Delete Track
+
+```http
+DELETE /tracks/{id}
+```
+
+**Response:** `204 No Content`
+
+---
+
+### Alerts
+
+#### List Alerts
+
+```http
+GET /alerts
+```
+
+**Parameters:**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| limit | int | query | Maximum alerts to return |
+| offset | int | query | Pagination offset |
+| priority | string | query | Filter by priority |
+| status | string | query | Filter by status |
 
 **Response:**
+
 ```json
 {
   "alerts": [
     {
-      "alert_id": "ALERT-001",
-      "track_id": "TRACK-001",
-      "alert_level": "INCOMING",
-      "threat_type": "BALLISTIC",
-      "launch_point": {
-        "lat": 38.0,
-        "lon": -77.0
-      },
-      "impact_point": {
-        "lat": 39.0,
-        "lon": -78.0
-      },
-      "time_to_impact": 90.0,
-      "confidence": 0.85,
-      "created_at": 1700000000000
+      "id": "alert-001",
+      "type": "CONOPREP",
+      "priority": "critical",
+      "track_id": "track-001",
+      "status": "pending",
+      "created_at": "2026-04-14T12:00:00Z"
     }
   ],
-  "total": 1
+  "total": 50
 }
 ```
 
-### POST /api/v1/alerts/evaluate
+#### Get Alert
 
-Evaluate track for alert generation.
+```http
+GET /alerts/{id}
+```
+
+#### Create Alert
+
+```http
+POST /alerts
+```
 
 **Request:**
+
 ```json
 {
-  "track_id": "TRACK-001",
-  "threat_type": "BALLISTIC"
+  "type": "IMMINENT",
+  "priority": "high",
+  "track_id": "track-001",
+  "message": "Missile launch detected"
 }
 ```
 
-**Response:**
+#### Acknowledge Alert
+
+```http
+POST /alerts/{id}/acknowledge
+```
+
+**Request:**
+
 ```json
 {
-  "alert_level": "INCOMING",
-  "threat_type": "BALLISTIC",
-  "time_to_impact": 90.0,
-  "confidence": 0.85,
-  "should_alert": true
+  "acknowledged_by": "operator-001",
+  "notes": "Confirming alert"
 }
 ```
 
-### GET /api/v1/threats
+#### Complete Alert
 
-Get threat summary.
+```http
+POST /alerts/{id}/complete
+```
 
-**Response:**
+**Request:**
+
 ```json
 {
-  "total_threats": 5,
-  "by_type": {
-    "BALLISTIC": 2,
-    "CRUISE": 1,
-    "AIRCRAFT": 1,
-    "UAV": 1
-  },
-  "by_level": {
-    "CONOPREP": 1,
-    "IMMINENT": 2,
-    "INCOMING": 1,
-    "HOSTILE": 1
+  "completed_by": "operator-001",
+  "resolution": "Threat mitigated"
+}
+```
+
+---
+
+### Events
+
+#### List Events
+
+```http
+GET /events
+```
+
+**Parameters:**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| limit | int | query | Maximum events to return |
+| type | string | query | Filter by event type |
+| start_time | string | query | Start time (RFC3339) |
+| end_time | string | query | End time (RFC3339) |
+
+**Response:**
+
+```json
+{
+  "events": [
+    {
+      "id": "event-001",
+      "type": "track_created",
+      "track_id": "track-001",
+      "timestamp": "2026-04-14T12:00:00Z",
+      "data": {}
+    }
+  ]
+}
+```
+
+---
+
+### Health
+
+#### Liveness
+
+```http
+GET /healthz/liveness
+```
+
+**Response:**
+
+```json
+{
+  "status": "healthy"
+}
+```
+
+#### Readiness
+
+```http
+GET /healthz/readiness
+```
+
+**Response:**
+
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": "healthy",
+    "redis": "healthy",
+    "kafka": "healthy"
   }
 }
 ```
 
-## LVC Coordinator API
+#### Startup
 
-### POST /api/v1/entities
-
-Create a new DIS entity.
-
-**Request:**
-```json
-{
-  "force_id": 1,
-  "entity_type": "F-16C",
-  "marking": "VIPER01",
-  "location": {
-    "lat": 38.8977,
-    "lon": -77.0365,
-    "alt": 10000.0
-  },
-  "orientation": {
-    "psi": 0.785,
-    "theta": 0.0,
-    "phi": 0.0
-  },
-  "velocity": {
-    "x": 300.0,
-    "y": 0.0,
-    "z": 0.0
-  },
-  "dead_reckoning_model": 2
-}
+```http
+GET /healthz/startup
 ```
 
-**Response:**
-```json
-{
-  "entity_id": {
-    "site_id": 1,
-    "application_id": 1,
-    "entity_id": 100
-  },
-  "force_id": 1,
-  "marking": "VIPER01",
-  "location": {
-    "x": 1000000.0,
-    "y": 2000000.0,
-    "z": 10000.0
-  },
-  "created_at": 1700000000000
-}
-```
-
-### GET /api/v1/entities
-
-Get all active entities.
-
-**Query Parameters:**
-- `force_id`: Filter by force (Friendly=1, Opposing=2, Neutral=3)
-- `marking`: Filter by marking
-
-**Response:**
-```json
-{
-  "entities": [
-    {
-      "entity_id": {
-        "site_id": 1,
-        "application_id": 1,
-        "entity_id": 100
-      },
-      "force_id": 1,
-      "marking": "VIPER01",
-      "entity_type": "F-16C",
-      "location": {
-        "lat": 38.8977,
-        "lon": -77.0365,
-        "alt": 10000.0
-      },
-      "velocity": 300.0,
-      "heading": 45.0,
-      "last_update": 1700000000000
-    }
-  ],
-  "total": 1
-}
-```
-
-### DELETE /api/v1/entities/{entity_id}
-
-Remove an entity.
-
-**Response:**
-```json
-{
-  "status": "removed",
-  "entity_id": 100
-}
-```
-
-## Replay Engine API
-
-### POST /api/v1/recordings
-
-Start a new recording.
-
-**Request:**
-```json
-{
-  "name": "EXERCISE-2024-001",
-  "description": "Training exercise recording",
-  "tags": ["training", "exercise"]
-}
-```
-
-**Response:**
-```json
-{
-  "recording_id": "REC-001",
-  "name": "EXERCISE-2024-001",
-  "status": "recording",
-  "started_at": 1700000000000
-}
-```
-
-### GET /api/v1/recordings
-
-List all recordings.
-
-**Response:**
-```json
-{
-  "recordings": [
-    {
-      "id": "REC-001",
-      "name": "EXERCISE-2024-001",
-      "start_time": 1700000000000,
-      "end_time": 1700003600000,
-      "pdu_count": 12345,
-      "file_size": 10485760
-    }
-  ],
-  "total": 1
-}
-```
-
-### POST /api/v1/recordings/{id}/playback
-
-Start playback of a recording.
-
-**Request:**
-```json
-{
-  "speed": 1.0,
-  "start_time": 1700000000000
-}
-```
-
-**Response:**
-```json
-{
-  "playback_id": "PLAY-001",
-  "recording_id": "REC-001",
-  "status": "playing",
-  "speed": 1.0,
-  "current_time": 1700000000000
-}
-```
+---
 
 ## Error Responses
 
-All endpoints use standard HTTP status codes and return error details:
+All errors follow this format:
 
 ```json
 {
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid latitude value",
-    "field": "latitude",
-    "value": -100.0
+    "code": "TRACK_NOT_FOUND",
+    "message": "Track with ID track-001 not found",
+    "details": {}
   }
 }
 ```
 
-### Common Error Codes
+### Error Codes
 
 | Code | HTTP Status | Description |
 |------|-------------|-------------|
-| `VALIDATION_ERROR` | 400 | Invalid request data |
-| `NOT_FOUND` | 404 | Resource not found |
-| `CONFLICT` | 409 | Resource already exists |
-| `INTERNAL_ERROR` | 500 | Internal server error |
-| `SERVICE_UNAVAILABLE` | 503 | Dependency unavailable |
+| UNAUTHORIZED | 401 | Authentication required |
+| FORBIDDEN | 403 | Insufficient permissions |
+| NOT_FOUND | 404 | Resource not found |
+| VALIDATION_ERROR | 400 | Invalid request data |
+| INTERNAL_ERROR | 500 | Internal server error |
+| TRACK_NOT_FOUND | 404 | Track not found |
+| ALERT_NOT_FOUND | 404 | Alert not found |
+| INVALID_PRIORITY | 400 | Invalid alert priority |
+| DUPLICATE_TRACK | 409 | Track already exists |
+
+---
 
 ## Rate Limiting
 
-All APIs are rate-limited:
+| Endpoint | Limit |
+|----------|-------|
+| GET /tracks | 1000/min |
+| POST /tracks | 100/min |
+| GET /alerts | 1000/min |
+| POST /alerts | 50/min |
 
-| Service | Limit | Window |
-|---------|-------|--------|
-| Health | 60 | 1 minute |
-| Metrics | 60 | 1 minute |
-| API | 1000 | 1 minute |
+Rate limit headers:
 
-Rate limit headers are included in responses:
-
-```http
+```
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1700000060
+X-RateLimit-Reset: 1681466400
 ```
 
-## Authentication
+---
 
-API requests require JWT authentication:
+## Webhooks
 
-```http
-Authorization: Bearer <token>
-```
+### Alert Webhook
 
-Tokens are obtained from the auth service:
-
-```http
-POST /api/v1/auth/token
-Content-Type: application/json
-
-{
-  "client_id": "your-client-id",
-  "client_secret": "your-client-secret"
-}
-```
-
-**Response:**
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIs...",
-  "token_type": "Bearer",
-  "expires_in": 3600
+  "event": "alert.created",
+  "timestamp": "2026-04-14T12:00:00Z",
+  "data": {
+    "id": "alert-001",
+    "type": "CONOPREP",
+    "priority": "critical"
+  }
 }
 ```
+
+### Track Webhook
+
+```json
+{
+  "event": "track.created",
+  "timestamp": "2026-04-14T12:00:00Z",
+  "data": {
+    "id": "track-001",
+    "source": "OPIR"
+  }
+}
+```
+
+---
+
+**Version:** 1.0.0
+**Last Updated:** 2026-04-14
