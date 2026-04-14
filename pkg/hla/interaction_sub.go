@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 )
 
 // InteractionSubscriber handles HLA interaction subscription

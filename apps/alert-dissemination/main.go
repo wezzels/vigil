@@ -97,10 +97,10 @@ type ThreatType int
 
 const (
 	THREAT_UNKNOWN ThreatType = 0
-	THREAT_SRBM   ThreatType = 1
-	THREAT_MRBM   ThreatType = 2
-	THREAT_IRBM   ThreatType = 3
-	THREAT_ICBM   ThreatType = 4
+	THREAT_SRBM    ThreatType = 1
+	THREAT_MRBM    ThreatType = 2
+	THREAT_IRBM    ThreatType = 3
+	THREAT_ICBM    ThreatType = 4
 )
 
 func (t ThreatType) String() string {
@@ -113,39 +113,39 @@ func (t ThreatType) String() string {
 
 // Incoming alert from missile-warning-engine
 type Alert struct {
-	AlertID      uint32    `json:"alert_id"`
+	AlertID      uint32     `json:"alert_id"`
 	AlertLevel   AlertLevel `json:"alert_level"`
 	ThreatType   ThreatType `json:"threat_type"`
-	TrackNumber  uint32    `json:"track_number"`
-	LaunchLat    float64   `json:"launch_lat"`
-	LaunchLon    float64   `json:"launch_lon"`
-	ImpactLat    float64   `json:"impact_lat"`
-	ImpactLon    float64   `json:"impact_lon"`
-	TimeToImpact float64   `json:"time_to_impact"` // seconds
-	ImpactTime   time.Time `json:"impact_time"`
-	NCARequired  bool      `json:"nca_required"`
-	SourceSensor string    `json:"source_sensor"`
-	Confidence   float64   `json:"confidence"`
-	IssuedAt     time.Time `json:"issued_at"`
+	TrackNumber  uint32     `json:"track_number"`
+	LaunchLat    float64    `json:"launch_lat"`
+	LaunchLon    float64    `json:"launch_lon"`
+	ImpactLat    float64    `json:"impact_lat"`
+	ImpactLon    float64    `json:"impact_lon"`
+	TimeToImpact float64    `json:"time_to_impact"` // seconds
+	ImpactTime   time.Time  `json:"impact_time"`
+	NCARequired  bool       `json:"nca_required"`
+	SourceSensor string     `json:"source_sensor"`
+	Confidence   float64    `json:"confidence"`
+	IssuedAt     time.Time  `json:"issued_at"`
 }
 
 // C2Message is the disseminated alert to C2 systems
 type C2Message struct {
-	MessageID     string       `json:"message_id"`
-	precedence   string       `json:"precedence"` // ROUTINE/PRIORITY/IMMEDIATE/OFFICER
-	AlertLevel    AlertLevel   `json:"alert_level"`
-	ThreatType    ThreatType   `json:"threat_type"`
-	JTIDSNet      uint8        `json:"jtids_net"` // JTIDS network (0=broadcast)
-	IRIGBMFlag    bool         `json:"iribm_flag"` // true if IRBM or ICBM
-	NCAApproval   bool         `json:"nca_approval_required"`
-	TrackNumber   uint32       `json:"track_number"`
-	LaunchPoint   Coordinate   `json:"launch_point"`
-	ImpactPoint   Coordinate   `json:"impact_point"`
-	TimeToImpact  float64      `json:"time_to_impact"` // seconds
-	ThreatWeapon  string       `json:"threat_weapon_designation"`
-	SensorSource  string       `json:"sensor_source"`
-	PDL           string       `json:"pdl"` // Processing Delay Line (latency ms)
-	IssuedAt      time.Time    `json:"issued_at"`
+	MessageID    string     `json:"message_id"`
+	precedence   string     `json:"precedence"` // ROUTINE/PRIORITY/IMMEDIATE/OFFICER
+	AlertLevel   AlertLevel `json:"alert_level"`
+	ThreatType   ThreatType `json:"threat_type"`
+	JTIDSNet     uint8      `json:"jtids_net"`  // JTIDS network (0=broadcast)
+	IRIGBMFlag   bool       `json:"iribm_flag"` // true if IRBM or ICBM
+	NCAApproval  bool       `json:"nca_approval_required"`
+	TrackNumber  uint32     `json:"track_number"`
+	LaunchPoint  Coordinate `json:"launch_point"`
+	ImpactPoint  Coordinate `json:"impact_point"`
+	TimeToImpact float64    `json:"time_to_impact"` // seconds
+	ThreatWeapon string     `json:"threat_weapon_designation"`
+	SensorSource string     `json:"sensor_source"`
+	PDL          string     `json:"pdl"` // Processing Delay Line (latency ms)
+	IssuedAt     time.Time  `json:"issued_at"`
 }
 
 type Coordinate struct {
@@ -211,8 +211,8 @@ func applyDoctrine(a *Alert) *C2Message {
 		TimeToImpact: a.TimeToImpact,
 		ThreatWeapon: rule.Weapon,
 		SensorSource: a.SourceSensor,
-		PDL:         fmt.Sprintf("%d", int(time.Since(a.IssuedAt).Milliseconds())),
-		IssuedAt:    time.Now(),
+		PDL:          fmt.Sprintf("%d", int(time.Since(a.IssuedAt).Milliseconds())),
+		IssuedAt:     time.Now(),
 	}
 }
 
@@ -381,7 +381,7 @@ func run(ctx context.Context) {
 
 			// Apply doctrine and issue C2 message
 			c2 := applyDoctrine(&alert)
-			
+
 			c2JSON, _ := json.Marshal(c2)
 			if err := kafkaWriter.WriteMessages(ctx, kafka.Message{
 				Key:   []byte(fmt.Sprintf("%d", alert.TrackNumber)),

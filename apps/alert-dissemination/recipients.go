@@ -10,30 +10,30 @@ import (
 
 // Recipient represents an alert recipient
 type Recipient struct {
-	ID          string
-	Name        string
-	Type        RecipientType
-	Channels    []Channel
-	Active      bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID        string
+	Name      string
+	Type      RecipientType
+	Channels  []Channel
+	Active    bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // RecipientType defines recipient type
 type RecipientType string
 
 const (
-	RecipientUser    RecipientType = "user"
-	RecipientGroup   RecipientType = "group"
-	RecipientSystem  RecipientType = "system"
+	RecipientUser   RecipientType = "user"
+	RecipientGroup  RecipientType = "group"
+	RecipientSystem RecipientType = "system"
 )
 
 // Channel defines a delivery channel
 type Channel struct {
-	Type      ChannelType
-	Address   string
-	Priority  int
-	Active    bool
+	Type     ChannelType
+	Address  string
+	Priority int
+	Active   bool
 }
 
 // ChannelType defines channel type
@@ -49,13 +49,13 @@ const (
 
 // DeliveryStatus represents delivery status
 type DeliveryStatus struct {
-	RecipientID  string
-	ChannelID    string
-	Status       DeliveryState
-	Attempts     int
-	LastAttempt  time.Time
-	NextRetry    *time.Time
-	Error        string
+	RecipientID string
+	ChannelID   string
+	Status      DeliveryState
+	Attempts    int
+	LastAttempt time.Time
+	NextRetry   *time.Time
+	Error       string
 }
 
 // DeliveryState defines delivery state
@@ -71,9 +71,9 @@ const (
 
 // RecipientManager manages recipients
 type RecipientManager struct {
-	mu          sync.RWMutex
-	recipients  map[string]*Recipient
-	statuses    map[string]*DeliveryStatus
+	mu         sync.RWMutex
+	recipients map[string]*Recipient
+	statuses   map[string]*DeliveryStatus
 }
 
 // NewRecipientManager creates a new recipient manager

@@ -123,8 +123,8 @@ func TestDeliveryStatus(t *testing.T) {
 	status := &alertdissemination.DeliveryStatus{
 		RecipientID: "rec-001",
 		ChannelID:   "test@example.com",
-		Status:       alertdissemination.DeliveryPending,
-		Attempts:     0,
+		Status:      alertdissemination.DeliveryPending,
+		Attempts:    0,
 	}
 
 	err := rm.SetDeliveryStatus(ctx, status)
@@ -180,21 +180,21 @@ func TestGetPendingDeliveries(t *testing.T) {
 	rm.SetDeliveryStatus(ctx, &alertdissemination.DeliveryStatus{
 		RecipientID: "rec-001",
 		ChannelID:   "email",
-		Status:       alertdissemination.DeliveryPending,
+		Status:      alertdissemination.DeliveryPending,
 	})
 
 	// Add sent status
 	rm.SetDeliveryStatus(ctx, &alertdissemination.DeliveryStatus{
 		RecipientID: "rec-002",
 		ChannelID:   "sms",
-		Status:       alertdissemination.DeliverySent,
+		Status:      alertdissemination.DeliverySent,
 	})
 
 	// Add retry status
 	rm.SetDeliveryStatus(ctx, &alertdissemination.DeliveryStatus{
 		RecipientID: "rec-003",
 		ChannelID:   "voice",
-		Status:       alertdissemination.DeliveryRetry,
+		Status:      alertdissemination.DeliveryRetry,
 	})
 
 	pending := rm.GetPendingDeliveries(ctx)
