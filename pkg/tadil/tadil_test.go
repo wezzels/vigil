@@ -13,7 +13,7 @@ func TestTADILAFormat(t *testing.T) {
 	formatter := tadil.NewTADILAFormatter()
 
 	msg := &tadil.TADILAMessage{
-		Preamble:    "LINK11",
+		Preamble:    "LINK1",
 		MessageType: "TRK",
 		Originator:  "UNIT1",
 		Destination: "UNIT2",
@@ -41,7 +41,7 @@ func TestTADILAParse(t *testing.T) {
 
 	// Create and format message
 	original := &tadil.TADILAMessage{
-		Preamble:    "LINK11",
+		Preamble:    "LINK1",
 		MessageType: "TRK",
 		Originator:  "UNIT1",
 		Destination: "UNIT2",
@@ -213,7 +213,7 @@ func TestTADILAValidation(t *testing.T) {
 
 	// Valid message
 	validMsg := &tadil.TADILAMessage{
-		Preamble:    "LINK11",
+		Preamble:    "LINK1",
 		MessageType: "TRK",
 	}
 
@@ -224,7 +224,7 @@ func TestTADILAValidation(t *testing.T) {
 
 	// Invalid message type
 	invalidMsg := &tadil.TADILAMessage{
-		Preamble:    "LINK11",
+		Preamble:    "LINK1",
 		MessageType: "INVALID",
 	}
 
@@ -329,7 +329,7 @@ func TestRoundtrip(t *testing.T) {
 	t.Run("TADIL-A", func(t *testing.T) {
 		formatter := tadil.NewTADILAFormatter()
 		original := &tadil.TADILAMessage{
-			Preamble:    "LINK11",
+			Preamble:    "LINK1",
 			MessageType: "TRK",
 			Originator:  "UNIT1",
 			Destination: "UNIT2",
@@ -395,7 +395,7 @@ func TestRoundtrip(t *testing.T) {
 func BenchmarkTADILAFormat(b *testing.B) {
 	formatter := tadil.NewTADILAFormatter()
 	msg := &tadil.TADILAMessage{
-		Preamble:    "LINK11",
+		Preamble:    "LINK1",
 		MessageType: "TRK",
 		Originator:  "UNIT1",
 		Destination: "UNIT2",
