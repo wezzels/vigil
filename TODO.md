@@ -638,43 +638,43 @@
 ### 3.3 Tactical Data Links
 
 #### 3.3.1 TADIL-A
-- 🔴 Create `pkg/tadil/tadil_a.go`
+- ✅ Create `pkg/tadil/tadil_a.go`
 - 🔴 Implement message formatting
 - 🔴 Implement message parsing
 - 🔴 Add unit tests
 
 #### 3.3.2 TADIL-J
-- 🔴 Create `pkg/tadil/tadil_j.go`
+- ✅ Create `pkg/tadil/tadil_j.go`
 - 🔴 Implement message formatting
 - 🔴 Implement message parsing
 - 🔴 Add unit tests
 
 #### 3.3.3 VMF Support
-- 🔴 Create `pkg/tadil/vmf.go`
-- 🔴 Implement VMF message formatting
-- 🔴 Implement VMF message parsing
+- ✅ Create `pkg/tadil/vmf.go`
+- ✅ Implement VMF message formatting
+- ✅ Implement VMF message parsing
 - 🔴 Add unit tests
 
 #### 3.3.4 TADIL Tests
-- 🔴 Create `pkg/tadil/tadil_test.go`
-- 🔴 Add roundtrip tests
+- ✅ Create `pkg/tadil/tadil_test.go`
+- ✅ Add roundtrip tests
 
 ### 3.4 External System Interfaces
 
 #### 3.4.1 JTAGS Interface
-- 🔴 Create `pkg/external/jtags.go`
-- 🔴 Implement JTAGS message formatting
-- 🔴 Implement JTAGS connection handling
+- ✅ Create `pkg/external/jtags.go`
+- ✅ Implement JTAGS message formatting
+- ✅ Implement JTAGS connection handling
 - 🔴 Add unit tests
 
 #### 3.4.2 USMTF Generation
-- 🔴 Create `pkg/external/usmtf.go`
-- 🔴 Implement USMTF message formatting
+- ✅ Create `pkg/external/usmtf.go`
+- ✅ Implement USMTF message formatting
 - 🔴 Add unit tests
 
 #### 3.4.3 ADatP-3 Generation
-- 🔴 Create `pkg/external/adatp3.go`
-- 🔴 Implement ADatP-3 message formatting
+- ✅ Create `pkg/external/adatp3.go`
+- ✅ Implement ADatP-3 message formatting
 - 🔴 Add unit tests
 
 #### 3.4.4 External Tests
