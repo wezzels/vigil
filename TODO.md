@@ -601,10 +601,10 @@
 - ✅ Add unit tests
 
 #### 3.2.2 Alert Queue
-- 🔴 Create `apps/alert-dissemination/queue/queue.go`
-- 🔴 Implement priority queue
-- 🔴 Implement FIFO for same priority
-- 🔴 Add unit tests
+- ✅ Create `apps/alert-dissemination/queue/queue.go`
+- ✅ Implement priority queue
+- ✅ Implement FIFO for same priority
+- ✅ Add unit tests
 
 #### 3.2.3 Acknowledgment Handling
 - 🔴 Create `apps/alert-dissemination/ack/ack.go`
