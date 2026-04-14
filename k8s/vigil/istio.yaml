@@ -1,0 +1,262 @@
+# VIGIL Istio Service Mesh Configuration
+# Provides mTLS, traffic management, and observability
+
+---
+# Istio PeerAuthentication - Strict mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: vigil-mtls
+  namespace: vigil
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# Istio AuthorizationPolicy - Deny all by default
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: vigil
+spec:
+  {}
+
+---
+# OPIR Ingest Authorization
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: opir-ingest-authz
+  namespace: vigil
+spec:
+  selector:
+    matchLabels:
+      app: opir-ingest
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/ingress-nginx/sa/ingress-nginx"]
+    - source:
+        principals: ["cluster.local/ns/vigil/sa/vigil"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/*", "/healthz/*"]
+
+---
+# Missile Warning Authorization
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: missile-warning-authz
+  namespace: vigil
+spec:
+  selector:
+    matchLabels:
+      app: missile-warning
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/ingress-nginx/sa/ingress-nginx"]
+    - source:
+        principals: ["cluster.local/ns/vigil/sa/vigil"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/*", "/healthz/*"]
+
+---
+# Sensor Fusion Authorization
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: sensor-fusion-authz
+  namespace: vigil
+spec:
+  selector:
+    matchLabels:
+      app: sensor-fusion
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/vigil/sa/vigil"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/*", "/healthz/*"]
+
+---
+# DestinationRule for traffic policy
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: vigil-destination
+  namespace: vigil
+spec:
+  host: "*.vigil.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        h2UpgradePolicy: UPGRADE
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+
+---
+# VirtualService for OPIR Ingest
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: opir-ingest
+  namespace: vigil
+spec:
+  hosts:
+  - opir-ingest
+  http:
+  - route:
+    - destination:
+        host: opir-ingest
+        port:
+          number: 8080
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,reset,connect-failure
+
+---
+# VirtualService for Missile Warning
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: missile-warning
+  namespace: vigil
+spec:
+  hosts:
+  - missile-warning
+  http:
+  - route:
+    - destination:
+        host: missile-warning
+        port:
+          number: 8080
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,reset,connect-failure
+    timeout: 10s
+
+---
+# VirtualService for Sensor Fusion
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: sensor-fusion
+  namespace: vigil
+spec:
+  hosts:
+  - sensor-fusion
+  http:
+  - route:
+    - destination:
+        host: sensor-fusion
+        port:
+          number: 8080
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,reset,connect-failure
+    timeout: 30s
+
+---
+# Gateway for external access (optional)
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: vigil-gateway
+  namespace: vigil
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: MUTUAL
+      credentialName: vigil-tls
+    hosts:
+    - "vigil.local"
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "vigil.local"
+
+---
+# VirtualService for Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: vigil-ingress
+  namespace: vigil
+spec:
+  hosts:
+  - "vigil.local"
+  gateways:
+  - vigil-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/opir
+    route:
+    - destination:
+        host: opir-ingest
+        port:
+          number: 8080
+  - match:
+    - uri:
+        prefix: /api/warning
+    route:
+    - destination:
+        host: missile-warning
+        port:
+          number: 8080
+  - match:
+    - uri:
+        prefix: /api/fusion
+    route:
+    - destination:
+        host: sensor-fusion
+        port:
+          number: 8080
+
+---
+# ServiceEntry for external dependencies (if needed)
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-services
+  namespace: vigil
+spec:
+  hosts:
+  - "external.vigil.local"
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS

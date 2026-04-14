@@ -1,0 +1,276 @@
+# VIGIL HashiCorp Vault Integration
+# Provides secrets management for VIGIL services
+
+---
+# Vault Agent ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-agent-config
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/component: secrets
+data:
+  vault-agent-config.hcl: |
+    pid_file = "/tmp/pid"
+    
+    auto_auth {
+      method "kubernetes" {
+        mount_path = "auth/kubernetes"
+        config = {
+          role = "vigil"
+        }
+      }
+      
+      sink "file" {
+        config = {
+          path = "/home/vault/.vault-token"
+        }
+      }
+    }
+    
+    template {
+      source      = "/etc/vault/templates/secrets.tmpl"
+      destination = "/etc/vigil/secrets/secrets.env"
+    }
+
+---
+# Vault Agent Template
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-agent-template
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/component: secrets
+data:
+  secrets.tmpl: |
+    {{- with secret "secret/data/vigil/database" }}
+    POSTGRES_USER="{{ .Data.data.username }}"
+    POSTGRES_PASSWORD="{{ .Data.data.password }}"
+    {{- end }}
+    
+    {{- with secret "secret/data/vigil/kafka" }}
+    KAFKA_SASL_USERNAME="{{ .Data.data.username }}"
+    KAFKA_SASL_PASSWORD="{{ .Data.data.password }}"
+    {{- end }}
+    
+    {{- with secret "secret/data/vigil/redis" }}
+    REDIS_PASSWORD="{{ .Data.data.password }}"
+    {{- end }}
+    
+    {{- with secret "secret/data/vigil/api" }}
+    JWT_SIGNING_KEY="{{ .Data.data.jwt_key }}"
+    API_KEY_SECRET="{{ .Data.data.api_secret }}"
+    {{- end }}
+
+---
+# Vault Policy
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vigil-vault-policy
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/component: secrets
+data:
+  policy.hcl: |
+    # VIGIL Secrets Policy
+    # Paths
+    path "secret/data/vigil/database" {
+      capabilities = ["read"]
+    }
+    
+    path "secret/data/vigil/kafka" {
+      capabilities = ["read"]
+    }
+    
+    path "secret/data/vigil/redis" {
+      capabilities = ["read"]
+    }
+    
+    path "secret/data/vigil/api" {
+      capabilities = ["read"]
+    }
+    
+    path "secret/data/vigil/tls" {
+      capabilities = ["read"]
+    }
+    
+    # PKI
+    path "pki/issue/vigil" {
+      capabilities = ["create", "update"]
+    }
+    
+    # Transit (encryption)
+    path "transit/encrypt/vigil" {
+      capabilities = ["create", "update"]
+    }
+    
+    path "transit/decrypt/vigil" {
+      capabilities = ["create", "update"]
+    }
+
+---
+# Vault Kubernetes Auth Role
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vigil-vault-role
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/component: secrets
+data:
+  role.json: |
+    {
+      "bound_service_account_names": ["vigil"],
+      "bound_service_account_namespaces": ["vigil"],
+      "policies": ["vigil-policy"],
+      "ttl": "4h",
+      "max_ttl": "24h"
+    }
+
+---
+# Example: Service with Vault Agent Injector
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: missile-warning-vault
+  namespace: vault-example
+  labels:
+    app: missile-warning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: missile-warning
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-status: "update"
+        vault.hashicorp.com/role: "vigil"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/vigil/database"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secret/data/vigil/database" -}}
+          export POSTGRES_USER="{{ .Data.data.username }}"
+          export POSTGRES_PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+      labels:
+        app: missile-warning
+    spec:
+      serviceAccountName: vigil
+      containers:
+      - name: missile-warning
+        image: vigil/missile-warning:latest
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres.vigil.svc.cluster.local"
+        volumeMounts:
+        - name: secrets
+          mountPath: /etc/vigil/secrets
+          readOnly: true
+      volumes:
+      - name: secrets
+        emptyDir:
+          medium: Memory
+
+---
+# Vault Sidecar Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vigil-vault
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/component: service-account
+
+---
+# Vault Secrets Engine Setup Script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-setup
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/component: setup
+data:
+  setup.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Enable secrets engine
+    vault secrets enable -path=secret kv-v2
+    
+    # Enable Kubernetes auth
+    vault auth enable kubernetes
+    
+    # Configure Kubernetes auth
+    vault write auth/kubernetes/config \
+      kubernetes_host="https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+    
+    # Create policy
+    vault policy write vigil-policy /etc/vault/policy.hcl
+    
+    # Create role
+    vault write auth/kubernetes/role/vigil \
+      bound_service_account_names=vigil \
+      bound_service_account_namespaces=vigil \
+      policies=vigil-policy \
+      ttl=4h
+    
+    # Create secrets
+    vault kv put secret/vigil/database \
+      username="vigil" \
+      password="$(openssl rand -base64 32)"
+    
+    vault kv put secret/vigil/kafka \
+      username="vigil" \
+      password="$(openssl rand -base64 32)"
+    
+    vault kv put secret/vigil/redis \
+      password="$(openssl rand -base64 32)"
+    
+    vault kv put secret/vigil/api \
+      jwt_key="$(openssl rand -base64 64)" \
+      api_secret="$(openssl rand -base64 32)"
+    
+    # Enable PKI
+    vault secrets enable pki
+    vault secrets enable -path=pki_int pki
+    
+    # Configure PKI
+    vault write pki/root/generate/internal \
+      common_name="vigil.local" \
+      ttl=87600h
+    
+    vault write pki/config/urls \
+      issuing_certificates="http://vault.vault.svc.cluster.local:8200/v1/pki/ca" \
+      crl_distribution_points="http://vault.vault.svc.cluster.local:8200/v1/pki/crl"
+    
+    # Create intermediate CA
+    vault write pki_int/intermediate/generate/internal \
+      common_name="vigil.local Intermediate Authority" \
+      | vault write -format=json pki/root/sign-intermediate \
+        - | jq -r '.data.certificate' > intermediate.pem
+    
+    vault write pki_int/intermediate/set-signed \
+      certificate=@intermediate.pem
+    
+    # Create role for VIGIL
+    vault write pki_int/roles/vigil \
+      allowed_domains="vigil.local" \
+      allow_subdomains=true \
+      max_ttl=720h
+    
+    # Enable Transit for encryption
+    vault secrets enable transit
+    vault write -f transit/keys/vigil
+    
+    echo "Vault setup complete!"

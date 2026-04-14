@@ -1,0 +1,416 @@
+# VIGIL Network Policies
+# Provides network segmentation and traffic control
+
+---
+# Default deny all ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: vigil
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+---
+# Default deny all egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: vigil
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+
+---
+# Allow DNS resolution
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: vigil
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# OPIR Ingress Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: opir-ingress-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: opir-ingest
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow metrics scraping
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 9090
+      protocol: TCP
+  egress:
+  # Allow to Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  # Allow to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP
+  # Allow to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - port: 5432
+      protocol: TCP
+
+---
+# Missile Warning Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: missile-warning-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: missile-warning
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow from sensor fusion
+  - from:
+    - podSelector:
+        matchLabels:
+          app: sensor-fusion
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow metrics
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 9090
+      protocol: TCP
+  egress:
+  # Allow to Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  # Allow to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - port: 5432
+      protocol: TCP
+  # Allow to TimescaleDB
+  - to:
+    - podSelector:
+        matchLabels:
+          app: timescaledb
+    ports:
+    - port: 5432
+      protocol: TCP
+  # Allow to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP
+
+---
+# Sensor Fusion Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sensor-fusion-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: sensor-fusion
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow from OPIR ingest
+  - from:
+    - podSelector:
+        matchLabels:
+          app: opir-ingest
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow metrics
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 9090
+      protocol: TCP
+  egress:
+  # Allow to Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  # Allow to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - port: 5432
+      protocol: TCP
+  # Allow to TimescaleDB
+  - to:
+    - podSelector:
+        matchLabels:
+          app: timescaledb
+    ports:
+    - port: 5432
+      protocol: TCP
+  # Allow to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP
+
+---
+# LVC Coordinator Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lvc-coordinator-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: lvc-coordinator
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow from sensor fusion
+  - from:
+    - podSelector:
+        matchLabels:
+          app: sensor-fusion
+    ports:
+    - port: 8080
+      protocol: TCP
+  # Allow metrics
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - port: 9090
+      protocol: TCP
+  egress:
+  # Allow to Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  # Allow to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP
+  # Allow HLA RTI multicast (if needed)
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - port: 15160
+      protocol: UDP
+
+---
+# PostgreSQL Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from all VIGIL services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: opir-ingest
+    - podSelector:
+        matchLabels:
+          app: missile-warning
+    - podSelector:
+        matchLabels:
+          app: sensor-fusion
+    ports:
+    - port: 5432
+      protocol: TCP
+  egress: []
+
+---
+# Kafka Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from all VIGIL services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: opir-ingest
+    - podSelector:
+        matchLabels:
+          app: missile-warning
+    - podSelector:
+        matchLabels:
+          app: sensor-fusion
+    - podSelector:
+        matchLabels:
+          app: lvc-coordinator
+    ports:
+    - port: 9092
+      protocol: TCP
+  egress: []
+
+---
+# Redis Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from all VIGIL services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: opir-ingest
+    - podSelector:
+        matchLabels:
+          app: missile-warning
+    - podSelector:
+        matchLabels:
+          app: sensor-fusion
+    - podSelector:
+        matchLabels:
+          app: lvc-coordinator
+    ports:
+    - port: 6379
+      protocol: TCP
+  egress: []
