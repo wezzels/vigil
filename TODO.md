@@ -533,10 +533,10 @@
 - ✅ Add unit tests
 
 #### 2.4.4 J7.0 Support
-- 🔴 Create `pkg/link16/j70.go`
-- 🔴 Implement J7.0 (Track Management) encoding
-- 🔴 Implement J7.0 decoding
-- 🔴 Add unit tests
+- ✅ Create `pkg/link16/j70.go`
+- ✅ Implement J7.0 (Track Management) encoding
+- ✅ Implement J7.0 decoding
+- ✅ Add unit tests
 
 #### 2.4.5 J12.0 Support
 - 🔴 Create `pkg/link16/j120.go`
@@ -545,8 +545,8 @@
 - 🔴 Add unit tests
 
 #### 2.4.6 Link 16 Tests
-- 🔴 Create `pkg/link16/link16_test.go`
-- 🔴 Add roundtrip tests
+- ✅ Create `pkg/link16/link16_test.go` (in jseries/parser_test.go, j32_test.go, j70_test.go)
+- ✅ Add roundtrip tests
 - 🔴 Add MIL-STD-6016 compliance tests
 
 ---
