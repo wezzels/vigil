@@ -403,9 +403,9 @@
 - 🔴 Add unit tests
 
 #### 2.1.7 Interaction Subscription
-- 🔴 Create `pkg/hla/interaction_sub.go`
-- 🔴 Implement interaction subscription
-- 🔴 Implement parameter extraction
+- ✅ Create `pkg/hla/interaction_sub.go`
+- ✅ Implement interaction subscription
+- ✅ Implement parameter extraction
 - 🔴 Add unit tests
 
 #### 2.1.8 Federation Management
@@ -463,15 +463,15 @@
 - ✅ Add unit tests
 
 #### 2.2.7 Electromagnetic Emission PDU
-- 🔴 Create `pkg/dis/pdu/emission.go`
-- 🔴 Implement Emission PDU encoding
-- 🔴 Implement Emission PDU decoding
+- ✅ Create `pkg/dis/pdu/emission.go`
+- ✅ Implement Emission PDU encoding
+- ✅ Implement Emission PDU decoding
 - 🔴 Add unit tests
 
 #### 2.2.8 DIS Tests
-- 🔴 Create `pkg/dis/dis_test.go`
-- 🔴 Add PDU roundtrip tests
-- 🔴 Add network tests
+- ✅ Create `pkg/dis/dis_test.go`
+- ✅ Add PDU roundtrip tests
+- ✅ Add network tests
 
 ### 2.3 JREAP Bridge
 
