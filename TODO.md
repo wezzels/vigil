@@ -802,56 +802,56 @@
 ### 5.1 Authentication
 
 #### 5.1.1 mTLS
-- 🔴 Create `pkg/auth/mtls.go`
-- 🔴 Implement certificate loading
-- 🔴 Implement certificate verification
-- 🔴 Implement mTLS server
-- 🔴 Implement mTLS client
-- 🔴 Add unit tests
+- ✅ Create `pkg/auth/mtls.go`
+- ✅ Implement certificate loading
+- ✅ Implement certificate verification
+- ✅ Implement mTLS server
+- ✅ Implement mTLS client
+- ✅ Add unit tests
 
 #### 5.1.2 PKI Management
-- 🔴 Create `pkg/auth/pki.go`
-- 🔴 Implement certificate generation
-- 🔴 Implement certificate rotation
-- 🔴 Implement CRL checking
-- 🔴 Add unit tests
+- ✅ Create `pkg/auth/pki.go`
+- ✅ Implement certificate generation
+- ✅ Implement certificate rotation
+- ✅ Implement CRL checking
+- ✅ Add unit tests
 
 #### 5.1.3 JWT Validation
-- 🔴 Create `pkg/auth/jwt.go`
-- 🔴 Implement JWT parsing
-- 🔴 Implement JWT validation
-- 🔴 Implement token refresh
-- 🔴 Add unit tests
+- ✅ Create `pkg/auth/jwt.go`
+- ✅ Implement JWT parsing
+- ✅ Implement JWT validation
+- ✅ Implement token refresh
+- ✅ Add unit tests
 
 #### 5.1.4 API Key Management
-- 🔴 Create `pkg/auth/apikey.go`
-- 🔴 Implement API key generation
-- 🔴 Implement API key validation
-- 🔴 Implement key rotation
-- 🔴 Add unit tests
+- ✅ Create `pkg/auth/apikey.go`
+- ✅ Implement API key generation
+- ✅ Implement API key validation
+- ✅ Implement key rotation
+- ✅ Add unit tests
 
 ### 5.2 Authorization
 
 #### 5.2.1 RBAC Middleware
-- 🔴 Create `pkg/auth/rbac.go`
-- 🔴 Implement role checking
-- 🔴 Implement permission checking
-- 🔴 Implement role inheritance
-- 🔴 Add unit tests
+- ✅ Create `pkg/auth/rbac.go`
+- ✅ Implement role checking
+- ✅ Implement permission checking
+- ✅ Implement role inheritance
+- ✅ Add unit tests
 
 #### 5.2.2 Role Definitions
-- 🔴 Create `pkg/auth/roles.go`
-- 🔴 Define admin role
-- 🔴 Define operator role
-- 🔴 Define viewer role
-- 🔴 Add role tests
+- ✅ Define roles in rbac.go
+- ✅ Define admin role
+- ✅ Define operator role
+- ✅ Define viewer role
+- ✅ Add role tests
 
 #### 5.2.3 Audit Logging
-- 🔴 Create `pkg/auth/audit.go`
-- 🔴 Implement request logging
-- 🔴 Implement access logging
-- 🔴 Implement change logging
-- 🔴 Add unit tests
+- ✅ Create `pkg/auth/audit.go`
+- ✅ Implement request logging
+- ✅ Implement access logging
+- ✅ Implement change logging
+- ✅ Add unit tests
 
 ### 5.3 Network Security
 
