@@ -527,10 +527,10 @@
 - ✅ Add unit tests
 
 #### 2.4.3 J3.2 Support
-- 🔴 Create `pkg/link16/j32.go`
-- 🔴 Implement J3.2 (Air Track) encoding
-- 🔴 Implement J3.2 decoding
-- 🔴 Add unit tests
+- ✅ Create `pkg/link16/j32.go`
+- ✅ Implement J3.2 (Air Track) encoding
+- ✅ Implement J3.2 decoding
+- ✅ Add unit tests
 
 #### 2.4.4 J7.0 Support
 - 🔴 Create `pkg/link16/j70.go`
