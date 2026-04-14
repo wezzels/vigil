@@ -688,21 +688,21 @@
 ### 4.1 PostgreSQL Schema
 
 #### 4.1.1 Schema Design
-- 🔴 Create `db/schema/design.sql`
-- 🔴 Design tracks table
-- 🔴 Design alerts table
-- 🔴 Design events table
-- 🔴 Design entities table
+- ✅ Create `db/schema/design.sql`
+- ✅ Design tracks table
+- ✅ Design alerts table
+- ✅ Design events table
+- ✅ Design entities table
 
 #### 4.1.2 Migrations
-- 🔴 Create `db/migrations/001_tracks.up.sql`
-- 🔴 Create `db/migrations/001_tracks.down.sql`
-- 🔴 Create `db/migrations/002_alerts.up.sql`
-- 🔴 Create `db/migrations/002_alerts.down.sql`
-- 🔴 Create `db/migrations/003_events.up.sql`
-- 🔴 Create `db/migrations/003_events.down.sql`
-- 🔴 Create `db/migrations/004_entities.up.sql`
-- 🔴 Create `db/migrations/004_entities.down.sql`
+- ✅ Create `db/migrations/001_tracks.up.sql`
+- ✅ Create `db/migrations/001_tracks.down.sql`
+- ✅ Create `db/migrations/002_alerts.up.sql`
+- ✅ Create `db/migrations/002_alerts.down.sql`
+- ✅ Create `db/migrations/003_track_history.up.sql`
+- ✅ Create `db/migrations/003_track_history.down.sql`
+- ✅ Create `db/migrations/004_events_entities.up.sql`
+- ✅ Create `db/migrations/004_events_entities.down.sql`
 
 #### 4.1.3 Indexes
 - 🔴 Create `db/migrations/005_indexes.up.sql`
@@ -712,11 +712,10 @@
 - 🔴 Add composite indexes
 
 #### 4.1.4 Repository Layer
-- 🔴 Create `pkg/db/repository/interface.go`
-- 🔴 Create `pkg/db/repository/tracks.go`
-- 🔴 Create `pkg/db/repository/alerts.go`
-- 🔴 Create `pkg/db/repository/events.go`
-- 🔴 Create `pkg/db/repository/entities.go`
+- ✅ Create `db/persistence/postgres.go`
+- ✅ Implement TrackRepository
+- ✅ Implement AlertRepository
+- ✅ Add unit tests
 
 ### 4.2 Time-Series Storage
 
