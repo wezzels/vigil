@@ -594,11 +594,11 @@
 ### 3.2 Alert Dissemination
 
 #### 3.2.1 NCA Formatting
-- 🔴 Create `apps/alert-dissemination/nca/format.go`
-- 🔴 Implement CONOPREP format
-- 🔴 Implement IMMINENT format
-- 🔴 Implement INCOMING format
-- 🔴 Add unit tests
+- ✅ Create `apps/alert-dissemination/nca/format.go`
+- ✅ Implement CONOPREP format
+- ✅ Implement IMMINENT format
+- ✅ Implement INCOMING format
+- ✅ Add unit tests
 
 #### 3.2.2 Alert Queue
 - 🔴 Create `apps/alert-dissemination/queue/queue.go`
