@@ -1,0 +1,137 @@
+# OPIR Ingest Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opir-ingest
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: opir-ingest
+    app.kubernetes.io/component: sensor-ingest
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opir-ingest
+  template:
+    metadata:
+      labels:
+        app: opir-ingest
+    spec:
+      serviceAccountName: vigil
+      containers:
+      - name: opir-ingest
+        image: vigil/opir-ingest:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        envFrom:
+        - configMapRef:
+            name: vigil-config
+        - secretRef:
+            name: vigil-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /healthz/liveness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz/readiness
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /healthz/startup
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/vigil/certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: vigil-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opir-ingest
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: opir-ingest
+spec:
+  type: ClusterIP
+  selector:
+    app: opir-ingest
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 9090
+    targetPort: 9090
+    name: metrics
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: opir-ingest-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: opir-ingest
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - port: 8080
+      protocol: TCP
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP

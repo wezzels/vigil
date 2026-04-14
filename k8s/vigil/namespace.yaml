@@ -1,0 +1,99 @@
+# VIGIL Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vigil
+  labels:
+    app.kubernetes.io/name: vigil
+    app.kubernetes.io/component: namespace
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vigil
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vigil
+    app.kubernetes.io/component: service-account
+---
+# Cluster Role for VIGIL components
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vigil-role
+  labels:
+    app.kubernetes.io/name: vigil
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/status"]
+  verbs: ["patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+---
+# Cluster Role Binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vigil-binding
+  labels:
+    app.kubernetes.io/name: vigil
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vigil-role
+subjects:
+- kind: ServiceAccount
+  name: vigil
+  namespace: vigil
+---
+# Config Map for VIGIL
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vigil-config
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vigil
+    app.kubernetes.io/component: config
+data:
+  # PostgreSQL
+  POSTGRES_HOST: "postgres.vigil.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "vigil"
+  # Redis
+  REDIS_HOST: "redis.vigil.svc.cluster.local"
+  REDIS_PORT: "6379"
+  # Kafka
+  KAFKA_BROKERS: "kafka.vigil.svc.cluster.local:9092"
+  # TimescaleDB
+  TIMESCALEDB_HOST: "timescaledb.vigil.svc.cluster.local"
+  TIMESCALEDB_PORT: "5432"
+  # Logging
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+---
+# Secret for VIGIL
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vigil-secrets
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: vigil
+    app.kubernetes.io/component: secrets
+type: Opaque
+stringData:
+  POSTGRES_USER: "vigil"
+  POSTGRES_PASSWORD: "vigil-secure-password"
+  REDIS_PASSWORD: ""
+  KAFKA_SASL_PASSWORD: ""

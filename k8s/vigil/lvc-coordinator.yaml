@@ -1,0 +1,264 @@
+# LVC Coordinator Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lvc-coordinator
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: lvc-coordinator
+    app.kubernetes.io/component: coordination
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lvc-coordinator
+  template:
+    metadata:
+      labels:
+        app: lvc-coordinator
+    spec:
+      serviceAccountName: vigil
+      # Leader election for singleton
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: lvc-coordinator
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: lvc-coordinator
+        image: vigil/lvc-coordinator:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: LEADER_ELECTION_ENABLED
+          value: "true"
+        - name: LEADER_ELECTION_ID
+          value: "lvc-coordinator"
+        envFrom:
+        - configMapRef:
+            name: vigil-config
+        - secretRef:
+            name: vigil-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /healthz/liveness
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz/readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /healthz/startup
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/vigil/certs
+          readOnly: true
+        - name: hla-config
+          mountPath: /etc/vigil/hla
+          readOnly: true
+        - name: dis-config
+          mountPath: /etc/vigil/dis
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: vigil-certs
+      - name: hla-config
+        configMap:
+          name: hla-config
+      - name: dis-config
+        configMap:
+          name: dis-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lvc-coordinator
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: lvc-coordinator
+spec:
+  type: ClusterIP
+  selector:
+    app: lvc-coordinator
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 9090
+    targetPort: 9090
+    name: metrics
+---
+# HLA Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hla-config
+  namespace: vigil
+data:
+  hla.yaml: |
+    # HLA RTI Configuration
+    hla:
+      federate_name: "VIGIL-Coordinator"
+      federation_name: "FORGE-Federation"
+      rti_host: "rti.vigil.svc.cluster.local"
+      rti_port: 15160
+      
+      # FOM/SOM modules
+      modules:
+        - name: "RPR-FOM"
+          path: "/etc/vigil/hla/RPR-FOM.xml"
+        - name: "VIGIL-SOM"
+          path: "/etc/vigil/hla/VIGIL-SOM.xml"
+      
+      # Object classes to publish/subscribe
+      objects:
+        publish:
+          - "HLAobjectRoot.BaseEntity.PhysicalEntity.Platform.Aircraft"
+          - "HLAobjectRoot.BaseEntity.PhysicalEntity.Platform.Missile"
+        subscribe:
+          - "HLAobjectRoot.BaseEntity.PhysicalEntity.Platform.Aircraft"
+          - "HLAobjectRoot.BaseEntity.PhysicalEntity.Platform.Missile"
+          - "HLAobjectRoot.BaseEntity.PhysicalEntity.Platform.SurfaceVessel"
+      
+      # Interaction classes
+      interactions:
+        publish:
+          - "HLAinteractionRoot.BaseInteraction.WeaponFire"
+          - "HLAinteractionRoot.BaseInteraction.MunitionDetonation"
+        subscribe:
+          - "HLAinteractionRoot.BaseInteraction.WeaponFire"
+          - "HLAinteractionRoot.BaseInteraction.MunitionDetonation"
+---
+# DIS Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dis-config
+  namespace: vigil
+data:
+  dis.yaml: |
+    # DIS Gateway Configuration
+    dis:
+      enabled: true
+      multicast_group: "239.1.2.3"
+      multicast_port: 30000
+      buffer_size: 65536
+      
+      # Exercise ID
+      exercise_id: 1
+      
+      # Site and Application IDs
+      site_id: 1
+      application_id: 100
+      
+      # PDU processing
+      pdu_handlers:
+        - type: "EntityState"
+          enabled: true
+        - type: "Fire"
+          enabled: true
+        - type: "Detonation"
+          enabled: true
+        - type: "Transmitter"
+          enabled: false
+      
+      # Entity types to track
+      entity_types:
+        - type: "Aircraft"
+          kind: 1
+          domain: 2
+        - type: "Missile"
+          kind: 1
+          domain: 2
+        - type: "SurfaceVessel"
+          kind: 1
+          domain: 1
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lvc-coordinator-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: lvc-coordinator
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: sensor-fusion
+    ports:
+    - port: 8080
+      protocol: TCP
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP
+  # HLA RTI multicast
+  - to:
+    - ipBlock:
+        cidr: 239.1.2.3/32
+    ports:
+    - port: 15160
+      protocol: UDP
+  # DIS multicast
+  - to:
+    - ipBlock:
+        cidr: 239.1.2.3/32
+    ports:
+    - port: 30000
+      protocol: UDP

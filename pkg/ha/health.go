@@ -82,6 +82,9 @@ func (hp *HealthProbe) Readiness(ctx context.Context) *HealthCheck {
 			}
 			allHealthy = false
 		}
+		if check != nil && check.Status != StatusHealthy {
+			allHealthy = false
+		}
 		checks = append(checks, check)
 	}
 

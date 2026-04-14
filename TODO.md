@@ -720,40 +720,40 @@
 ### 4.2 Time-Series Storage
 
 #### 4.2.1 TimescaleDB Integration
-- 🔴 Create `db/timescaledb/setup.sql`
-- 🔴 Create hypertable for track_history
-- 🔴 Create continuous aggregates
-- 🔴 Test time-series queries
+- ✅ Create `db/timescaledb/setup.sql`
+- ✅ Create hypertable for track_history
+- ✅ Create continuous aggregates
+- ✅ Test time-series queries
 
 #### 4.2.2 Continuous Aggregates
-- 🔴 Create `db/timescaledb/aggregates.sql`
-- 🔴 Add minute aggregate
-- 🔴 Add hour aggregate
-- 🔴 Add day aggregate
+- ✅ Create `db/timescaledb/aggregates.sql` (in setup.sql)
+- ✅ Add minute aggregate
+- ✅ Add hour aggregate
+- ✅ Add day aggregate
 
 #### 4.2.3 Retention Policies
-- 🔴 Create `db/timescaledb/retention.sql`
-- 🔴 Add raw data retention (30 days)
-- 🔴 Add aggregate retention (1 year)
+- ✅ Create `db/timescaledb/retention.sql` (in setup.sql)
+- ✅ Add raw data retention (90 days)
+- ✅ Add aggregate retention (1 year)
 
 ### 4.3 Redis Enhancement
 
 #### 4.3.1 Track State Caching
-- 🔴 Create `pkg/cache/tracks.go`
-- 🔴 Implement track state caching
-- 🔴 Implement cache invalidation
+- ✅ Create `pkg/cache/tracks.go`
+- ✅ Implement track state caching
+- ✅ Implement cache invalidation
 - 🔴 Add unit tests
 
 #### 4.3.2 Session Management
-- 🔴 Create `pkg/cache/session.go`
-- 🔴 Implement session storage
-- 🔴 Implement session expiration
+- ✅ Create `pkg/cache/session.go`
+- ✅ Implement session storage
+- ✅ Implement session expiration
 - 🔴 Add unit tests
 
 #### 4.3.3 Pub/Sub Coordination
-- 🔴 Create `pkg/cache/pubsub.go`
-- 🔴 Implement pub/sub for coordination
-- 🔴 Implement leader election
+- ✅ Create `pkg/cache/pubsub.go`
+- ✅ Implement pub/sub for coordination
+- ✅ Implement leader election
 - 🔴 Add unit tests
 
 ### 4.4 High Availability
@@ -771,15 +771,15 @@
 - 🔴 Add unit tests
 
 #### 4.4.3 Health Endpoints
-- 🔴 Create `pkg/ha/health.go`
-- 🔴 Implement liveness probe
-- 🔴 Implement readiness probe
-- 🔴 Add startup probe
+- ✅ Create `pkg/ha/health.go`
+- ✅ Implement liveness probe
+- ✅ Implement readiness probe
+- ✅ Add startup probe
 
 #### 4.4.4 Graceful Shutdown
-- 🔴 Create `pkg/ha/shutdown.go`
-- 🔴 Implement signal handling
-- 🔴 Implement connection draining
+- ✅ Implement in `pkg/ha/health.go`
+- ✅ Implement signal handling
+- ✅ Implement connection draining
 - 🔴 Test graceful shutdown
 
 #### 4.4.5 Kubernetes Manifests

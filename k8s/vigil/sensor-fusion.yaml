@@ -1,0 +1,210 @@
+# Sensor Fusion Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-fusion
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: sensor-fusion
+    app.kubernetes.io/component: track-correlation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sensor-fusion
+  template:
+    metadata:
+      labels:
+        app: sensor-fusion
+    spec:
+      serviceAccountName: vigil
+      containers:
+      - name: sensor-fusion
+        image: vigil/sensor-fusion:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        envFrom:
+        - configMapRef:
+            name: vigil-config
+        - secretRef:
+            name: vigil-secrets
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1500m"
+            memory: "2Gi"
+        livenessProbe:
+          httpGet:
+            path: /healthz/liveness
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz/readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /healthz/startup
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/vigil/certs
+          readOnly: true
+        - name: correlation-config
+          mountPath: /etc/vigil/correlation
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: vigil-certs
+      - name: correlation-config
+        configMap:
+          name: correlation-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensor-fusion
+  namespace: vigil
+  labels:
+    app.kubernetes.io/name: sensor-fusion
+spec:
+  type: ClusterIP
+  selector:
+    app: sensor-fusion
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 9090
+    targetPort: 9090
+    name: metrics
+---
+# Correlation Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: correlation-config
+  namespace: vigil
+data:
+  correlation.yaml: |
+    # Track Correlation Configuration
+    correlation:
+      # Gate parameters
+      spatial_gate_km: 5.0
+      velocity_gate_ms: 100.0
+      altitude_gate_m: 500.0
+      
+      # Weights for scoring
+      weights:
+        spatial: 0.4
+        velocity: 0.3
+        altitude: 0.2
+        identity: 0.1
+      
+      # Minimum confidence threshold
+      min_confidence: 0.7
+      
+      # Association methods
+      association:
+        method: "munkres"
+        max_iterations: 100
+      
+      # Track aging
+      track_age:
+        coast_threshold_sec: 30
+        drop_threshold_sec: 60
+      
+    # Sensor sources
+    sources:
+      opir:
+        weight: 0.8
+        latency_ms: 500
+      radar:
+        weight: 0.9
+        latency_ms: 100
+      sbirs:
+        weight: 0.95
+        latency_ms: 1000
+      dsp:
+        weight: 0.7
+        latency_ms: 2000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sensor-fusion-policy
+  namespace: vigil
+spec:
+  podSelector:
+    matchLabels:
+      app: sensor-fusion
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: opir-ingest
+    - podSelector:
+        matchLabels:
+          app: missile-warning
+    ports:
+    - port: 8080
+      protocol: TCP
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - port: 9092
+      protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - port: 5432
+      protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+      protocol: TCP
+  - to:
+    - podSelector:
+        matchLabels:
+          app: timescaledb
+    ports:
+    - port: 5432
+      protocol: TCP
