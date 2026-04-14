@@ -620,10 +620,10 @@
 - ✅ Add unit tests
 
 #### 3.2.5 Delivery Confirmation
-- 🔴 Create `apps/alert-dissemination/delivery.go`
-- 🔴 Implement delivery tracking
-- 🔴 Implement retry logic
-- 🔴 Add unit tests
+- ✅ Create `apps/alert-dissemination/delivery/delivery.go`
+- ✅ Implement delivery tracking
+- ✅ Implement retry logic
+- ✅ Add unit tests
 
 #### 3.2.6 Multiple Recipients
 - 🔴 Create `apps/alert-dissemination/recipients.go`
