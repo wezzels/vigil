@@ -222,7 +222,7 @@ type AlertStats struct {
 	TotalSubmitted    int64
 	TotalAcknowledged int64
 	TotalFailed       int64
-	TotalCanceled    int64
+	TotalCanceled     int64
 	ByType            map[AlertType]int64
 	ByPriority        map[AlertPriority]int64
 	LastSubmitTime    time.Time

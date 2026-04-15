@@ -49,7 +49,7 @@ const (
 	J120StatusAssigned  uint8 = 1 // Assigned
 	J120StatusActive    uint8 = 2 // Active
 	J120StatusComplete  uint8 = 3 // Complete
-	J120StatusCanceled uint8 = 4 // Canceled
+	J120StatusCanceled  uint8 = 4 // Canceled
 	J120StatusAborted   uint8 = 5 // Aborted
 	J120StatusDelayed   uint8 = 6 // Delayed
 	J120StatusSuspended uint8 = 7 // Suspended

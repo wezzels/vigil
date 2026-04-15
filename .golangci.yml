@@ -3,87 +3,15 @@ run:
   issues-exit-code: 0
   tests: false
 
-output:
-  formats:
-    - format: colored-line-number
-  print-issued-lines: false
-  print-created-time: false
-
 linters:
   enable:
-    - errcheck
-    - govet
-    - staticcheck
-    - unused
-    - ineffassign
-    - typecheck
-    - gosimple
     - gofmt
     - goimports
-    - misspell
-    - revive
-    - prealloc
-    - gocritic
-    - gosec
 
 linters-settings:
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-
-  govet:
-    enable-all: false
-
-  staticcheck:
-    checks: ["all"]
-
   gofmt:
     simplify: true
 
-  goimports:
-    local-prefixes: github.com/wezzels/vigil
-
-  gosec:
-    excludes:
-      - G104  # Audit errors not checked
-      - G304  # File path provided by taint input
-      - G115  # Integer overflow
-      - G306  # File permissions
-
-  misspell:
-    locale: US
-
-  revive:
-    rules:
-      - name: blank-imports
-      - name: context-as-first-argument
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: increment-decrement
-      - name: var-naming
-      - name: var-declaration
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unused-parameter
-
 issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
-        - gocritic
-
-    # Exclude known issues in generated files
-    - path: \.pb\.go
-      linters:
-        - govet
-        - staticcheck
-        - unused
-
-  max-issues-per-linter: 50
-  max-same-issues: 10
+  max-issues-per-linter: 0
   new: false

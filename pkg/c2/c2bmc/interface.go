@@ -38,7 +38,7 @@ const (
 	AlertStatusProcessing   AlertStatus = 2
 	AlertStatusComplete     AlertStatus = 3
 	AlertStatusFailed       AlertStatus = 4
-	AlertStatusCanceled    AlertStatus = 5
+	AlertStatusCanceled     AlertStatus = 5
 )
 
 // TrackQuality defines track quality levels
