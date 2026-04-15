@@ -8,7 +8,7 @@ import (
 // TestJ70Parser tests parser creation
 func TestJ70Parser(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	if parser == nil {
 		t.Fatal("Parser should not be nil")
 	}
@@ -17,33 +17,33 @@ func TestJ70Parser(t *testing.T) {
 // TestJ70MessageParse tests message parsing
 func TestJ70MessageParse(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	// Create test words
 	words := []uint32{
 		0x00010000 | // Track number 1
-			(3 << 12) |  // Status CONFIRMED
-			(10 << 8) |   // Quality 10
-			(3 << 4) |    // Identity FRIEND
-			3,            // Force FRIEND
+			(3 << 12) | // Status CONFIRMED
+			(10 << 8) | // Quality 10
+			(3 << 4) | // Identity FRIEND
+			3, // Force FRIEND
 		(1 << 28) | // Action UPDATE
-			(0 << 24) |    // Environment AIR
-			(0 << 12) |    // Source track
-			100,           // Target track
+			(0 << 24) | // Environment AIR
+			(0 << 12) | // Source track
+			100, // Target track
 	}
-	
+
 	msg, err := parser.Parse(words)
 	if err != nil {
 		t.Errorf("Parse failed: %v", err)
 	}
-	
+
 	if msg.TrackNumber != 1 {
 		t.Errorf("Track number should be 1, got %d", msg.TrackNumber)
 	}
-	
+
 	if msg.TrackStatus != J70StatusConfirmed {
 		t.Errorf("Status should be CONFIRMED, got %d", msg.TrackStatus)
 	}
-	
+
 	if msg.ActionCode != J70ActionUpdate {
 		t.Errorf("Action should be UPDATE, got %d", msg.ActionCode)
 	}
@@ -52,9 +52,9 @@ func TestJ70MessageParse(t *testing.T) {
 // TestJ70MessageParseTooShort tests parsing with insufficient words
 func TestJ70MessageParseTooShort(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	words := []uint32{0x00010000}
-	
+
 	_, err := parser.Parse(words)
 	if err == nil {
 		t.Error("Expected error for insufficient words")
@@ -64,7 +64,7 @@ func TestJ70MessageParseTooShort(t *testing.T) {
 // TestJ70MessageSerialize tests message serialization
 func TestJ70MessageSerialize(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	msg := &J70Message{
 		TrackNumber:   100,
 		TrackStatus:   J70StatusConfirmed,
@@ -74,12 +74,12 @@ func TestJ70MessageSerialize(t *testing.T) {
 		Environment:   EnvAir,
 		ActionCode:    J70ActionUpdate,
 		SourceTrack:   0,
-		TargetTrack:  200,
+		TargetTrack:   200,
 		Time:          time.Now(),
 	}
-	
+
 	words := parser.Serialize(msg)
-	
+
 	if len(words) != 2 {
 		t.Errorf("Expected 2 words, got %d", len(words))
 	}
@@ -88,7 +88,7 @@ func TestJ70MessageSerialize(t *testing.T) {
 // TestJ70Roundtrip tests parse/serialize roundtrip
 func TestJ70Roundtrip(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	original := &J70Message{
 		TrackNumber:   500,
 		TrackStatus:   J70StatusConfirmed,
@@ -101,23 +101,23 @@ func TestJ70Roundtrip(t *testing.T) {
 		TargetTrack:   200,
 		Time:          time.Now(),
 	}
-	
+
 	words := parser.Serialize(original)
 	parsed, err := parser.Parse(words)
 	if err != nil {
 		t.Errorf("Parse failed: %v", err)
 	}
-	
+
 	if parsed.TrackNumber != original.TrackNumber {
 		t.Errorf("Track number mismatch: got %d, want %d",
 			parsed.TrackNumber, original.TrackNumber)
 	}
-	
+
 	if parsed.TrackStatus != original.TrackStatus {
 		t.Errorf("Status mismatch: got %d, want %d",
 			parsed.TrackStatus, original.TrackStatus)
 	}
-	
+
 	if parsed.ActionCode != original.ActionCode {
 		t.Errorf("Action mismatch: got %d, want %d",
 			parsed.ActionCode, original.ActionCode)
@@ -139,7 +139,7 @@ func TestActionStrings(t *testing.T) {
 		{J70ActionDropTrack, "DROP_TRACK"},
 		{99, "UNKNOWN"},
 	}
-	
+
 	for _, tt := range tests {
 		result := GetActionString(tt.action)
 		if result != tt.expected {
@@ -163,7 +163,7 @@ func TestStatusStrings(t *testing.T) {
 		{J70StatusLost, "LOST"},
 		{99, "UNKNOWN"},
 	}
-	
+
 	for _, tt := range tests {
 		result := GetStatusString(tt.status)
 		if result != tt.expected {
@@ -176,7 +176,7 @@ func TestStatusStrings(t *testing.T) {
 // TestJ70Builder tests message builder
 func TestJ70Builder(t *testing.T) {
 	builder := NewJ70Builder()
-	
+
 	msg := builder.
 		SetTrackNumber(100).
 		SetStatus(J70StatusConfirmed).
@@ -188,15 +188,15 @@ func TestJ70Builder(t *testing.T) {
 		SetSource(0).
 		SetTarget(200).
 		Build()
-	
+
 	if msg.TrackNumber != 100 {
 		t.Errorf("Track number should be 100, got %d", msg.TrackNumber)
 	}
-	
+
 	if msg.TrackStatus != J70StatusConfirmed {
 		t.Errorf("Status should be CONFIRMED, got %d", msg.TrackStatus)
 	}
-	
+
 	if msg.ActionCode != J70ActionUpdate {
 		t.Errorf("Action should be UPDATE, got %d", msg.ActionCode)
 	}
@@ -212,19 +212,19 @@ func TestJ70Actions(t *testing.T) {
 	if newAction.Target != 100 {
 		t.Error("Target should be 100")
 	}
-	
+
 	// Update track
 	updateAction := UpdateTrackAction(100)
 	if updateAction.Action != J70ActionUpdate {
 		t.Error("UpdateTrackAction should have UPDATE action")
 	}
-	
+
 	// Delete track
 	deleteAction := DeleteTrackAction(100)
 	if deleteAction.Action != J70ActionDelete {
 		t.Error("DeleteTrackAction should have DELETE action")
 	}
-	
+
 	// Correlate tracks
 	correlateAction := CorrelateTracksAction(100, 200)
 	if correlateAction.Action != J70ActionCorrelate {
@@ -236,7 +236,7 @@ func TestJ70Actions(t *testing.T) {
 	if correlateAction.Target != 200 {
 		t.Error("Target should be 200")
 	}
-	
+
 	// Merge tracks
 	mergeAction := MergeTracksAction(100, 200)
 	if mergeAction.Action != J70ActionMerge {
@@ -247,7 +247,7 @@ func TestJ70Actions(t *testing.T) {
 // TestJ70AllStatuses tests all status codes
 func TestJ70AllStatuses(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	statuses := []uint8{
 		J70StatusDropped,
 		J70StatusInitiating,
@@ -257,22 +257,22 @@ func TestJ70AllStatuses(t *testing.T) {
 		J70StatusPredicted,
 		J70StatusLost,
 	}
-	
+
 	for _, status := range statuses {
 		msg := &J70Message{
 			TrackNumber:  1,
-			TrackStatus: status,
+			TrackStatus:  status,
 			TrackQuality: 10,
 			ActionCode:   J70ActionUpdate,
 			Time:         time.Now(),
 		}
-		
+
 		words := parser.Serialize(msg)
 		parsed, err := parser.Parse(words)
 		if err != nil {
 			t.Errorf("Parse failed for status %d: %v", status, err)
 		}
-		
+
 		if parsed.TrackStatus != status {
 			t.Errorf("Status mismatch: got %d, want %d", parsed.TrackStatus, status)
 		}
@@ -282,7 +282,7 @@ func TestJ70AllStatuses(t *testing.T) {
 // TestJ70AllActions tests all action codes
 func TestJ70AllActions(t *testing.T) {
 	parser := NewJ70Parser()
-	
+
 	actions := []uint8{
 		J70ActionNewTrack,
 		J70ActionUpdate,
@@ -292,21 +292,21 @@ func TestJ70AllActions(t *testing.T) {
 		J70ActionSplit,
 		J70ActionDropTrack,
 	}
-	
+
 	for _, action := range actions {
 		msg := &J70Message{
-			TrackNumber:  1,
+			TrackNumber: 1,
 			TrackStatus: J70StatusConfirmed,
-			ActionCode:   action,
-			Time:         time.Now(),
+			ActionCode:  action,
+			Time:        time.Now(),
 		}
-		
+
 		words := parser.Serialize(msg)
 		parsed, err := parser.Parse(words)
 		if err != nil {
 			t.Errorf("Parse failed for action %d: %v", action, err)
 		}
-		
+
 		if parsed.ActionCode != action {
 			t.Errorf("Action mismatch: got %d, want %d", parsed.ActionCode, action)
 		}
@@ -317,7 +317,7 @@ func TestJ70AllActions(t *testing.T) {
 func BenchmarkJ70Parse(b *testing.B) {
 	parser := NewJ70Parser()
 	words := []uint32{0x00013003, 0x10000064}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parser.Parse(words)
@@ -328,13 +328,13 @@ func BenchmarkJ70Parse(b *testing.B) {
 func BenchmarkJ70Serialize(b *testing.B) {
 	parser := NewJ70Parser()
 	msg := &J70Message{
-		TrackNumber:   100,
-		TrackStatus:   J70StatusConfirmed,
-		TrackQuality:  10,
-		ActionCode:    J70ActionUpdate,
-		Time:          time.Now(),
+		TrackNumber:  100,
+		TrackStatus:  J70StatusConfirmed,
+		TrackQuality: 10,
+		ActionCode:   J70ActionUpdate,
+		Time:         time.Now(),
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parser.Serialize(msg)

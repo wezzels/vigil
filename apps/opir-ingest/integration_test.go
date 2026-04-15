@@ -65,13 +65,13 @@ func TestMessagePublish(t *testing.T) {
 
 	// Test message structure
 	type OPIRDetection struct {
-		SensorID    string    `json:"sensor_id"`
-		Timestamp   int64     `json:"timestamp"`
-		Latitude    float64   `json:"latitude"`
-		Longitude   float64   `json:"longitude"`
-		Altitude    float64   `json:"altitude"`
-		Confidence  float64   `json:"confidence"`
-		TrackID     string    `json:"track_id"`
+		SensorID   string  `json:"sensor_id"`
+		Timestamp  int64   `json:"timestamp"`
+		Latitude   float64 `json:"latitude"`
+		Longitude  float64 `json:"longitude"`
+		Altitude   float64 `json:"altitude"`
+		Confidence float64 `json:"confidence"`
+		TrackID    string  `json:"track_id"`
 	}
 
 	detection := OPIRDetection{
@@ -92,10 +92,10 @@ func TestMessagePublish(t *testing.T) {
 // TestMessageSerialization tests message serialization
 func TestMessageSerialization(t *testing.T) {
 	type Detection struct {
-		ID   string  `json:"id"`
-		Lat  float64 `json:"lat"`
-		Lon  float64 `json:"lon"`
-		Alt  float64 `json:"alt"`
+		ID  string  `json:"id"`
+		Lat float64 `json:"lat"`
+		Lon float64 `json:"lon"`
+		Alt float64 `json:"alt"`
 	}
 
 	detection := Detection{
@@ -157,9 +157,6 @@ func TestGracefulShutdown(t *testing.T) {
 }
 
 // Helper functions
-
-import "encoding/json"
-
 func serializeMessage(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }

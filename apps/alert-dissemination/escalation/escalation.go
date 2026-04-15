@@ -38,62 +38,62 @@ func (l EscalationLevel) String() string {
 
 // EscalationRule defines when to escalate
 type EscalationRule struct {
-	ID              string          `json:"id"`
-	Name            string          `json:"name"`
-	Description     string          `json:"description"`
-	FromLevel       EscalationLevel `json:"from_level"`
-	ToLevel         EscalationLevel `json:"to_level"`
-	TriggerAfter    time.Duration   `json:"trigger_after"`
-	MaxAttempts     int             `json:"max_attempts"`
-	RequireAck      bool            `json:"require_ack"`
-	NotifyRecipients []string       `json:"notify_recipients"`
-	Conditions      []Condition     `json:"conditions"`
+	ID               string          `json:"id"`
+	Name             string          `json:"name"`
+	Description      string          `json:"description"`
+	FromLevel        EscalationLevel `json:"from_level"`
+	ToLevel          EscalationLevel `json:"to_level"`
+	TriggerAfter     time.Duration   `json:"trigger_after"`
+	MaxAttempts      int             `json:"max_attempts"`
+	RequireAck       bool            `json:"require_ack"`
+	NotifyRecipients []string        `json:"notify_recipients"`
+	Conditions       []Condition     `json:"conditions"`
 }
 
 // Condition defines a condition for escalation
 type Condition struct {
-	Field    string `json:"field"`
-	Operator string `json:"operator"` // eq, ne, gt, lt, gte, lte, contains
+	Field    string      `json:"field"`
+	Operator string      `json:"operator"` // eq, ne, gt, lt, gte, lte, contains
 	Value    interface{} `json:"value"`
 }
 
 // EscalationState tracks escalation state
 type EscalationState struct {
-	AlertID         string          `json:"alert_id"`
-	CurrentLevel    EscalationLevel `json:"current_level"`
-	OriginalLevel   EscalationLevel `json:"original_level"`
-	AttemptCount    int             `json:"attempt_count"`
-	LastAttempt     time.Time       `json:"last_attempt"`
-	LastEscalation  time.Time       `json:"last_escalation"`
-	NextEscalation  time.Time       `json:"next_escalation"`
-	EscalationPath  []EscalationStep `json:"escalation_path"`
-	Acknowledged    bool            `json:"acknowledged"`
-	AcknowledgedBy  string          `json:"acknowledged_by,omitempty"`
-	StartedAt       time.Time       `json:"started_at"`
-	CompletedAt     time.Time       `json:"completed_at,omitempty"`
+	AlertID        string           `json:"alert_id"`
+	CurrentLevel   EscalationLevel  `json:"current_level"`
+	OriginalLevel  EscalationLevel  `json:"original_level"`
+	AttemptCount   int              `json:"attempt_count"`
+	LastAttempt    time.Time        `json:"last_attempt"`
+	LastEscalation time.Time        `json:"last_escalation"`
+	NextEscalation time.Time        `json:"next_escalation"`
+	EscalationPath []EscalationStep `json:"escalation_path"`
+	Acknowledged   bool             `json:"acknowledged"`
+	AcknowledgedBy string           `json:"acknowledged_by,omitempty"`
+	StartedAt      time.Time        `json:"started_at"`
+	CompletedAt    time.Time        `json:"completed_at,omitempty"`
 }
 
 // EscalationStep represents a step in escalation
 type EscalationStep struct {
-	Level       EscalationLevel `json:"level"`
-	Timestamp   time.Time       `json:"timestamp"`
-	Reason      string          `json:"reason"`
-	Recipients  []string        `json:"recipients"`
+	Level      EscalationLevel `json:"level"`
+	Timestamp  time.Time       `json:"timestamp"`
+	Reason     string          `json:"reason"`
+	Recipients []string        `json:"recipients"`
 }
 
 // EscalationManager manages escalation rules and state
 type EscalationManager struct {
-	rules    map[string]*EscalationRule
-	states   map[string]*EscalationState
+	rules     map[string]*EscalationRule
+	states    map[string]*EscalationState
 	callbacks map[string][]func(*EscalationState)
-	mutex    sync.RWMutex
+	mutex     sync.RWMutex
 }
 
 // NewEscalationManager creates a new escalation manager
 func NewEscalationManager() *EscalationManager {
 	return &EscalationManager{
-		rules:    make(map[string]*EscalationRule),
-		states:   make(map[string]*EscalationState),
+		rules:     make(map[string]*EscalationRule),
+		states:    make(map[string]*EscalationState),
 		callbacks: make(map[string][]func(*EscalationState)),
 	}
 }

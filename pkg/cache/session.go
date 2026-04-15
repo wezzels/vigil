@@ -46,7 +46,7 @@ func (sc *SessionCache) Create(ctx context.Context, userID, username string, rol
 		Metadata:     make(map[string]string),
 		CreatedAt:    time.Now(),
 		LastAccessed: time.Now(),
-		ExpiresAt:     time.Now().Add(sc.ttl),
+		ExpiresAt:    time.Now().Add(sc.ttl),
 	}
 
 	if err := sc.Set(ctx, session); err != nil {

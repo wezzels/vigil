@@ -39,7 +39,7 @@ type Measurement struct {
 type Association struct {
 	TrackID       uint64
 	MeasurementID uint64
-	Probability    float64
+	Probability   float64
 	Mahalanobis   float64
 }
 
@@ -48,7 +48,7 @@ type TrackManager struct {
 	Tracks       map[uint64]*Track
 	NextTrackNum uint32
 	MaxTracks    int
-	MaxAge       int64 // Max age in milliseconds
+	MaxAge       int64   // Max age in milliseconds
 	GatingLimit  float64 // Mahalanobis distance threshold
 }
 
@@ -71,21 +71,21 @@ func (tm *TrackManager) MahalanobisDistance(m *Measurement, t *Track) float64 {
 	mLonM := m.Lon * 111000 * math.Cos(m.Lat*math.Pi/180)
 	tLatM := t.Lat * 111000
 	tLonM := t.Lon * 111000 * math.Cos(t.Lat*math.Pi/180)
-	
+
 	// Position differences
 	dLat := mLatM - tLatM
 	dLon := mLonM - tLonM
 	dAlt := m.Alt - t.Alt
-	
+
 	// Combined variance (approximate as diagonal)
 	vLat := t.VarLat*111000*111000 + m.VarLat*111000*111000
 	vLon := t.VarLon*111000*111000*math.Cos(t.Lat*math.Pi/180)*math.Cos(t.Lat*math.Pi/180) +
 		m.VarLon*111000*111000*math.Cos(m.Lat*math.Pi/180)*math.Cos(m.Lat*math.Pi/180)
 	vAlt := t.VarAlt + m.VarAlt
-	
+
 	// Mahalanobis distance: d^T * S^-1 * d
 	dSquared := dLat*dLat/vLat + dLon*dLon/vLon + dAlt*dAlt/vAlt
-	
+
 	return dSquared
 }
 
@@ -93,26 +93,26 @@ func (tm *TrackManager) MahalanobisDistance(m *Measurement, t *Track) float64 {
 // Returns associations for all track-measurement pairs within gating limit
 func (tm *TrackManager) JPDAAssociate(measurements []*Measurement) []*Association {
 	associations := make([]*Association, 0)
-	
+
 	for _, m := range measurements {
 		for _, t := range tm.Tracks {
 			dist := tm.MahalanobisDistance(m, t)
-			
+
 			if dist < tm.GatingLimit {
 				// Calculate probability based on Mahalanobis distance
 				prob := math.Exp(-dist / 2.0)
-				
+
 				assoc := &Association{
 					TrackID:       t.ID,
 					MeasurementID: m.ID,
 					Probability:   prob,
-					Mahalanobis:    dist,
+					Mahalanobis:   dist,
 				}
 				associations = append(associations, assoc)
 			}
 		}
 	}
-	
+
 	return associations
 }
 
@@ -120,20 +120,20 @@ func (tm *TrackManager) JPDAAssociate(measurements []*Measurement) []*Associatio
 func (tm *TrackManager) Update(measurements []*Measurement, timestamp int64) {
 	// Get associations
 	associations := tm.JPDAAssociate(measurements)
-	
+
 	// Group associations by track
 	trackAssocs := make(map[uint64][]*Association)
 	for _, a := range associations {
 		trackAssocs[a.TrackID] = append(trackAssocs[a.TrackID], a)
 	}
-	
+
 	// Update each track with weighted combination
 	for trackID, assocs := range trackAssocs {
 		track := tm.Tracks[trackID]
 		if track == nil {
 			continue
 		}
-		
+
 		// Normalize probabilities
 		totalProb := 0.0
 		for _, a := range assocs {
@@ -142,12 +142,12 @@ func (tm *TrackManager) Update(measurements []*Measurement, timestamp int64) {
 		if totalProb == 0 {
 			continue
 		}
-		
+
 		// Weighted update
 		newLat := 0.0
 		newLon := 0.0
 		newAlt := 0.0
-		
+
 		for _, a := range assocs {
 			m := findMeasurement(measurements, a.MeasurementID)
 			if m == nil {
@@ -158,7 +158,7 @@ func (tm *TrackManager) Update(measurements []*Measurement, timestamp int64) {
 			newLon += m.Lon * weight
 			newAlt += m.Alt * weight
 		}
-		
+
 		// Simple weighted average update (could use Kalman)
 		alpha := 0.3 // Update rate
 		track.Lat = track.Lat*(1-alpha) + newLat*alpha
@@ -167,7 +167,7 @@ func (tm *TrackManager) Update(measurements []*Measurement, timestamp int64) {
 		track.LastUpdate = timestamp
 		track.SourceCount++
 	}
-	
+
 	// Initiate new tracks for unassociated measurements
 	for _, m := range measurements {
 		associated := false
@@ -177,12 +177,12 @@ func (tm *TrackManager) Update(measurements []*Measurement, timestamp int64) {
 				break
 			}
 		}
-		
+
 		if !associated {
 			tm.InitiateTrack(m)
 		}
 	}
-	
+
 	// Remove old tracks
 	tm.Cleanup(timestamp)
 }
@@ -192,7 +192,7 @@ func (tm *TrackManager) InitiateTrack(m *Measurement) *Track {
 	if len(tm.Tracks) >= tm.MaxTracks {
 		return nil
 	}
-	
+
 	track := &Track{
 		ID:          m.ID,
 		Lat:         m.Lat,
@@ -205,10 +205,10 @@ func (tm *TrackManager) InitiateTrack(m *Measurement) *Track {
 		SourceCount: 1,
 		LastUpdate:  m.Timestamp,
 	}
-	
+
 	tm.NextTrackNum++
 	tm.Tracks[track.ID] = track
-	
+
 	return track
 }
 

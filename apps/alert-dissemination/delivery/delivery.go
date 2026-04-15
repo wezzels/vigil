@@ -42,7 +42,7 @@ func (s DeliveryStatus) String() string {
 
 // DeliveryRecord represents a delivery attempt
 type DeliveryRecord struct {
-	AlertID       string         `json:"alert_id"`
+	AlertID        string         `json:"alert_id"`
 	Recipient      string         `json:"recipient"`
 	Status         DeliveryStatus `json:"status"`
 	Attempts       int            `json:"attempts"`
@@ -58,13 +58,13 @@ type DeliveryRecord struct {
 
 // DeliveryConfig holds delivery configuration
 type DeliveryConfig struct {
-	MaxAttempts     int           `json:"max_attempts"`
-	InitialDelay    time.Duration `json:"initial_delay"`
-	RetryDelay      time.Duration `json:"retry_delay"`
-	Timeout         time.Duration `json:"timeout"`
-	EnableRetry     bool          `json:"enable_retry"`
-	RetryBackoff    bool          `json:"retry_backoff"`
-	BackoffMultiplier float64     `json:"backoff_multiplier"`
+	MaxAttempts       int           `json:"max_attempts"`
+	InitialDelay      time.Duration `json:"initial_delay"`
+	RetryDelay        time.Duration `json:"retry_delay"`
+	Timeout           time.Duration `json:"timeout"`
+	EnableRetry       bool          `json:"enable_retry"`
+	RetryBackoff      bool          `json:"retry_backoff"`
+	BackoffMultiplier float64       `json:"backoff_multiplier"`
 }
 
 // DefaultDeliveryConfig returns default configuration
@@ -72,7 +72,7 @@ func DefaultDeliveryConfig() *DeliveryConfig {
 	return &DeliveryConfig{
 		MaxAttempts:       3,
 		InitialDelay:      1 * time.Second,
-		RetryDelay:         5 * time.Second,
+		RetryDelay:        5 * time.Second,
 		Timeout:           30 * time.Second,
 		EnableRetry:       true,
 		RetryBackoff:      true,
@@ -111,12 +111,12 @@ func (t *DeliveryTracker) Register(alertID, recipient string) *DeliveryRecord {
 
 	record := &DeliveryRecord{
 		AlertID:     alertID,
-		Recipient:    recipient,
-		Status:       StatusPending,
-		Attempts:     0,
-		MaxAttempts:  t.config.MaxAttempts,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Recipient:   recipient,
+		Status:      StatusPending,
+		Attempts:    0,
+		MaxAttempts: t.config.MaxAttempts,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	t.records[key] = record

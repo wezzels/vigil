@@ -28,10 +28,10 @@ import (
 )
 
 const (
-	TopicDISIn   = "vimi.dis.entity-state"
-	TopicAlerts  = "vimi.alerts"
-	TopicReplay  = "vimi.replay.events"
-	RecordDir    = "/var/vimi/recordings"
+	TopicDISIn  = "vimi.dis.entity-state"
+	TopicAlerts = "vimi.alerts"
+	TopicReplay = "vimi.replay.events"
+	RecordDir   = "/var/vimi/recordings"
 )
 
 // PDUType DIS enumeration
@@ -47,28 +47,28 @@ const (
 
 // RecordedPDU with timestamp
 type RecordedPDU struct {
-	Sequence   uint64    `json:"sequence"`
-	ReceiveTS  time.Time `json:"receive_ts"`  // when we received it
-	OriginTS   time.Time `json:"origin_ts"`  // timestamp from PDU
-	SiteID     uint16    `json:"site_id"`
-	AppID      uint16    `json:"app_id"`
-	EntityID   uint32    `json:"entity_id"`
-	ForceID    uint8     `json:"force_id"`
-	PDUType    PDUType   `json:"pdu_type"`
-	LVCType    string    `json:"lvc_type"`
-	Raw        []byte    `json:"raw,omitempty"`
-	
+	Sequence  uint64    `json:"sequence"`
+	ReceiveTS time.Time `json:"receive_ts"` // when we received it
+	OriginTS  time.Time `json:"origin_ts"`  // timestamp from PDU
+	SiteID    uint16    `json:"site_id"`
+	AppID     uint16    `json:"app_id"`
+	EntityID  uint32    `json:"entity_id"`
+	ForceID   uint8     `json:"force_id"`
+	PDUType   PDUType   `json:"pdu_type"`
+	LVCType   string    `json:"lvc_type"`
+	Raw       []byte    `json:"raw,omitempty"`
+
 	// Parsed entity state (if applicable)
-	Lat        float64   `json:"lat,omitempty"`
-	Lon        float64   `json:"lon,omitempty"`
-	Alt        float64   `json:"alt,omitempty"`
-	Yaw        float32   `json:"yaw,omitempty"`
-	Pitch      float32   `json:"pitch,omitempty"`
-	Roll       float32   `json:"roll,omitempty"`
-	VX         float32   `json:"vx,omitempty"`
-	VY         float32   `json:"vy,omitempty"`
-	VZ         float32   `json:"vz,omitempty"`
-	Marking    string    `json:"marking,omitempty"`
+	Lat     float64 `json:"lat,omitempty"`
+	Lon     float64 `json:"lon,omitempty"`
+	Alt     float64 `json:"alt,omitempty"`
+	Yaw     float32 `json:"yaw,omitempty"`
+	Pitch   float32 `json:"pitch,omitempty"`
+	Roll    float32 `json:"roll,omitempty"`
+	VX      float32 `json:"vx,omitempty"`
+	VY      float32 `json:"vy,omitempty"`
+	VZ      float32 `json:"vz,omitempty"`
+	Marking string  `json:"marking,omitempty"`
 }
 
 // Recording metadata
@@ -126,18 +126,18 @@ func parseEntityStatePDU(data []byte) *RecordedPDU {
 	}
 
 	pdu := &RecordedPDU{
-		PDUType: PDUEntityState,
-		SiteID:  binary.BigEndian.Uint16(data[10:12]),
-		AppID:  binary.BigEndian.Uint16(data[12:14]),
+		PDUType:  PDUEntityState,
+		SiteID:   binary.BigEndian.Uint16(data[10:12]),
+		AppID:    binary.BigEndian.Uint16(data[12:14]),
 		EntityID: binary.BigEndian.Uint32(data[14:18]),
-		ForceID: data[18],
+		ForceID:  data[18],
 	}
 
 	// Location (ECEF) at bytes 52-64
 	x := float64(math.Float32frombits(binary.BigEndian.Uint32(data[52:56])))
 	y := float64(math.Float32frombits(binary.BigEndian.Uint32(data[56:60])))
 	z := float64(math.Float32frombits(binary.BigEndian.Uint32(data[60:64])))
-	
+
 	pdu.Lat, pdu.Lon, pdu.Alt = ecefToGeodetic(x, y, z)
 
 	// Orientation at bytes 26-38
@@ -269,7 +269,7 @@ func loadRecordings(rs *replayState) {
 		}
 		path := filepath.Join(RecordDir, ent.Name())
 		info, _ := os.Stat(path)
-		
+
 		rec := &Recording{
 			ID:       ent.Name(),
 			Name:     "unlabeled",
@@ -322,8 +322,8 @@ type playbackState struct {
 }
 
 var (
-	rs   *replayState
-	ps   *playbackState
+	rs          *replayState
+	ps          *playbackState
 	kafkaWriter *kafka.Writer
 	kafkaReader *kafka.Reader
 	kafkaBroker = getEnv("KAFKA_BROKERS", "kafka:9092")
@@ -339,22 +339,22 @@ func getEnv(key, fallback string) string {
 
 func run(ctx context.Context) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBroker},
-		Topic:     TopicDISIn,
-		GroupID:   "replay-engine",
-		MinBytes:  10e3,
-		MaxBytes:  10e6,
+		Brokers:     []string{kafkaBroker},
+		Topic:       TopicDISIn,
+		GroupID:     "replay-engine",
+		MinBytes:    10e3,
+		MaxBytes:    10e6,
 		StartOffset: kafka.LastOffset,
 	})
 	defer reader.Close()
 
 	// Also subscribe to alerts for context
 	alertReader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBroker},
-		Topic:     TopicAlerts,
-		GroupID:   "replay-engine-alerts",
-		MinBytes:  10e3,
-		MaxBytes:  10e6,
+		Brokers:     []string{kafkaBroker},
+		Topic:       TopicAlerts,
+		GroupID:     "replay-engine-alerts",
+		MinBytes:    10e3,
+		MaxBytes:    10e6,
 		StartOffset: kafka.LastOffset,
 	})
 	defer alertReader.Close()
@@ -405,7 +405,7 @@ func run(ctx context.Context) {
 			}
 
 			siteID, appID, entityID, pduType := parsePDUHeaders(msg.Value)
-			
+
 			// Get LVC type from headers
 			lvcType := "Unknown"
 			for _, h := range msg.Headers {
@@ -458,14 +458,14 @@ func run(ctx context.Context) {
 }
 
 type HealthResponse struct {
-	Service      string    `json:"service"`
-	Version      string    `json:"version"`
-	Timestamp    time.Time `json:"timestamp"`
-	Status       string    `json:"status"`
-	Recording    bool      `json:"recording"`
-	RecordingName string   `json:"recording_name,omitempty"`
-	PDUCount     uint64    `json:"pdu_count"`
-	Recordings   int       `json:"recordings"`
+	Service       string    `json:"service"`
+	Version       string    `json:"version"`
+	Timestamp     time.Time `json:"timestamp"`
+	Status        string    `json:"status"`
+	Recording     bool      `json:"recording"`
+	RecordingName string    `json:"recording_name,omitempty"`
+	PDUCount      uint64    `json:"pdu_count"`
+	Recordings    int       `json:"recordings"`
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -514,7 +514,7 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
-http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/health", healthHandler)
 
 	// Recording control
 	http.HandleFunc("/record/start", func(w http.ResponseWriter, r *http.Request) {

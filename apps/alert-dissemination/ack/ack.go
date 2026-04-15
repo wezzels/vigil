@@ -39,27 +39,27 @@ func (s AckStatus) String() string {
 
 // Acknowledgment represents an alert acknowledgment
 type Acknowledgment struct {
-	AlertID       string     `json:"alert_id"`
-	Recipient      string     `json:"recipient"`
-	Status         AckStatus  `json:"status"`
-	AcknowledgedBy string     `json:"acknowledged_by,omitempty"`
-	AcknowledgedAt time.Time  `json:"acknowledged_at,omitempty"`
-	Reason         string     `json:"reason,omitempty"`
-	Attempts       int        `json:"attempts"`
-	MaxAttempts    int        `json:"max_attempts"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	ExpiresAt      time.Time  `json:"expires_at"`
+	AlertID        string    `json:"alert_id"`
+	Recipient      string    `json:"recipient"`
+	Status         AckStatus `json:"status"`
+	AcknowledgedBy string    `json:"acknowledged_by,omitempty"`
+	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty"`
+	Reason         string    `json:"reason,omitempty"`
+	Attempts       int       `json:"attempts"`
+	MaxAttempts    int       `json:"max_attempts"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	ExpiresAt      time.Time `json:"expires_at"`
 }
 
 // AckHandler handles acknowledgment processing
 type AckHandler struct {
-	pending      map[string]*Acknowledgment
-	ackCallbacks map[string][]func(*Acknowledgment)
-	nackCallbacks map[string][]func(*Acknowledgment)
+	pending          map[string]*Acknowledgment
+	ackCallbacks     map[string][]func(*Acknowledgment)
+	nackCallbacks    map[string][]func(*Acknowledgment)
 	timeoutCallbacks map[string][]func(*Acknowledgment)
-	mutex        sync.RWMutex
-	timeout      time.Duration
+	mutex            sync.RWMutex
+	timeout          time.Duration
 }
 
 // NewAckHandler creates a new acknowledgment handler
@@ -82,7 +82,7 @@ func (h *AckHandler) Register(alertID, recipient string) *Acknowledgment {
 	now := time.Now()
 
 	ack := &Acknowledgment{
-		AlertID:    alertID,
+		AlertID:     alertID,
 		Recipient:   recipient,
 		Status:      AckStatusPending,
 		Attempts:    0,
@@ -404,7 +404,7 @@ func (t *AckTracker) Stats() AckStats {
 
 // Errors
 var (
-	ErrAckNotFound        = &AckError{Code: "ACK_NOT_FOUND", Message: "acknowledgment not found"}
+	ErrAckNotFound         = &AckError{Code: "ACK_NOT_FOUND", Message: "acknowledgment not found"}
 	ErrMaxAttemptsExceeded = &AckError{Code: "MAX_ATTEMPTS", Message: "maximum attempts exceeded"}
 )
 

@@ -9,10 +9,10 @@ import (
 
 // USMTFMessage represents a USMTF message
 type USMTFMessage struct {
-	Header         USMTFHeader
-	Body           string
-	Signature      string
-	Timestamp      time.Time
+	Header    USMTFHeader
+	Body      string
+	Signature string
+	Timestamp time.Time
 }
 
 // USMTFHeader represents USMTF message header
@@ -104,10 +104,10 @@ func (f *USMTFFormatter) Validate(msg *USMTFMessage) error {
 	}
 
 	validPrecedence := map[string]bool{
-		"FLASH":       true,
-		"IMMEDIATE":   true,
-		"PRIORITY":    true,
-		"ROUTINE":     true,
+		"FLASH":     true,
+		"IMMEDIATE": true,
+		"PRIORITY":  true,
+		"ROUTINE":   true,
 	}
 
 	if !validPrecedence[msg.Header.Precedence] {
@@ -119,16 +119,16 @@ func (f *USMTFFormatter) Validate(msg *USMTFMessage) error {
 
 // ADatP3Message represents an ADatP-3 message
 type ADatP3Message struct {
-	Header         ADatP3Header
-	Body           string
-	Timestamp      time.Time
+	Header    ADatP3Header
+	Body      string
+	Timestamp time.Time
 }
 
 // ADatP3Header represents ADatP-3 message header
 type ADatP3Header struct {
-	Originator     string
-	ReportType     string
-	SecurityLevel  string
+	Originator    string
+	ReportType    string
+	SecurityLevel string
 }
 
 // ADatP3Formatter formats ADatP-3 messages

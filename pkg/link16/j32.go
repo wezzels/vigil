@@ -23,48 +23,48 @@ func (e *J32Error) Error() string {
 
 // J32Message represents a J3.2 Air Track message
 type J32Message struct {
-	TrackNumber     uint16    `json:"track_number"`     // Track number
-	TrackQuality    uint8     `json:"track_quality"`    // Track quality (0-15)
-	TrackIdentity   uint8     `json:"track_identity"`   // Identity (0-15)
-	TrackAugment    uint8     `json:"track_augment"`    // Augmentation
-	Latitude        float64   `json:"latitude"`         // Degrees (-90 to +90)
-	Longitude       float64   `json:"longitude"`        // Degrees (-180 to +180)
-	Altitude        float64   `json:"altitude"`         // Meters
-	Speed           float64   `json:"speed"`            // Meters per second
-	Heading         float64   `json:"heading"`          // Degrees (0-360)
-	Time            time.Time `json:"time"`            // Time of track
-	Force           uint8     `json:"force"`           // Force ID
-	Environment     uint8     `json:"environment"`     // Environment (Air, Surface, etc.)
-	TrackType       uint8     `json:"track_type"`       // Track type
+	TrackNumber   uint16    `json:"track_number"`   // Track number
+	TrackQuality  uint8     `json:"track_quality"`  // Track quality (0-15)
+	TrackIdentity uint8     `json:"track_identity"` // Identity (0-15)
+	TrackAugment  uint8     `json:"track_augment"`  // Augmentation
+	Latitude      float64   `json:"latitude"`       // Degrees (-90 to +90)
+	Longitude     float64   `json:"longitude"`      // Degrees (-180 to +180)
+	Altitude      float64   `json:"altitude"`       // Meters
+	Speed         float64   `json:"speed"`          // Meters per second
+	Heading       float64   `json:"heading"`        // Degrees (0-360)
+	Time          time.Time `json:"time"`           // Time of track
+	Force         uint8     `json:"force"`          // Force ID
+	Environment   uint8     `json:"environment"`    // Environment (Air, Surface, etc.)
+	TrackType     uint8     `json:"track_type"`     // Track type
 }
 
 // J32Constants defines J3.2 field constants
 const (
-	J32WordCount       = 3
-	J32LatitudeScale   = 90.0 / 32767.0   // Scale for 15-bit latitude (-90 to +90)
-	J32LongitudeScale  = 180.0 / 32767.0   // Scale for 15-bit longitude (-180 to +180)
-	J32AltitudeScale    = 1.0              // Scale for 16-bit altitude (meters)
-	J32SpeedScale       = 10.0             // Scale for 11-bit speed (dm/s)
-	J32HeadingScale     = 360.0 / 512.0    // Scale for 9-bit heading (degrees)
+	J32WordCount      = 3
+	J32LatitudeScale  = 90.0 / 32767.0  // Scale for 15-bit latitude (-90 to +90)
+	J32LongitudeScale = 180.0 / 32767.0 // Scale for 15-bit longitude (-180 to +180)
+	J32AltitudeScale  = 1.0             // Scale for 16-bit altitude (meters)
+	J32SpeedScale     = 10.0            // Scale for 11-bit speed (dm/s)
+	J32HeadingScale   = 360.0 / 512.0   // Scale for 9-bit heading (degrees)
 )
 
 // Identity codes (MIL-STD-6016)
 const (
-	IdentityPending     uint8 = 0
-	IdentityUnknown      uint8 = 1
+	IdentityPending       uint8 = 0
+	IdentityUnknown       uint8 = 1
 	IdentityAssumedFriend uint8 = 2
-	IdentityFriend       uint8 = 3
-	IdentityNeutral      uint8 = 4
-	IdentitySuspect      uint8 = 5
-	IdentityHostile      uint8 = 6
+	IdentityFriend        uint8 = 3
+	IdentityNeutral       uint8 = 4
+	IdentitySuspect       uint8 = 5
+	IdentityHostile       uint8 = 6
 )
 
 // Environment codes
 const (
-	EnvAir     uint8 = 0
-	EnvSurface uint8 = 1
+	EnvAir        uint8 = 0
+	EnvSurface    uint8 = 1
 	EnvSubsurface uint8 = 2
-	EnvLand    uint8 = 3
+	EnvLand       uint8 = 3
 )
 
 // J32Parser handles J3.2 message parsing and generation
@@ -80,16 +80,16 @@ func (p *J32Parser) Parse(words []uint32) (*J32Message, error) {
 	if len(words) < J32WordCount {
 		return nil, ErrWordCountMismatch
 	}
-	
+
 	msg := &J32Message{}
-	
+
 	// Word 0: Track number and quality
 	msg.TrackNumber = uint16(words[0] >> 16)
 	msg.TrackQuality = uint8((words[0] >> 12) & 0x0F)
 	msg.TrackIdentity = uint8((words[0] >> 8) & 0x0F)
 	msg.Force = uint8((words[0] >> 4) & 0x0F)
 	msg.Environment = uint8(words[0] & 0x0F)
-	
+
 	// Word 1: Position (signed 16-bit values)
 	// Latitude: -90 to +90 degrees, scaled to 16-bit
 	// Longitude: -180 to +180 degrees, scaled to 16-bit
@@ -97,39 +97,39 @@ func (p *J32Parser) Parse(words []uint32) (*J32Message, error) {
 	lonRaw := int16(words[1] & 0xFFFF)
 	msg.Latitude = float64(latRaw) * 90.0 / 32767.0
 	msg.Longitude = float64(lonRaw) * 180.0 / 32767.0
-	
+
 	// Word 2: Altitude, speed, heading
 	alt := uint16((words[2] >> 16) & 0xFFFF)
 	speed := uint16((words[2] >> 5) & 0x07FF)
 	heading := uint16(words[2] & 0x1FF)
-	
+
 	msg.Altitude = float64(alt)
 	msg.Speed = float64(speed) * J32SpeedScale
 	msg.Heading = float64(heading) * J32HeadingScale
-	
+
 	msg.Time = time.Now()
-	
+
 	return msg, nil
 }
 
 // Serialize serializes a J3.2 message to J-Series words
 func (p *J32Parser) Serialize(msg *J32Message) []uint32 {
 	words := make([]uint32, J32WordCount)
-	
+
 	// Word 0: Track number and quality
 	words[0] = (uint32(msg.TrackNumber) << 16) |
 		(uint32(msg.TrackQuality&0x0F) << 12) |
 		(uint32(msg.TrackIdentity&0x0F) << 8) |
 		(uint32(msg.Force&0x0F) << 4) |
 		(uint32(msg.Environment) & 0x0F)
-	
+
 	// Word 1: Position
 	// Latitude: -90 to +90, scale to signed 16-bit
 	// Longitude: -180 to +180, scale to signed 16-bit
 	latRaw := int16(msg.Latitude * 32767.0 / 90.0)
 	lonRaw := int16(msg.Longitude * 32767.0 / 180.0)
 	words[1] = (uint32(uint16(latRaw)) << 16) | uint32(uint16(lonRaw))
-	
+
 	// Word 2: Altitude, speed, heading
 	alt := uint16(msg.Altitude)
 	speed := uint16(msg.Speed / J32SpeedScale)
@@ -137,7 +137,7 @@ func (p *J32Parser) Serialize(msg *J32Message) []uint32 {
 	words[2] = (uint32(alt) << 16) |
 		(uint32(speed&0x07FF) << 5) |
 		(uint32(heading) & 0x1FF)
-	
+
 	return words
 }
 
@@ -245,27 +245,27 @@ func (b *J32Builder) Build() *J32Message {
 
 // J32Track represents a track from J3.2 data
 type J32Track struct {
-	TrackNumber  uint32    `json:"track_number"`
-	Position     [3]float64 `json:"position"` // lat, lon, alt (deg, deg, m)
-	Velocity     [2]float64 `json:"velocity"` // speed (m/s), heading (deg)
-	Identity     string    `json:"identity"`
-	Force        string    `json:"force"`
-	Environment  string    `json:"environment"`
-	Quality      uint8     `json:"quality"`
-	LastUpdate   time.Time `json:"last_update"`
+	TrackNumber uint32     `json:"track_number"`
+	Position    [3]float64 `json:"position"` // lat, lon, alt (deg, deg, m)
+	Velocity    [2]float64 `json:"velocity"` // speed (m/s), heading (deg)
+	Identity    string     `json:"identity"`
+	Force       string     `json:"force"`
+	Environment string     `json:"environment"`
+	Quality     uint8      `json:"quality"`
+	LastUpdate  time.Time  `json:"last_update"`
 }
 
 // ToTrack converts J32Message to J32Track
 func (msg *J32Message) ToTrack() *J32Track {
 	return &J32Track{
 		TrackNumber: uint32(msg.TrackNumber),
-		Position:     [3]float64{msg.Latitude, msg.Longitude, msg.Altitude},
-		Velocity:     [2]float64{msg.Speed, msg.Heading},
-		Identity:     GetIdentityString(msg.TrackIdentity),
-		Force:        GetIdentityString(msg.Force),
-		Environment:  GetEnvironmentString(msg.Environment),
-		Quality:      msg.TrackQuality,
-		LastUpdate:   msg.Time,
+		Position:    [3]float64{msg.Latitude, msg.Longitude, msg.Altitude},
+		Velocity:    [2]float64{msg.Speed, msg.Heading},
+		Identity:    GetIdentityString(msg.TrackIdentity),
+		Force:       GetIdentityString(msg.Force),
+		Environment: GetEnvironmentString(msg.Environment),
+		Quality:     msg.TrackQuality,
+		LastUpdate:  msg.Time,
 	}
 }
 
@@ -279,7 +279,7 @@ func FromTrack(track *J32Track) *J32Message {
 			break
 		}
 	}
-	
+
 	env := EnvAir
 	for i, e := range []uint8{EnvAir, EnvSurface, EnvSubsurface, EnvLand} {
 		if GetEnvironmentString(e) == track.Environment {
@@ -287,7 +287,7 @@ func FromTrack(track *J32Track) *J32Message {
 			break
 		}
 	}
-	
+
 	return &J32Message{
 		TrackNumber:   uint16(track.TrackNumber),
 		TrackQuality:  track.Quality,
@@ -305,10 +305,10 @@ func FromTrack(track *J32Track) *J32Message {
 
 // J32Stats holds J3.2 message statistics
 type J32Stats struct {
-	TotalMessages   uint64 `json:"total_messages"`
-	ValidMessages   uint64 `json:"valid_messages"`
-	InvalidMessages uint64 `json:"invalid_messages"`
-	AirTracks      uint64 `json:"air_tracks"`
-	SurfaceTracks  uint64 `json:"surface_tracks"`
-	LastUpdateTime time.Time `json:"last_update_time"`
+	TotalMessages   uint64    `json:"total_messages"`
+	ValidMessages   uint64    `json:"valid_messages"`
+	InvalidMessages uint64    `json:"invalid_messages"`
+	AirTracks       uint64    `json:"air_tracks"`
+	SurfaceTracks   uint64    `json:"surface_tracks"`
+	LastUpdateTime  time.Time `json:"last_update_time"`
 }

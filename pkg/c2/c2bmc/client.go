@@ -28,10 +28,10 @@ func NewClient(config *C2BMCConfig) (*Client, error) {
 
 	// Create HTTP transport
 	transport := &http.Transport{
-		MaxIdleConns:        10,
-		IdleConnTimeout:     30 * time.Second,
-		DisableCompression:  false,
-		TLSClientConfig:     &tls.Config{},
+		MaxIdleConns:       10,
+		IdleConnTimeout:    30 * time.Second,
+		DisableCompression: false,
+		TLSClientConfig:    &tls.Config{},
 	}
 
 	// Configure TLS

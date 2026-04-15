@@ -20,18 +20,18 @@ func NewTrackCorrelator(client C2BMCClient, threshold float64) *TrackCorrelator 
 	return &TrackCorrelator{
 		client:      client,
 		threshold:   threshold,
-		maxDistance: 5000.0,  // 5km default
-		timeWindow: 30 * time.Second,
+		maxDistance: 5000.0, // 5km default
+		timeWindow:  30 * time.Second,
 	}
 }
 
 // CorrelationResult represents the result of a correlation attempt
 type CorrelationResult struct {
-	PrimaryTrack    string
+	PrimaryTrack     string
 	SecondaryTrack   string
 	CorrelationScore float64
-	IsCorrelated    bool
-	Reason         string
+	IsCorrelated     bool
+	Reason           string
 }
 
 // CorrelateByPosition correlates tracks by position proximity
@@ -47,11 +47,11 @@ func (tc *TrackCorrelator) CorrelateByPosition(ctx context.Context, primary *Tra
 
 	if timeDiff > tc.timeWindow {
 		return &CorrelationResult{
-			PrimaryTrack:    primary.TrackNumber,
+			PrimaryTrack:     primary.TrackNumber,
 			SecondaryTrack:   secondary.TrackNumber,
 			CorrelationScore: 0,
-			IsCorrelated:    false,
-			Reason:         fmt.Sprintf("Time difference %v exceeds window %v", timeDiff, tc.timeWindow),
+			IsCorrelated:     false,
+			Reason:           fmt.Sprintf("Time difference %v exceeds window %v", timeDiff, tc.timeWindow),
 		}, nil
 	}
 
@@ -80,11 +80,11 @@ func (tc *TrackCorrelator) CorrelateByPosition(ctx context.Context, primary *Tra
 	}
 
 	return &CorrelationResult{
-		PrimaryTrack:    primary.TrackNumber,
+		PrimaryTrack:     primary.TrackNumber,
 		SecondaryTrack:   secondary.TrackNumber,
 		CorrelationScore: finalScore,
-		IsCorrelated:    isCorrelated,
-		Reason:         reason,
+		IsCorrelated:     isCorrelated,
+		Reason:           reason,
 	}, nil
 }
 
@@ -98,8 +98,8 @@ func (tc *TrackCorrelator) CorrelateAndSubmit(ctx context.Context, primary *Trac
 	req := &TrackCorrelationRequest{
 		PrimaryTrack:    primary.TrackNumber,
 		SecondaryTracks: secondaryIDs,
-		SourceSystem:   "VIGIL",
-		Timestamp:      time.Now(),
+		SourceSystem:    "VIGIL",
+		Timestamp:       time.Now(),
 	}
 
 	return tc.client.CorrelateTracks(ctx, req)

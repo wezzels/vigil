@@ -148,8 +148,8 @@ func TestAcknowledgmentHandler(t *testing.T) {
 
 	// Test acknowledgment
 	handler.Process(&AlertResponse{
-		AlertID:       "ALERT-001",
-		Status:        AlertStatusAcknowledged,
+		AlertID:        "ALERT-001",
+		Status:         AlertStatusAcknowledged,
 		AcknowledgedBy: "OPERATOR-1",
 	})
 
@@ -160,7 +160,7 @@ func TestAcknowledgmentHandler(t *testing.T) {
 	// Test completion
 	handler.Process(&AlertResponse{
 		AlertID: "ALERT-002",
-		Status: AlertStatusComplete,
+		Status:  AlertStatusComplete,
 	})
 
 	if completed != "ALERT-002" {
@@ -170,7 +170,7 @@ func TestAcknowledgmentHandler(t *testing.T) {
 	// Test rejection
 	handler.Process(&AlertResponse{
 		AlertID: "ALERT-003",
-		Status: AlertStatusFailed,
+		Status:  AlertStatusFailed,
 		Message: "Invalid track",
 	})
 

@@ -26,7 +26,7 @@ func (e *EntityID) Encode(w io.Writer) error {
 	return nil
 }
 
-// Decode reads EntityID from buffer  
+// Decode reads EntityID from buffer
 func (e *EntityID) Decode(r io.Reader) error {
 	return nil
 }
@@ -56,15 +56,15 @@ type EntityStatePDU struct {
 	PDUHeader
 	EntityID          EntityID
 	EntityLocation    WorldCoordinate
-	EntityOrientation  EulerAngles
+	EntityOrientation EulerAngles
 }
 
 // FirePDU represents a DIS Fire PDU
 type FirePDU struct {
 	PDUHeader
-	FiringEntityID  EntityID
-	TargetEntityID  EntityID
-	EventID         EntityID
+	FiringEntityID EntityID
+	TargetEntityID EntityID
+	EventID        EntityID
 }
 
 // DetonationPDU represents a DIS Detonation PDU
@@ -79,7 +79,7 @@ type DetonationPDU struct {
 type EmissionPDU struct {
 	PDUHeader
 	EmittingEntityID EntityID
-	EventID           EntityID
+	EventID          EntityID
 }
 
 // Encode encodes EntityStatePDU to binary

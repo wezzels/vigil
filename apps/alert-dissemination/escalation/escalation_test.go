@@ -220,7 +220,7 @@ func TestOnEscalate(t *testing.T) {
 	for _, rule := range DefaultEscalationRules() {
 		mgr.AddRule(rule)
 	}
-	
+
 	// Trigger escalation
 	state.NextEscalation = time.Now().Add(-1 * time.Minute)
 	mgr.CheckEscalation("ALERT-001")

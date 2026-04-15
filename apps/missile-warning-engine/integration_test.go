@@ -42,14 +42,14 @@ func TestTrackCreationFlow(t *testing.T) {
 	// 3. Publish track to correlated-tracks topic
 
 	type SensorDetection struct {
-		SensorID   string    `json:"sensor_id"`
-		Timestamp  int64     `json:"timestamp"`
-		Lat        float64   `json:"lat"`
-		Lon        float64   `json:"lon"`
-		Alt        float64   `json:"alt"`
-		Velocity   float64   `json:"velocity"`
-		Heading    float64   `json:"heading"`
-		Confidence float64   `json:"confidence"`
+		SensorID   string  `json:"sensor_id"`
+		Timestamp  int64   `json:"timestamp"`
+		Lat        float64 `json:"lat"`
+		Lon        float64 `json:"lon"`
+		Alt        float64 `json:"alt"`
+		Velocity   float64 `json:"velocity"`
+		Heading    float64 `json:"heading"`
+		Confidence float64 `json:"confidence"`
 	}
 
 	detection := SensorDetection{
@@ -141,10 +141,10 @@ func TestHealthEndpoint(t *testing.T) {
 	// - Memory usage
 
 	type HealthStatus struct {
-		Status    string            `json:"status"`
-		Uptime    int64             `json:"uptime"`
-		Checks    map[string]string `json:"checks"`
-		Stats     map[string]any    `json:"stats"`
+		Status string            `json:"status"`
+		Uptime int64             `json:"uptime"`
+		Checks map[string]string `json:"checks"`
+		Stats  map[string]any    `json:"stats"`
 	}
 
 	health := HealthStatus{
@@ -168,10 +168,10 @@ func TestHealthEndpoint(t *testing.T) {
 func TestAlertDoctrine(t *testing.T) {
 	// Test cases for alert doctrine
 	tests := []struct {
-		name        string
-		confidence  float64
+		name         string
+		confidence   float64
 		timeToImpact float64
-		expected    string
+		expected     string
 	}{
 		{"High confidence, short time", 0.9, 30.0, "INCOMING"},
 		{"High confidence, medium time", 0.8, 90.0, "IMMINENT"},

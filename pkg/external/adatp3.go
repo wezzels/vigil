@@ -14,10 +14,10 @@ import (
 type ADatP3ReportType string
 
 const (
-	ADatP3Sitrep    ADatP3ReportType = "SITREP"
-	ADatP3Intelrep  ADatP3ReportType = "INTREP"
-	ADatP3Opsrep    ADatP3ReportType = "OPSREP"
-	ADatP3Trackrep  ADatP3ReportType = "TRACKREP"
+	ADatP3Sitrep   ADatP3ReportType = "SITREP"
+	ADatP3Intelrep ADatP3ReportType = "INTREP"
+	ADatP3Opsrep   ADatP3ReportType = "OPSREP"
+	ADatP3Trackrep ADatP3ReportType = "TRACKREP"
 )
 
 // NewADatP3Sitrep creates a SITREP message
@@ -108,10 +108,10 @@ func NewADatP3Validator() *ADatP3Validator {
 // ValidateReportType validates report type
 func (v *ADatP3Validator) ValidateReportType(reportType string) error {
 	validTypes := map[string]bool{
-		"SITREP":    true,
-		"INTREP":    true,
-		"OPSREP":    true,
-		"TRACKREP":  true,
+		"SITREP":   true,
+		"INTREP":   true,
+		"OPSREP":   true,
+		"TRACKREP": true,
 	}
 
 	if !validTypes[reportType] {
@@ -124,10 +124,10 @@ func (v *ADatP3Validator) ValidateReportType(reportType string) error {
 // ValidateSecurityLevel validates security level
 func (v *ADatP3Validator) ValidateSecurityLevel(level string) error {
 	validLevels := map[string]bool{
-		"UNCLASSIFIED":   true,
-		"CONFIDENTIAL":   true,
-		"SECRET":         true,
-		"TOP SECRET":     true,
+		"UNCLASSIFIED": true,
+		"CONFIDENTIAL": true,
+		"SECRET":       true,
+		"TOP SECRET":   true,
 	}
 
 	if !validLevels[level] {

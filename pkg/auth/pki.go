@@ -18,11 +18,11 @@ import (
 
 // PKIManager manages PKI operations
 type PKIManager struct {
-	caCert     *x509.Certificate
-	caKey      interface{}
-	certPool   *x509.CertPool
-	crl        *x509.RevocationList
-	revoked    map[string]bool
+	caCert   *x509.Certificate
+	caKey    interface{}
+	certPool *x509.CertPool
+	crl      *x509.RevocationList
+	revoked  map[string]bool
 }
 
 // PKIConfig holds PKI configuration
@@ -44,7 +44,7 @@ func DefaultPKIConfig() *PKIConfig {
 // NewPKIManager creates a new PKI manager
 func NewPKIManager(config *PKIConfig) (*PKIManager, error) {
 	pki := &PKIManager{
-		revoked: make(map[string]bool),
+		revoked:  make(map[string]bool),
 		certPool: x509.NewCertPool(),
 	}
 
@@ -328,11 +328,11 @@ func (p *PKIManager) VerifyCertificate(certPEM []byte) (*x509.Certificate, error
 
 // CertValidity holds certificate validity information
 type CertValidity struct {
-	NotBefore  time.Time
-	NotAfter   time.Time
-	ExpiresIn  time.Duration
-	IsExpired  bool
-	IsRevoked  bool
+	NotBefore time.Time
+	NotAfter  time.Time
+	ExpiresIn time.Duration
+	IsExpired bool
+	IsRevoked bool
 }
 
 // CheckCertValidity checks certificate validity

@@ -16,8 +16,8 @@ type RTIType int
 
 const (
 	RTIPortico RTIType = iota // Portico open-source RTI
-	RTIMak                     // MAK RTI
-	RTIPitch                   // Pitch RTI
+	RTIMak                    // MAK RTI
+	RTIPitch                  // Pitch RTI
 )
 
 // String returns string representation of RTI type
@@ -112,9 +112,9 @@ func NewRTIAmbassador(config *RTIConfig) *RTIAmbassador {
 	if config == nil {
 		config = DefaultRTIConfig()
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &RTIAmbassador{
 		config:        config,
 		ctx:           ctx,
@@ -137,20 +137,20 @@ func (r *RTIAmbassador) SetCallbacks(callbacks FederateAmbassador) {
 func (r *RTIAmbassador) CreateFederation(name string, fomFiles []string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if r.connected {
 		return ErrFederationExists
 	}
-	
+
 	for _, file := range fomFiles {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
 			return fmt.Errorf("FOM file not found: %s", file)
 		}
 	}
-	
+
 	r.federationName = name
 	r.connected = true
-	
+
 	return nil
 }
 
@@ -158,15 +158,15 @@ func (r *RTIAmbassador) CreateFederation(name string, fomFiles []string) error {
 func (r *RTIAmbassador) DestroyFederation(name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	if r.federationName != name {
 		return ErrInvalidFederation
 	}
-	
+
 	r.connected = false
 	r.federationName = ""
 	return nil
@@ -176,16 +176,16 @@ func (r *RTIAmbassador) DestroyFederation(name string) error {
 func (r *RTIAmbassador) JoinFederation(name string, federateName string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if r.connected {
 		return ErrAlreadyConnected
 	}
-	
+
 	r.federationName = name
 	r.federateName = federateName
 	r.connected = true
 	r.federateTime = time.Time{}
-	
+
 	return nil
 }
 
@@ -193,11 +193,11 @@ func (r *RTIAmbassador) JoinFederation(name string, federateName string) error {
 func (r *RTIAmbassador) ResignFederation() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	r.connected = false
 	r.timeRegulated = false
 	r.timeConstrained = false
@@ -208,14 +208,14 @@ func (r *RTIAmbassador) ResignFederation() error {
 func (r *RTIAmbassador) RegisterObjectClass(name string) (ObjectClassHandle, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return 0, ErrNotConnected
 	}
-	
+
 	handle := ObjectClassHandle(len(r.objectClasses) + 1)
 	r.objectClasses[name] = handle
-	
+
 	return handle, nil
 }
 
@@ -223,11 +223,11 @@ func (r *RTIAmbassador) RegisterObjectClass(name string) (ObjectClassHandle, err
 func (r *RTIAmbassador) PublishObjectClass(handle ObjectClassHandle, attributes []AttributeHandle) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -235,11 +235,11 @@ func (r *RTIAmbassador) PublishObjectClass(handle ObjectClassHandle, attributes 
 func (r *RTIAmbassador) SubscribeObjectClass(handle ObjectClassHandle, attributes []AttributeHandle) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -247,13 +247,13 @@ func (r *RTIAmbassador) SubscribeObjectClass(handle ObjectClassHandle, attribute
 func (r *RTIAmbassador) RegisterObjectInstance(handle ObjectClassHandle) (ObjectInstanceHandle, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return 0, ErrNotConnected
 	}
-	
+
 	instanceHandle := ObjectInstanceHandle(time.Now().UnixNano())
-	
+
 	return instanceHandle, nil
 }
 
@@ -261,11 +261,11 @@ func (r *RTIAmbassador) RegisterObjectInstance(handle ObjectClassHandle) (Object
 func (r *RTIAmbassador) UpdateAttributeValues(instance ObjectInstanceHandle, values map[AttributeHandle][]byte) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -273,11 +273,11 @@ func (r *RTIAmbassador) UpdateAttributeValues(instance ObjectInstanceHandle, val
 func (r *RTIAmbassador) DeleteObjectInstance(instance ObjectInstanceHandle) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -285,14 +285,14 @@ func (r *RTIAmbassador) DeleteObjectInstance(instance ObjectInstanceHandle) erro
 func (r *RTIAmbassador) RegisterInteractionClass(name string) (InteractionClassHandle, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return 0, ErrNotConnected
 	}
-	
+
 	handle := InteractionClassHandle(len(r.interactions) + 1)
 	r.interactions[name] = handle
-	
+
 	return handle, nil
 }
 
@@ -300,11 +300,11 @@ func (r *RTIAmbassador) RegisterInteractionClass(name string) (InteractionClassH
 func (r *RTIAmbassador) PublishInteractionClass(handle InteractionClassHandle) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -312,11 +312,11 @@ func (r *RTIAmbassador) PublishInteractionClass(handle InteractionClassHandle) e
 func (r *RTIAmbassador) SubscribeInteractionClass(handle InteractionClassHandle) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -324,11 +324,11 @@ func (r *RTIAmbassador) SubscribeInteractionClass(handle InteractionClassHandle)
 func (r *RTIAmbassador) SendInteraction(handle InteractionClassHandle, parameters map[ParameterHandle][]byte) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -336,11 +336,11 @@ func (r *RTIAmbassador) SendInteraction(handle InteractionClassHandle, parameter
 func (r *RTIAmbassador) EnableTimeRegulation(lookahead time.Duration) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	r.timeRegulated = true
 	r.lookahead = lookahead
 	return nil
@@ -350,7 +350,7 @@ func (r *RTIAmbassador) EnableTimeRegulation(lookahead time.Duration) error {
 func (r *RTIAmbassador) DisableTimeRegulation() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	r.timeRegulated = false
 	return nil
 }
@@ -359,11 +359,11 @@ func (r *RTIAmbassador) DisableTimeRegulation() error {
 func (r *RTIAmbassador) EnableTimeConstrained() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	r.timeConstrained = true
 	return nil
 }
@@ -372,7 +372,7 @@ func (r *RTIAmbassador) EnableTimeConstrained() error {
 func (r *RTIAmbassador) DisableTimeConstrained() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	r.timeConstrained = false
 	return nil
 }
@@ -381,16 +381,16 @@ func (r *RTIAmbassador) DisableTimeConstrained() error {
 func (r *RTIAmbassador) TimeAdvanceRequest(t time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	r.federateTime = t
 	if r.callbacks != nil && !r.timeRegulated {
 		go r.callbacks.TimeAdvanceGrant(t)
 	}
-	
+
 	return nil
 }
 
@@ -398,11 +398,11 @@ func (r *RTIAmbassador) TimeAdvanceRequest(t time.Time) error {
 func (r *RTIAmbassador) QueryFederateTime() (time.Time, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return time.Time{}, ErrNotConnected
 	}
-	
+
 	return r.federateTime, nil
 }
 
@@ -410,11 +410,11 @@ func (r *RTIAmbassador) QueryFederateTime() (time.Time, error) {
 func (r *RTIAmbassador) RegisterFederationSynchronizationPoint(label string, tag string) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -422,11 +422,11 @@ func (r *RTIAmbassador) RegisterFederationSynchronizationPoint(label string, tag
 func (r *RTIAmbassador) AchieveSynchronizationPoint(label string) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if !r.connected {
 		return ErrNotConnected
 	}
-	
+
 	return nil
 }
 
@@ -434,11 +434,11 @@ func (r *RTIAmbassador) AchieveSynchronizationPoint(label string) error {
 func (r *RTIAmbassador) Shutdown() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if r.cancel != nil {
 		r.cancel()
 	}
-	
+
 	r.connected = false
 	return nil
 }
@@ -454,7 +454,7 @@ func (r *RTIAmbassador) IsConnected() bool {
 func (r *RTIAmbassador) Stats() RTIStats {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	return RTIStats{
 		Connected:       r.connected,
 		FederationName:  r.federationName,
@@ -501,17 +501,17 @@ func (e *RTIError) Error() string {
 
 // FOMFile represents a Federation Object Model file
 type FOMFile struct {
-	XMLName        xml.Name           `xml:"objectModel"`
-	Name           string             `xml:"name"`
-	Version        string             `xml:"version"`
-	ObjectClasses  []ObjectClassFOM   `xml:"objects>objectClass"`
-	Interactions   []InteractionFOM   `xml:"interactions>interactionClass"`
+	XMLName       xml.Name         `xml:"objectModel"`
+	Name          string           `xml:"name"`
+	Version       string           `xml:"version"`
+	ObjectClasses []ObjectClassFOM `xml:"objects>objectClass"`
+	Interactions  []InteractionFOM `xml:"interactions>interactionClass"`
 }
 
 // ObjectClassFOM represents an HLA object class in FOM
 type ObjectClassFOM struct {
-	Name       string             `xml:"name"`
-	Attributes []AttributeFOM     `xml:"attribute"`
+	Name       string         `xml:"name"`
+	Attributes []AttributeFOM `xml:"attribute"`
 }
 
 // AttributeFOM represents an HLA attribute in FOM
@@ -523,7 +523,7 @@ type AttributeFOM struct {
 
 // InteractionFOM represents an HLA interaction class in FOM
 type InteractionFOM struct {
-	Name       string          `xml:"name"`
+	Name       string         `xml:"name"`
 	Parameters []ParameterFOM `xml:"parameter"`
 }
 
@@ -539,11 +539,11 @@ func ParseFOM(filename string) (*FOMFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var fom FOMFile
 	if err := xml.Unmarshal(data, &fom); err != nil {
 		return nil, err
 	}
-	
+
 	return &fom, nil
 }

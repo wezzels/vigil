@@ -21,23 +21,23 @@ const (
 
 // CircuitBreaker implements the circuit breaker pattern
 type CircuitBreaker struct {
-	maxFailures    int
-	timeout        time.Duration
+	maxFailures      int
+	timeout          time.Duration
 	successThreshold int
-	
-	failures       int
-	lastFailure   time.Time
-	state         CircuitState
-	mu            sync.RWMutex
+
+	failures    int
+	lastFailure time.Time
+	state       CircuitState
+	mu          sync.RWMutex
 }
 
 // NewCircuitBreaker creates a new circuit breaker
 func NewCircuitBreaker(maxFailures int, timeout time.Duration) *CircuitBreaker {
 	return &CircuitBreaker{
-		maxFailures:    maxFailures,
-		timeout:        timeout,
+		maxFailures:      maxFailures,
+		timeout:          timeout,
 		successThreshold: 3,
-		state:          StateClosed,
+		state:            StateClosed,
 	}
 }
 
@@ -45,7 +45,7 @@ func NewCircuitBreaker(maxFailures int, timeout time.Duration) *CircuitBreaker {
 func (cb *CircuitBreaker) Allow() bool {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
-	
+
 	switch cb.state {
 	case StateClosed:
 		return true
@@ -72,7 +72,7 @@ func (cb *CircuitBreaker) Allow() bool {
 func (cb *CircuitBreaker) RecordSuccess() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	switch cb.state {
 	case StateClosed:
 		cb.failures = 0
@@ -89,10 +89,10 @@ func (cb *CircuitBreaker) RecordSuccess() {
 func (cb *CircuitBreaker) RecordFailure() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	cb.failures++
 	cb.lastFailure = time.Now()
-	
+
 	switch cb.state {
 	case StateClosed:
 		if cb.failures >= cb.maxFailures {
@@ -112,12 +112,12 @@ func (cb *CircuitBreaker) State() CircuitState {
 
 // Reconnector handles connection reconnection with backoff
 type Reconnector struct {
-	config       *OPIRConfig
-	circuit      *CircuitBreaker
-	
-	attempts     int
-	lastAttempt  time.Time
-	mu           sync.RWMutex
+	config  *OPIRConfig
+	circuit *CircuitBreaker
+
+	attempts    int
+	lastAttempt time.Time
+	mu          sync.RWMutex
 }
 
 // NewReconnector creates a new reconnector
@@ -133,11 +133,11 @@ func (r *Reconnector) ShouldReconnect() bool {
 	if !r.circuit.Allow() {
 		return false
 	}
-	
+
 	r.mu.RLock()
 	attempts := r.attempts
 	r.mu.RUnlock()
-	
+
 	return attempts < r.config.MaxRetries
 }
 
@@ -145,24 +145,24 @@ func (r *Reconnector) ShouldReconnect() bool {
 func (r *Reconnector) NextBackoff() time.Duration {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	r.attempts++
-	
+
 	// Exponential backoff with jitter
 	baseDelay := r.config.RetryDelay
 	maxDelay := r.config.MaxRetryDelay
-	
+
 	delay := baseDelay * time.Duration(1<<uint(r.attempts-1))
 	if delay > maxDelay {
 		delay = maxDelay
 	}
-	
+
 	// Add jitter (±10%)
 	jitter := time.Duration(float64(delay) * 0.1)
 	delay = delay + jitter - time.Duration(float64(jitter)*2*float64(time.Now().UnixNano()%1000)/1000)
-	
+
 	r.lastAttempt = time.Now()
-	
+
 	return delay
 }
 
@@ -201,10 +201,10 @@ func (r *Reconnector) CircuitState() CircuitState {
 
 // HealthChecker provides health checking functionality
 type HealthChecker struct {
-	config      *OPIRConfig
-	lastCheck   time.Time
-	healthy     bool
-	mu          sync.RWMutex
+	config    *OPIRConfig
+	lastCheck time.Time
+	healthy   bool
+	mu        sync.RWMutex
 }
 
 // NewHealthChecker creates a new health checker
@@ -219,18 +219,18 @@ func NewHealthChecker(config *OPIRConfig) *HealthChecker {
 func (h *HealthChecker) Check(ctx context.Context, feed OPIRDataFeed) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	h.lastCheck = time.Now()
-	
+
 	// Check if feed is connected
 	if !feed.IsConnected() {
 		h.healthy = false
 		return NewConnectionError("feed not connected", true)
 	}
-	
+
 	// Check feed stats
 	stats := feed.Stats()
-	
+
 	// Check error rate
 	if stats.TotalReceived > 0 {
 		errorRate := float64(stats.TotalErrors) / float64(stats.TotalReceived)
@@ -239,13 +239,13 @@ func (h *HealthChecker) Check(ctx context.Context, feed OPIRDataFeed) error {
 			return NewConnectionError("high error rate", true)
 		}
 	}
-	
+
 	// Check receive rate
 	if stats.ReceiveRate < 1.0 { // Less than 1 message/second
 		h.healthy = false
 		return NewConnectionError("low receive rate", true)
 	}
-	
+
 	h.healthy = true
 	return nil
 }
@@ -266,9 +266,9 @@ func (h *HealthChecker) LastCheck() time.Time {
 
 // ConnectionPool manages multiple connections
 type ConnectionPool struct {
-	feeds      []OPIRDataFeed
-	current    int
-	mu         sync.RWMutex
+	feeds   []OPIRDataFeed
+	current int
+	mu      sync.RWMutex
 }
 
 // NewConnectionPool creates a new connection pool
@@ -283,14 +283,14 @@ func NewConnectionPool(feeds ...OPIRDataFeed) *ConnectionPool {
 func (p *ConnectionPool) Get() OPIRDataFeed {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if len(p.feeds) == 0 {
 		return nil
 	}
-	
+
 	feed := p.feeds[p.current]
 	p.current = (p.current + 1) % len(p.feeds)
-	
+
 	return feed
 }
 
@@ -298,14 +298,14 @@ func (p *ConnectionPool) Get() OPIRDataFeed {
 func (p *ConnectionPool) GetHealthy() OPIRDataFeed {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	for i := 0; i < len(p.feeds); i++ {
 		idx := (p.current + i) % len(p.feeds)
 		if p.feeds[idx].IsConnected() {
 			return p.feeds[idx]
 		}
 	}
-	
+
 	return nil
 }
 
@@ -327,7 +327,7 @@ func (p *ConnectionPool) Add(feed OPIRDataFeed) {
 func (p *ConnectionPool) Remove(feed OPIRDataFeed) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	for i, f := range p.feeds {
 		if f == feed {
 			p.feeds = append(p.feeds[:i], p.feeds[i+1:]...)

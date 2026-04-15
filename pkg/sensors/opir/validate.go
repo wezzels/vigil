@@ -8,9 +8,9 @@ import (
 
 // Validator validates OPIR sightings
 type Validator struct {
-	config      *OPIRConfig
-	seenCache   map[string]time.Time
-	mu          sync.RWMutex
+	config    *OPIRConfig
+	seenCache map[string]time.Time
+	mu        sync.RWMutex
 }
 
 // NewValidator creates a new validator
@@ -27,44 +27,44 @@ func (v *Validator) Validate(sighting *OPIRSighting) error {
 	if err := v.validateLatitude(sighting.Latitude); err != nil {
 		return err
 	}
-	
+
 	// Longitude range
 	if err := v.validateLongitude(sighting.Longitude); err != nil {
 		return err
 	}
-	
+
 	// Altitude range
 	if err := v.validateAltitude(sighting.Altitude); err != nil {
 		return err
 	}
-	
+
 	// Confidence
 	if err := v.validateConfidence(sighting.Confidence); err != nil {
 		return err
 	}
-	
+
 	// SNR
 	if err := v.validateSNR(sighting.SNR); err != nil {
 		return err
 	}
-	
+
 	// Intensity
 	if err := v.validateIntensity(sighting.Intensity); err != nil {
 		return err
 	}
-	
+
 	// Timestamp
 	if err := v.validateTimestamp(sighting.Timestamp); err != nil {
 		return err
 	}
-	
+
 	// Duplicate detection
 	if v.config.EnableFiltering {
 		if err := v.checkDuplicate(sighting); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (v *Validator) validateIntensity(intensity float64) error {
 // validateTimestamp validates timestamp
 func (v *Validator) validateTimestamp(ts time.Time) error {
 	now := time.Now()
-	
+
 	// Check if timestamp is too old
 	maxAge := 24 * time.Hour
 	if now.Sub(ts) > maxAge {
@@ -152,7 +152,7 @@ func (v *Validator) validateTimestamp(ts time.Time) error {
 			"",
 		)
 	}
-	
+
 	// Check if timestamp is in the future
 	if ts.After(now.Add(5 * time.Minute)) {
 		return NewValidationError(
@@ -160,7 +160,7 @@ func (v *Validator) validateTimestamp(ts time.Time) error {
 			"",
 		)
 	}
-	
+
 	return nil
 }
 
@@ -168,10 +168,10 @@ func (v *Validator) validateTimestamp(ts time.Time) error {
 func (v *Validator) checkDuplicate(sighting *OPIRSighting) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	
+
 	// Create deduplication key
 	key := sighting.ID
-	
+
 	// Check if we've seen this recently
 	if lastSeen, exists := v.seenCache[key]; exists {
 		if time.Since(lastSeen) < v.config.DedupeWindow {
@@ -181,13 +181,13 @@ func (v *Validator) checkDuplicate(sighting *OPIRSighting) error {
 			)
 		}
 	}
-	
+
 	// Add to cache
 	v.seenCache[key] = time.Now()
-	
+
 	// Cleanup old entries
 	v.cleanup()
-	
+
 	return nil
 }
 
@@ -205,30 +205,30 @@ func (v *Validator) cleanup() {
 func (v *Validator) Stats() ValidationStats {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
-	
+
 	return ValidationStats{
-		CacheSize:    len(v.seenCache),
+		CacheSize:     len(v.seenCache),
 		MinConfidence: v.config.MinConfidence,
-		MinSNR:       v.config.MinSNR,
-		MaxAltitude:  v.config.MaxAltitude,
+		MinSNR:        v.config.MinSNR,
+		MaxAltitude:   v.config.MaxAltitude,
 	}
 }
 
 // ValidationStats holds validation statistics
 type ValidationStats struct {
-	CacheSize     int       `json:"cache_size"`
-	MinConfidence float64   `json:"min_confidence"`
-	MinSNR        float64   `json:"min_snr"`
-	MaxAltitude   float64   `json:"max_altitude"`
+	CacheSize     int     `json:"cache_size"`
+	MinConfidence float64 `json:"min_confidence"`
+	MinSNR        float64 `json:"min_snr"`
+	MaxAltitude   float64 `json:"max_altitude"`
 }
 
 // Filter filters sightings based on quality metrics
 type Filter struct {
-	config       *OPIRConfig
-	minLat       float64
-	maxLat       float64
-	minLon       float64
-	maxLon       float64
+	config *OPIRConfig
+	minLat float64
+	maxLat float64
+	minLon float64
+	maxLon float64
 }
 
 // NewFilter creates a new filter
@@ -259,22 +259,22 @@ func (f *Filter) Filter(sighting *OPIRSighting) bool {
 	if sighting.Longitude < f.minLon || sighting.Longitude > f.maxLon {
 		return false
 	}
-	
+
 	// Altitude
 	if sighting.Altitude < -1000 || sighting.Altitude > f.config.MaxAltitude {
 		return false
 	}
-	
+
 	// Confidence
 	if sighting.Confidence < f.config.MinConfidence {
 		return false
 	}
-	
+
 	// SNR
 	if sighting.SNR < f.config.MinSNR {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -291,7 +291,7 @@ func (f *Filter) FilterBatch(sightings []OPIRSighting) []OPIRSighting {
 
 // NoiseFilter filters noise from sightings
 type NoiseFilter struct {
-	config      *OPIRConfig
+	config             *OPIRConfig
 	intensityThreshold float64
 	velocityThreshold  float64
 }
@@ -299,9 +299,9 @@ type NoiseFilter struct {
 // NewNoiseFilter creates a new noise filter
 func NewNoiseFilter(config *OPIRConfig) *NoiseFilter {
 	return &NoiseFilter{
-		config:            config,
+		config:             config,
 		intensityThreshold: 1e-10, // W/m²/sr
-		velocityThreshold:  10000,  // m/s
+		velocityThreshold:  10000, // m/s
 	}
 }
 
@@ -311,7 +311,7 @@ func (nf *NoiseFilter) Filter(sighting *OPIRSighting) bool {
 	if sighting.Intensity < nf.intensityThreshold {
 		return false
 	}
-	
+
 	// Calculate velocity magnitude
 	velocity := sighting.Speed
 	if velocity == 0 {
@@ -320,12 +320,12 @@ func (nf *NoiseFilter) Filter(sighting *OPIRSighting) bool {
 			sighting.VelocityN*sighting.VelocityN +
 			sighting.VelocityU*sighting.VelocityU)
 	}
-	
+
 	// Unrealistic velocity likely noise
 	if velocity > nf.velocityThreshold {
 		return false
 	}
-	
+
 	return true
 }
 

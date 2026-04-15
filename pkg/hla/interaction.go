@@ -10,8 +10,8 @@ import (
 
 // InteractionPublisher handles HLA interaction publishing
 type InteractionPublisher struct {
-	mu              sync.RWMutex
-	federation      *Federation
+	mu               sync.RWMutex
+	federation       *Federation
 	interactionClass string
 }
 

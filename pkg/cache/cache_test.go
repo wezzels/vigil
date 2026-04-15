@@ -7,12 +7,12 @@ import (
 
 // MockRedisClient is a mock for testing
 type MockRedisClient struct {
-	data    map[string]string
-	hashes  map[string]map[string]string
-	sets    map[string]map[string]bool
-	lists   map[string][]string
-	sorted  map[string]map[string]float64
-	pubsub  map[string][]string
+	data   map[string]string
+	hashes map[string]map[string]string
+	sets   map[string]map[string]bool
+	lists  map[string][]string
+	sorted map[string]map[string]float64
+	pubsub map[string][]string
 }
 
 func NewMockRedisClient() *MockRedisClient {
@@ -58,7 +58,7 @@ func TestTrackStateStruct(t *testing.T) {
 		Identity:    "hostile",
 		Quality:     "high",
 		Confidence:  0.95,
-		LastUpdate: time.Now(),
+		LastUpdate:  time.Now(),
 	}
 
 	if state.TrackID != "track-001" {

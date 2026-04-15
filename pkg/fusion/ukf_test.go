@@ -8,7 +8,7 @@ import (
 // TestUKFSigmaPoints tests UKF can be created and initialized
 func TestUKFSigmaPoints(t *testing.T) {
 	ukf := NewUKF(4, 0.001, 2.0, 0.0)
-	
+
 	state := []float64{1000.0, 2000.0, 50.0, 30.0}
 	cov := [][]float64{
 		{100.0, 0.0, 0.0, 0.0},
@@ -18,7 +18,7 @@ func TestUKFSigmaPoints(t *testing.T) {
 	}
 
 	ukf.Initialize(state, cov)
-	
+
 	if ukf.state[0] != 1000.0 {
 		t.Errorf("State not initialized correctly")
 	}
@@ -27,7 +27,7 @@ func TestUKFSigmaPoints(t *testing.T) {
 // TestUKFPredict tests prediction step
 func TestUKFPredict(t *testing.T) {
 	ukf := NewUKF(4, 0.001, 2.0, 0.0)
-	
+
 	state := []float64{1000.0, 2000.0, 50.0, 30.0}
 	cov := [][]float64{
 		{100.0, 0.0, 0.0, 0.0},
@@ -37,10 +37,10 @@ func TestUKFPredict(t *testing.T) {
 	}
 
 	ukf.Initialize(state, cov)
-	
+
 	// Predict with dt=1
 	newState := ukf.Predict(1.0, nil)
-	
+
 	// X should advance by velocity
 	if newState[0] != 1050.0 {
 		t.Errorf("Expected X=1050, got %f", newState[0])
@@ -50,7 +50,7 @@ func TestUKFPredict(t *testing.T) {
 // TestUKFUpdate tests update step
 func TestUKFUpdate(t *testing.T) {
 	ukf := NewUKF(4, 0.001, 2.0, 0.0)
-	
+
 	state := []float64{1000.0, 2000.0, 50.0, 30.0}
 	cov := [][]float64{
 		{100.0, 0.0, 0.0, 0.0},
@@ -60,11 +60,11 @@ func TestUKFUpdate(t *testing.T) {
 	}
 
 	ukf.Initialize(state, cov)
-	
+
 	// Update with measurement
 	measurement := []float64{1050.0, 2030.0}
 	newState := ukf.Update(measurement, nil)
-	
+
 	if len(newState) != 4 {
 		t.Errorf("Wrong state dimension")
 	}

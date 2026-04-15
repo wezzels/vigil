@@ -18,27 +18,27 @@ func TestEntityCreation(t *testing.T) {
 	// - Publish Entity State PDU
 
 	type Entity struct {
-		SiteID       uint16  `json:"site_id"`
+		SiteID        uint16  `json:"site_id"`
 		ApplicationID uint16  `json:"application_id"`
-		EntityID     uint16  `json:"entity_id"`
-		ForceID      uint8   `json:"force_id"`
-		EntityType   string  `json:"entity_type"`
-		Lat          float64 `json:"lat"`
-		Lon          float64 `json:"lon"`
-		Alt          float64 `json:"alt"`
-		DRModel      uint8   `json:"dr_model"`
+		EntityID      uint16  `json:"entity_id"`
+		ForceID       uint8   `json:"force_id"`
+		EntityType    string  `json:"entity_type"`
+		Lat           float64 `json:"lat"`
+		Lon           float64 `json:"lon"`
+		Alt           float64 `json:"alt"`
+		DRModel       uint8   `json:"dr_model"`
 	}
 
 	entity := Entity{
-		SiteID:       1,
+		SiteID:        1,
 		ApplicationID: 1,
-		EntityID:     100,
-		ForceID:      1, // Friendly
-		EntityType:   "F-16C",
-		Lat:          38.8977,
-		Lon:          -77.0365,
-		Alt:          10000,
-		DRModel:      2, // DRM_RPW
+		EntityID:      100,
+		ForceID:       1, // Friendly
+		EntityType:    "F-16C",
+		Lat:           38.8977,
+		Lon:           -77.0365,
+		Alt:           10000,
+		DRModel:       2, // DRM_RPW
 	}
 
 	t.Logf("Entity: %+v", entity)
@@ -75,28 +75,28 @@ func TestDeadReckoning(t *testing.T) {
 	// - Time delta
 
 	type DRState struct {
-		X, Y, Z        float64 // Position (meters)
-		VX, VY, VZ     float64 // Velocity (m/s)
-		AX, AY, AZ     float64 // Acceleration (m/s²)
+		X, Y, Z         float64 // Position (meters)
+		VX, VY, VZ      float64 // Velocity (m/s)
+		AX, AY, AZ      float64 // Acceleration (m/s²)
 		Psi, Theta, Phi float64 // Orientation (radians)
-		DRModel        uint8
-		LastUpdate     int64
+		DRModel         uint8
+		LastUpdate      int64
 	}
 
 	state := DRState{
-		X:         1000000.0,
-		Y:         2000000.0,
-		Z:         50000.0,
-		VX:        300.0,
-		VY:        0.0,
-		VZ:        0.0,
-		AX:        0.0,
-		AY:        0.0,
-		AZ:        0.0,
-		Psi:       0.785,  // 45 degrees
-		Theta:     0.0,
-		Phi:       0.0,
-		DRModel:   2,      // DRM_RPW
+		X:          1000000.0,
+		Y:          2000000.0,
+		Z:          50000.0,
+		VX:         300.0,
+		VY:         0.0,
+		VZ:         0.0,
+		AX:         0.0,
+		AY:         0.0,
+		AZ:         0.0,
+		Psi:        0.785, // 45 degrees
+		Theta:      0.0,
+		Phi:        0.0,
+		DRModel:    2, // DRM_RPW
 		LastUpdate: time.Now().UnixMilli(),
 	}
 
@@ -123,41 +123,41 @@ func TestEntityStatePDU(t *testing.T) {
 	// - Marking
 
 	type EntityStatePDU struct {
-		PDUType         uint8
-		ProtocolVersion uint8
-		ExerciseID      uint8
-		SiteID          uint16
-		ApplicationID   uint16
-		EntityID        uint16
-		ForceID         uint8
-		LocationX       float64
-		LocationY       float64
-		LocationZ       float64
-		OrientationPsi  float32
+		PDUType          uint8
+		ProtocolVersion  uint8
+		ExerciseID       uint8
+		SiteID           uint16
+		ApplicationID    uint16
+		EntityID         uint16
+		ForceID          uint8
+		LocationX        float64
+		LocationY        float64
+		LocationZ        float64
+		OrientationPsi   float32
 		OrientationTheta float32
-		OrientationPhi  float32
-		VelocityX       float32
-		VelocityY       float32
-		VelocityZ       float32
+		OrientationPhi   float32
+		VelocityX        float32
+		VelocityY        float32
+		VelocityZ        float32
 	}
 
 	pdu := EntityStatePDU{
-		PDUType:         1, // Entity State
-		ProtocolVersion: 7, // DIS 7
-		ExerciseID:      1,
-		SiteID:          1,
-		ApplicationID:   1,
-		EntityID:        100,
-		ForceID:         1,
-		LocationX:       1000000.0,
-		LocationY:       2000000.0,
-		LocationZ:       50000.0,
-		OrientationPsi:  0.785,
+		PDUType:          1, // Entity State
+		ProtocolVersion:  7, // DIS 7
+		ExerciseID:       1,
+		SiteID:           1,
+		ApplicationID:    1,
+		EntityID:         100,
+		ForceID:          1,
+		LocationX:        1000000.0,
+		LocationY:        2000000.0,
+		LocationZ:        50000.0,
+		OrientationPsi:   0.785,
 		OrientationTheta: 0.0,
-		OrientationPhi:  0.0,
-		VelocityX:       300.0,
-		VelocityY:       0.0,
-		VelocityZ:       0.0,
+		OrientationPhi:   0.0,
+		VelocityX:        300.0,
+		VelocityY:        0.0,
+		VelocityZ:        0.0,
 	}
 
 	t.Logf("Entity State PDU: %+v", pdu)
@@ -200,13 +200,13 @@ func TestLVCInteroperability(t *testing.T) {
 	// - Constructive entities (computer-generated forces)
 
 	entityTypes := []struct {
-		Type     string
-		Source   string
-		DRModel  uint8
+		Type    string
+		Source  string
+		DRModel uint8
 	}{
-		{"Live Aircraft", "RADAR", 1},     // DRM_STATIC
+		{"Live Aircraft", "RADAR", 1},        // DRM_STATIC
 		{"Virtual Aircraft", "SIMULATOR", 2}, // DRM_RPW
-		{"Constructive Tank", "CGF", 3},   // DRM_RVW
+		{"Constructive Tank", "CGF", 3},      // DRM_RVW
 	}
 
 	for _, et := range entityTypes {
@@ -222,19 +222,19 @@ func TestEntityRemoval(t *testing.T) {
 	// - Free track number for reuse
 
 	type EntityRemoval struct {
-		SiteID       uint16 `json:"site_id"`
+		SiteID        uint16 `json:"site_id"`
 		ApplicationID uint16 `json:"application_id"`
-		EntityID     uint16 `json:"entity_id"`
-		Reason       string `json:"reason"`
-		Timestamp    int64  `json:"timestamp"`
+		EntityID      uint16 `json:"entity_id"`
+		Reason        string `json:"reason"`
+		Timestamp     int64  `json:"timestamp"`
 	}
 
 	removal := EntityRemoval{
-		SiteID:       1,
+		SiteID:        1,
 		ApplicationID: 1,
-		EntityID:     100,
-		Reason:       "timeout",
-		Timestamp:    time.Now().UnixMilli(),
+		EntityID:      100,
+		Reason:        "timeout",
+		Timestamp:     time.Now().UnixMilli(),
 	}
 
 	t.Logf("Entity removal: %+v", removal)

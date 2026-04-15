@@ -11,10 +11,10 @@ import (
 type Mode int
 
 const (
-	ModeLive Mode = iota     // Live sensor data
-	ModeReplay               // Replay from recorded data
-	ModeSimulation           // Simulated data
-	ModeHybrid               // Mix of live and simulated
+	ModeLive       Mode = iota // Live sensor data
+	ModeReplay                 // Replay from recorded data
+	ModeSimulation             // Simulated data
+	ModeHybrid                 // Mix of live and simulated
 )
 
 // String returns string representation of mode
@@ -57,32 +57,32 @@ func (m *Mode) UnmarshalText(text []byte) error {
 
 // ModeConfig holds configuration for a mode
 type ModeConfig struct {
-	CurrentMode     Mode          `json:"current_mode"`
-	PreviousMode    Mode          `json:"previous_mode"`
-	SwitchCooldown  time.Duration `json:"switch_cooldown"`
-	AllowHotSwitch  bool          `json:"allow_hot_switch"`
-	ReplaySource    string        `json:"replay_source"`
-	SimConfig       SimConfig     `json:"sim_config"`
-	HybridRatio     float64       `json:"hybrid_ratio"` // 0-1, ratio of live to simulated
+	CurrentMode    Mode          `json:"current_mode"`
+	PreviousMode   Mode          `json:"previous_mode"`
+	SwitchCooldown time.Duration `json:"switch_cooldown"`
+	AllowHotSwitch bool          `json:"allow_hot_switch"`
+	ReplaySource   string        `json:"replay_source"`
+	SimConfig      SimConfig     `json:"sim_config"`
+	HybridRatio    float64       `json:"hybrid_ratio"` // 0-1, ratio of live to simulated
 }
 
 // SimConfig holds simulation configuration
 type SimConfig struct {
-	NumTargets      int           `json:"num_targets"`
-	ScenarioFile    string        `json:"scenario_file"`
-	TimeCompression float64       `json:"time_compression"`
-	InjectNoise     bool          `json:"inject_noise"`
-	Seed            int64         `json:"seed"`
+	NumTargets      int     `json:"num_targets"`
+	ScenarioFile    string  `json:"scenario_file"`
+	TimeCompression float64 `json:"time_compression"`
+	InjectNoise     bool    `json:"inject_noise"`
+	Seed            int64   `json:"seed"`
 }
 
 // DefaultModeConfig returns default mode configuration
 func DefaultModeConfig() *ModeConfig {
 	return &ModeConfig{
-		CurrentMode:     ModeLive,
-		PreviousMode:    ModeLive,
-		SwitchCooldown:  5 * time.Second,
-		AllowHotSwitch:  true,
-		HybridRatio:     0.5,
+		CurrentMode:    ModeLive,
+		PreviousMode:   ModeLive,
+		SwitchCooldown: 5 * time.Second,
+		AllowHotSwitch: true,
+		HybridRatio:    0.5,
 		SimConfig: SimConfig{
 			NumTargets:      10,
 			TimeCompression: 1.0,
@@ -110,9 +110,9 @@ func NewModeManager(config *ModeConfig) *ModeManager {
 	if config == nil {
 		config = DefaultModeConfig()
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &ModeManager{
 		config:    config,
 		ctx:       ctx,
@@ -132,30 +132,30 @@ func (mm *ModeManager) GetMode() Mode {
 func (mm *ModeManager) SetMode(newMode Mode) error {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
-	
+
 	// Check cooldown
 	if time.Since(mm.lastSwitch) < mm.config.SwitchCooldown && !mm.config.AllowHotSwitch {
 		return ErrSwitchCooldown
 	}
-	
+
 	// Same mode
 	if mm.config.CurrentMode == newMode {
 		return nil
 	}
-	
+
 	// Store old mode
 	oldMode := mm.config.CurrentMode
-	
+
 	// Update mode
 	mm.config.PreviousMode = oldMode
 	mm.config.CurrentMode = newMode
 	mm.lastSwitch = time.Now()
-	
+
 	// Notify callbacks
 	for _, cb := range mm.callbacks {
 		go cb(oldMode, newMode)
 	}
-	
+
 	return nil
 }
 
@@ -184,11 +184,11 @@ func (mm *ModeManager) UpdateConfig(config *ModeConfig) {
 func (mm *ModeManager) CanSwitch() bool {
 	mm.mu.RLock()
 	defer mm.mu.RUnlock()
-	
+
 	if mm.config.AllowHotSwitch {
 		return true
 	}
-	
+
 	return time.Since(mm.lastSwitch) >= mm.config.SwitchCooldown
 }
 
@@ -196,11 +196,11 @@ func (mm *ModeManager) CanSwitch() bool {
 func (mm *ModeManager) TimeUntilSwitch() time.Duration {
 	mm.mu.RLock()
 	defer mm.mu.RUnlock()
-	
+
 	if mm.config.AllowHotSwitch {
 		return 0
 	}
-	
+
 	remaining := mm.config.SwitchCooldown - time.Since(mm.lastSwitch)
 	if remaining < 0 {
 		return 0
@@ -213,7 +213,7 @@ func (mm *ModeManager) RestorePreviousMode() error {
 	mm.mu.RLock()
 	previousMode := mm.config.PreviousMode
 	mm.mu.RUnlock()
-	
+
 	return mm.SetMode(previousMode)
 }
 
@@ -221,7 +221,7 @@ func (mm *ModeManager) RestorePreviousMode() error {
 func (mm *ModeManager) Stats() ModeStats {
 	mm.mu.RLock()
 	defer mm.mu.RUnlock()
-	
+
 	return ModeStats{
 		CurrentMode:     mm.config.CurrentMode,
 		PreviousMode:    mm.config.PreviousMode,
@@ -235,8 +235,8 @@ func (mm *ModeManager) Stats() ModeStats {
 type ModeStats struct {
 	CurrentMode     Mode          `json:"current_mode"`
 	PreviousMode    Mode          `json:"previous_mode"`
-	LastSwitch      time.Time    `json:"last_switch"`
-	CanSwitch       bool         `json:"can_switch"`
+	LastSwitch      time.Time     `json:"last_switch"`
+	CanSwitch       bool          `json:"can_switch"`
 	TimeUntilSwitch time.Duration `json:"time_until_switch"`
 }
 
@@ -249,7 +249,7 @@ func (mm *ModeManager) Context() context.Context {
 func (mm *ModeManager) Shutdown() {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
-	
+
 	if mm.cancel != nil {
 		mm.cancel()
 	}
@@ -295,29 +295,29 @@ func (e *ModeError) Error() string {
 func (mm *ModeManager) CycleMode() Mode {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
-	
+
 	modes := []Mode{ModeLive, ModeReplay, ModeSimulation, ModeHybrid}
 	currentIdx := 0
-	
+
 	for i, m := range modes {
 		if m == mm.config.CurrentMode {
 			currentIdx = i
 			break
 		}
 	}
-	
+
 	nextIdx := (currentIdx + 1) % len(modes)
 	newMode := modes[nextIdx]
-	
+
 	oldMode := mm.config.CurrentMode
 	mm.config.PreviousMode = oldMode
 	mm.config.CurrentMode = newMode
 	mm.lastSwitch = time.Now()
-	
+
 	for _, cb := range mm.callbacks {
 		go cb(oldMode, newMode)
 	}
-	
+
 	return newMode
 }
 
@@ -325,14 +325,14 @@ func (mm *ModeManager) CycleMode() Mode {
 func (mm *ModeManager) SetHybridRatio(ratio float64) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
-	
+
 	if ratio < 0 {
 		ratio = 0
 	}
 	if ratio > 1 {
 		ratio = 1
 	}
-	
+
 	mm.config.HybridRatio = ratio
 }
 

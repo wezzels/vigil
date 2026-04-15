@@ -22,11 +22,11 @@ type ObjectHandler func(ctx context.Context, obj *DiscoveredObject) error
 
 // DiscoveredObject represents a discovered HLA object
 type DiscoveredObject struct {
-	ID             string
-	Class          string
-	Attributes     map[string]interface{}
-	DiscoverTime    time.Time
-	LastUpdateTime time.Time
+	ID                string
+	Class             string
+	Attributes        map[string]interface{}
+	DiscoverTime      time.Time
+	LastUpdateTime    time.Time
 	ProducingFederate string
 }
 

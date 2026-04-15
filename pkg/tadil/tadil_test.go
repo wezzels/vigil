@@ -270,9 +270,9 @@ func TestVMFValidation(t *testing.T) {
 	// Valid message
 	validMsg := &tadil.VMFMessage{
 		MessageHeader: tadil.VMFHeader{
-			Originator: "UNIT1",
+			Originator:  "UNIT1",
 			MessageType: "TRACK",
-			Precedence: "PRIORITY",
+			Precedence:  "PRIORITY",
 		},
 	}
 
@@ -284,9 +284,9 @@ func TestVMFValidation(t *testing.T) {
 	// Invalid precedence
 	invalidMsg := &tadil.VMFMessage{
 		MessageHeader: tadil.VMFHeader{
-			Originator: "UNIT1",
+			Originator:  "UNIT1",
 			MessageType: "TRACK",
-			Precedence: "INVALID",
+			Precedence:  "INVALID",
 		},
 	}
 
@@ -371,9 +371,9 @@ func TestRoundtrip(t *testing.T) {
 		formatter := tadil.NewVMFFormatter()
 		original := &tadil.VMFMessage{
 			MessageHeader: tadil.VMFHeader{
-				Originator: "UNIT1",
+				Originator:  "UNIT1",
 				MessageType: "TRACK",
-				Precedence: "PRIORITY",
+				Precedence:  "PRIORITY",
 			},
 			MessageBody: "Test",
 			Timestamp:   time.Now(),
@@ -414,9 +414,9 @@ func BenchmarkVMFFormat(b *testing.B) {
 	formatter := tadil.NewVMFFormatter()
 	msg := &tadil.VMFMessage{
 		MessageHeader: tadil.VMFHeader{
-			Originator: "UNIT1",
+			Originator:  "UNIT1",
 			MessageType: "TRACK",
-			Precedence: "PRIORITY",
+			Precedence:  "PRIORITY",
 		},
 		MessageBody: "Test message",
 		Timestamp:   time.Now(),

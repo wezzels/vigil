@@ -31,14 +31,14 @@ func TestOPIRLoad(t *testing.T) {
 func testOPIRThroughput(t *testing.T, targetRate int, duration time.Duration) {
 	msgCount := targetRate * int(duration.Seconds())
 	processed := make(chan struct{}, msgCount)
-	
+
 	// Simulate message processing
 	start := time.Now()
-	
+
 	var wg sync.WaitGroup
 	workers := 10
 	msgsPerWorker := msgCount / workers
-	
+
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
@@ -50,15 +50,15 @@ func testOPIRThroughput(t *testing.T, targetRate int, duration time.Duration) {
 			}
 		}()
 	}
-	
+
 	wg.Wait()
 	close(processed)
-	
+
 	elapsed := time.Since(start)
 	actualRate := float64(len(processed)) / elapsed.Seconds()
-	
+
 	t.Logf("Target: %d msg/s, Actual: %.2f msg/s", targetRate, actualRate)
-	
+
 	// Allow 10% variance
 	if actualRate < float64(targetRate)*0.9 {
 		t.Errorf("Throughput below target: got %.2f msg/s, want %d msg/s", actualRate, targetRate)
@@ -88,9 +88,9 @@ func TestCorrelationLoad(t *testing.T) {
 func testCorrelationPerformance(t *testing.T, trackCount int) {
 	// Generate mock tracks
 	tracks := generateMockTracks(trackCount)
-	
+
 	start := time.Now()
-	
+
 	// Simulate correlation
 	var correlations int
 	for i := 0; i < len(tracks); i++ {
@@ -100,11 +100,11 @@ func testCorrelationPerformance(t *testing.T, trackCount int) {
 			}
 		}
 	}
-	
+
 	elapsed := time.Since(start)
-	
+
 	t.Logf("Tracks: %d, Correlations: %d, Time: %v", trackCount, correlations, elapsed)
-	
+
 	// Performance threshold: should process in reasonable time
 	maxTime := time.Duration(trackCount/1000) * time.Second
 	if elapsed > maxTime {
@@ -119,7 +119,7 @@ func TestLatencyUnderLoad(t *testing.T) {
 	}
 
 	loads := []int{100, 500, 1000, 5000}
-	
+
 	for _, load := range loads {
 		t.Run(fmt.Sprintf("load_%d", load), func(t *testing.T) {
 			testLatencyAtLoad(t, load)
@@ -131,26 +131,26 @@ func TestLatencyUnderLoad(t *testing.T) {
 func testLatencyAtLoad(t *testing.T, load int) {
 	iterations := 1000
 	latencies := make([]time.Duration, iterations)
-	
+
 	// Warm up
 	for i := 0; i < 100; i++ {
 		processOPIRMessage()
 	}
-	
+
 	// Measure
 	for i := 0; i < iterations; i++ {
 		start := time.Now()
 		processOPIRMessage()
 		latencies[i] = time.Since(start)
 	}
-	
+
 	// Calculate percentiles
 	p50 := percentile(latencies, 50)
 	p95 := percentile(latencies, 95)
 	p99 := percentile(latencies, 99)
-	
+
 	t.Logf("Load %d msg/s: P50=%v, P95=%v, P99=%v", load, p50, p95, p99)
-	
+
 	// Latency thresholds
 	if p99 > 100*time.Millisecond {
 		t.Errorf("P99 latency too high: %v", p99)
@@ -192,7 +192,7 @@ func shouldCorrelate(a, b MockTrack) bool {
 	dx := a.Position[0] - b.Position[0]
 	dy := a.Position[1] - b.Position[1]
 	dz := a.Position[2] - b.Position[2]
-	
+
 	distance := dx*dx + dy*dy + dz*dz
 	return distance < 100 // Within 10 units
 }
@@ -202,11 +202,11 @@ func percentile(latencies []time.Duration, p int) time.Duration {
 	if len(latencies) == 0 {
 		return 0
 	}
-	
+
 	// Sort latencies (simplified - in production use sort.Slice)
 	sorted := make([]time.Duration, len(latencies))
 	copy(sorted, latencies)
-	
+
 	// Bubble sort (simple, not efficient - just for demo)
 	for i := 0; i < len(sorted); i++ {
 		for j := i + 1; j < len(sorted); j++ {
@@ -215,11 +215,11 @@ func percentile(latencies []time.Duration, p int) time.Duration {
 			}
 		}
 	}
-	
+
 	idx := (p * len(sorted)) / 100
 	if idx >= len(sorted) {
 		idx = len(sorted) - 1
 	}
-	
+
 	return sorted[idx]
 }

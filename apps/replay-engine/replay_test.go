@@ -27,17 +27,17 @@ func TestRecordedPDUSerialization(t *testing.T) {
 		Lon:       -77.0,
 		Alt:       100.0,
 	}
-	
+
 	data, err := json.Marshal(pdu)
 	if err != nil {
 		t.Fatalf("Failed to marshal PDU: %v", err)
 	}
-	
+
 	var pdu2 RecordedPDU
 	if err := json.Unmarshal(data, &pdu2); err != nil {
 		t.Fatalf("Failed to unmarshal PDU: %v", err)
 	}
-	
+
 	if pdu2.Sequence != pdu.Sequence {
 		t.Errorf("Sequence mismatch: expected %d, got %d", pdu.Sequence, pdu2.Sequence)
 	}
@@ -58,22 +58,22 @@ func TestRecordingMetadata(t *testing.T) {
 		Description: "Test recording for unit tests",
 		Tags:        []string{"test", "unit"},
 	}
-	
+
 	duration := rec.EndTime.Sub(rec.StartTime)
 	if duration != 5*time.Minute {
 		t.Errorf("Expected 5 minute duration, got %v", duration)
 	}
-	
+
 	data, err := json.Marshal(rec)
 	if err != nil {
 		t.Fatalf("Failed to marshal recording: %v", err)
 	}
-	
+
 	var rec2 Recording
 	if err := json.Unmarshal(data, &rec2); err != nil {
 		t.Fatalf("Failed to unmarshal recording: %v", err)
 	}
-	
+
 	if rec2.ID != rec.ID {
 		t.Errorf("ID mismatch: expected %s, got %s", rec.ID, rec2.ID)
 	}
@@ -86,11 +86,11 @@ func TestPDUSorting(t *testing.T) {
 		{Sequence: 1, EntityID: 101},
 		{Sequence: 2, EntityID: 102},
 	}
-	
+
 	sort.Slice(pdus, func(i, j int) bool {
 		return pdus[i].Sequence < pdus[j].Sequence
 	})
-	
+
 	if pdus[0].Sequence != 1 {
 		t.Errorf("First PDU should have sequence 1, got %d", pdus[0].Sequence)
 	}
@@ -106,14 +106,14 @@ func TestPDUSorting(t *testing.T) {
 func TestTimeCompression(t *testing.T) {
 	startTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 	endTime := time.Date(2024, 1, 1, 12, 1, 0, 0, time.UTC)
-	
+
 	duration := endTime.Sub(startTime)
-	
+
 	scaled2x := time.Duration(float64(duration) / 2.0)
 	if scaled2x != 30*time.Second {
 		t.Errorf("2x speed: expected 30s, got %v", scaled2x)
 	}
-	
+
 	scaled10x := time.Duration(float64(duration) / 10.0)
 	if scaled10x != 6*time.Second {
 		t.Errorf("10x speed: expected 6s, got %v", scaled10x)
@@ -133,7 +133,7 @@ func TestFormatBytes(t *testing.T) {
 		{1048576, "1.0 MB"},
 		{1073741824, "1024.0 MB"}, // 1 GB shows as MB in this implementation
 	}
-	
+
 	for _, tt := range tests {
 		result := formatBytes(tt.bytes)
 		if result != tt.expected {
@@ -159,25 +159,25 @@ func TestPDUTypeValues(t *testing.T) {
 func TestEntityStatePDUHeader(t *testing.T) {
 	// Create a minimal entity state PDU
 	pduData := make([]byte, 144)
-	
+
 	// Protocol version (1 byte)
 	pduData[0] = 7 // DIS 7
-	
+
 	// Exercise ID (1 byte)
 	pduData[1] = 1
-	
+
 	// PDU type (1 byte)
 	pduData[2] = 1 // Entity State
-	
+
 	// Protocol family (1 byte)
 	pduData[3] = 1 // Entity Information
-	
+
 	// Timestamp (4 bytes)
 	binary.BigEndian.PutUint32(pduData[4:8], uint32(time.Now().Unix()))
-	
+
 	// Length (2 bytes)
 	binary.BigEndian.PutUint16(pduData[8:10], 144)
-	
+
 	// Verify header
 	if pduData[0] != 7 {
 		t.Errorf("Protocol version should be 7, got %d", pduData[0])
@@ -192,7 +192,7 @@ func TestRecordingFilePath(t *testing.T) {
 	// Test that recording files go to correct directory
 	id := "test-recording-001"
 	expectedPath := filepath.Join(RecordDir, id+".jsonl")
-	
+
 	if !filepath.IsAbs(expectedPath) {
 		t.Errorf("Recording path should be absolute: %s", expectedPath)
 	}
@@ -201,20 +201,20 @@ func TestRecordingFilePath(t *testing.T) {
 // TestPDUSequence tests PDU sequence numbering
 func TestPDUSequence(t *testing.T) {
 	rs := newReplayState()
-	
+
 	// Initial sequence should be 0
 	if rs.currentSeq != 0 {
 		t.Errorf("Initial sequence should be 0, got %d", rs.currentSeq)
 	}
-	
+
 	// After recording a PDU, sequence should increment
 	pdu := &RecordedPDU{
 		Sequence: 1,
 		EntityID: 100,
 	}
-	
+
 	_ = pdu // Use pdu to avoid unused variable error
-	
+
 	// Sequence increment would be tested with actual recordPDU call
 	// but that requires file I/O setup
 }
@@ -232,7 +232,7 @@ func BenchmarkJSONMarshal(b *testing.B) {
 		Lon:      -77.0365,
 		Alt:      100.0,
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = json.Marshal(pdu)
@@ -247,7 +247,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 		Lat:      38.0,
 		Lon:      -77.0,
 	})
-	
+
 	var pdu RecordedPDU
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -270,14 +270,14 @@ func TestTempFileCreation(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	
+
 	tmpFile := filepath.Join(tmpDir, "test.jsonl")
 	file, err := os.Create(tmpFile)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	file.Close()
-	
+
 	if _, err := os.Stat(tmpFile); err != nil {
 		t.Errorf("Temp file not created: %v", err)
 	}

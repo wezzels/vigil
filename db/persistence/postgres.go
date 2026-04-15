@@ -13,15 +13,15 @@ import (
 
 // Config holds database configuration
 type Config struct {
-	Host            string
-	Port            int
-	Database        string
-	User            string
-	Password        string
-	MaxConns        int32
-	MinConns        int32
-	MaxConnLifetime time.Duration
-	MaxConnIdleTime time.Duration
+	Host              string
+	Port              int
+	Database          string
+	User              string
+	Password          string
+	MaxConns          int32
+	MinConns          int32
+	MaxConnLifetime   time.Duration
+	MaxConnIdleTime   time.Duration
 	HealthCheckPeriod time.Duration
 }
 
@@ -109,24 +109,24 @@ func (db *Database) Exec(ctx context.Context, sql string, args ...interface{}) (
 
 // Track represents a track record
 type Track struct {
-	ID            string     `json:"id"`
-	TrackNumber   string     `json:"track_number"`
-	TrackID       string     `json:"track_id"`
-	SourceSystem  string     `json:"source_system"`
-	Latitude      float64    `json:"latitude"`
-	Longitude     float64    `json:"longitude"`
-	Altitude      float64    `json:"altitude"`
-	VelocityX     float64    `json:"velocity_x"`
-	VelocityY     float64    `json:"velocity_y"`
-	VelocityZ     float64    `json:"velocity_z"`
-	Identity      string     `json:"identity"`
-	Quality       string     `json:"quality"`
-	Confidence    float64    `json:"confidence"`
-	TrackType     string     `json:"track_type"`
-	ForceID       string     `json:"force_id"`
-	Environment   string     `json:"environment"`
-	FirstDetect   time.Time  `json:"first_detect"`
-	LastUpdate    time.Time  `json:"last_update"`
+	ID           string    `json:"id"`
+	TrackNumber  string    `json:"track_number"`
+	TrackID      string    `json:"track_id"`
+	SourceSystem string    `json:"source_system"`
+	Latitude     float64   `json:"latitude"`
+	Longitude    float64   `json:"longitude"`
+	Altitude     float64   `json:"altitude"`
+	VelocityX    float64   `json:"velocity_x"`
+	VelocityY    float64   `json:"velocity_y"`
+	VelocityZ    float64   `json:"velocity_z"`
+	Identity     string    `json:"identity"`
+	Quality      string    `json:"quality"`
+	Confidence   float64   `json:"confidence"`
+	TrackType    string    `json:"track_type"`
+	ForceID      string    `json:"force_id"`
+	Environment  string    `json:"environment"`
+	FirstDetect  time.Time `json:"first_detect"`
+	LastUpdate   time.Time `json:"last_update"`
 }
 
 // Alert represents an alert record
@@ -149,14 +149,14 @@ type Alert struct {
 
 // Event represents an event record
 type Event struct {
-	ID          string     `json:"id"`
-	EventType   string     `json:"event_type"`
-	EventSource string     `json:"event_source"`
-	EventTime   time.Time  `json:"event_time"`
-	TrackID     string     `json:"track_id"`
-	AlertID     string     `json:"alert_id"`
-	Data        string     `json:"data"`
-	Severity    string     `json:"severity"`
+	ID          string    `json:"id"`
+	EventType   string    `json:"event_type"`
+	EventSource string    `json:"event_source"`
+	EventTime   time.Time `json:"event_time"`
+	TrackID     string    `json:"track_id"`
+	AlertID     string    `json:"alert_id"`
+	Data        string    `json:"data"`
+	Severity    string    `json:"severity"`
 }
 
 // TrackRepository provides track database operations

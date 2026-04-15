@@ -9,19 +9,19 @@ import (
 
 // VMFMessage represents a VMF message
 type VMFMessage struct {
-	MessageHeader    VMFHeader
-	MessageBody      string
-	Checksum         string
-	Timestamp        time.Time
+	MessageHeader VMFHeader
+	MessageBody   string
+	Checksum      string
+	Timestamp     time.Time
 }
 
 // VMFHeader represents VMF message header
 type VMFHeader struct {
-	Originator       string
-	Destination      string
-	MessageType      string
-	Precedence       string
-	SecurityLevel    string
+	Originator    string
+	Destination   string
+	MessageType   string
+	Precedence    string
+	SecurityLevel string
 }
 
 // VMFFormatter formats VMF messages
@@ -140,10 +140,10 @@ func (f *VMFFormatter) Validate(msg *VMFMessage) error {
 	}
 
 	validPrecedence := map[string]bool{
-		"FLASH": true,
+		"FLASH":     true,
 		"IMMEDIATE": true,
-		"PRIORITY": true,
-		"ROUTINE": true,
+		"PRIORITY":  true,
+		"ROUTINE":   true,
 	}
 
 	if !validPrecedence[msg.MessageHeader.Precedence] {
@@ -179,11 +179,11 @@ func (e *VMFEncoder) Decode(data []byte) (*VMFMessage, error) {
 
 // VMFTrackMessage represents a VMF track message
 type VMFTrackMessage struct {
-	TrackNumber     string
-	Position        Position3D
-	Velocity        Velocity3D
-	TrackQuality    int
-	Identity        string
+	TrackNumber  string
+	Position     Position3D
+	Velocity     Velocity3D
+	TrackQuality int
+	Identity     string
 }
 
 // FormatTrack formats a VMF track report

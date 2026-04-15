@@ -13,12 +13,12 @@ import (
 type MessageType string
 
 const (
-	MessageTypeTrack      MessageType = "track"
-	MessageTypeAlert      MessageType = "alert"
-	MessageTypeEvent      MessageType = "event"
-	MessageTypeCommand    MessageType = "command"
-	MessageTypeHeartbeat  MessageType = "heartbeat"
-	MessageTypeLeader     MessageType = "leader"
+	MessageTypeTrack     MessageType = "track"
+	MessageTypeAlert     MessageType = "alert"
+	MessageTypeEvent     MessageType = "event"
+	MessageTypeCommand   MessageType = "command"
+	MessageTypeHeartbeat MessageType = "heartbeat"
+	MessageTypeLeader    MessageType = "leader"
 )
 
 // Message represents a pub/sub message
@@ -31,15 +31,15 @@ type Message struct {
 
 // PubSub provides pub/sub coordination
 type PubSub struct {
-	cache   *Cache
+	cache         *Cache
 	subscriptions map[string][]chan *Message
-	mu      sync.RWMutex
+	mu            sync.RWMutex
 }
 
 // NewPubSub creates a new pub/sub coordinator
 func NewPubSub(cache *Cache) *PubSub {
 	return &PubSub{
-		cache:        cache,
+		cache:         cache,
 		subscriptions: make(map[string][]chan *Message),
 	}
 }
@@ -156,7 +156,7 @@ func NewLeaderElection(cache *Cache, key, id string, ttl time.Duration) *LeaderE
 func (le *LeaderElection) Campaign(ctx context.Context) error {
 	// Try to set key with NX (only if not exists)
 	key := le.leaderKey()
-	
+
 	// Use SET NX EX for atomic operation
 	err := le.cache.SetString(ctx, key, le.id, le.ttl)
 	if err != nil {
@@ -219,7 +219,7 @@ func (le *LeaderElection) keepAlive() {
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			key := le.leaderKey()
-			
+
 			// Check if we still hold the lock
 			value, err := le.cache.Get(ctx, key)
 			if err != nil || value != le.id {

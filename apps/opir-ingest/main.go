@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"strconv"
 	"flag"
 	"fmt"
 	"log"
@@ -16,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -35,7 +35,7 @@ var (
 	port        = getEnv("PORT", "8080")
 	disSite     = uint16(mustAtoi(getEnv("DIS_SITE_ID", "1")))
 	disApp      = uint16(mustAtoi(getEnv("DIS_APP_ID", "1")))
-	
+
 	writer *kafka.Writer
 	mode   = flag.String("mode", "simulate", "simulate|replay")
 )
@@ -54,52 +54,52 @@ func mustAtoi(s string) int {
 
 // OPIRSighting represents a single IR detection from a satellite sensor
 type OPIRSighting struct {
-	SightingID       uint64    `json:"sighting_id"`
-	SatelliteID      uint32    `json:"satellite_id"`   // e.g., 1=SBIRS-High, 2=NG-OPIR
-	SensorID         uint16    `json:"sensor_id"`
-	ScanMode         uint8     `json:"scan_mode"`      // 0=Survey, 1=Sector, 2=Spot
-	Timestamp        time.Time `json:"timestamp"`
-	DetectionLat     float64   `json:"detection_lat"`  // degrees
-	DetectionLon     float64   `json:"detection_lon"`  // degrees
-	DetectionAlt     float64   `json:"detection_alt"`  // km
-	Intensity        float64   `json:"intensity"`      // W/sr (watts per steradian)
-	BackgroundTemp   float64   `json:"background_temp"` // K
-	SNR              float64   `json:"snr"`             // signal-to-noise ratio
-	SatelliteLat     float64   `json:"satellite_lat"`   // satellite position
-	SatelliteLon     float64   `json:"satellite_lon"`
-	SatelliteAlt     float64   `json:"satellite_alt"`   // km
-	FOVCenterLat     float64   `json:"fov_center_lat"`
-	FOVCenterLon     float64   `json:"fov_center_lon"`
-	FOVHalfAngle     float64   `json:"fov_half_angle"`  // degrees
-	ProcessingFlags  uint16    `json:"processing_flags"`
+	SightingID      uint64    `json:"sighting_id"`
+	SatelliteID     uint32    `json:"satellite_id"` // e.g., 1=SBIRS-High, 2=NG-OPIR
+	SensorID        uint16    `json:"sensor_id"`
+	ScanMode        uint8     `json:"scan_mode"` // 0=Survey, 1=Sector, 2=Spot
+	Timestamp       time.Time `json:"timestamp"`
+	DetectionLat    float64   `json:"detection_lat"`   // degrees
+	DetectionLon    float64   `json:"detection_lon"`   // degrees
+	DetectionAlt    float64   `json:"detection_alt"`   // km
+	Intensity       float64   `json:"intensity"`       // W/sr (watts per steradian)
+	BackgroundTemp  float64   `json:"background_temp"` // K
+	SNR             float64   `json:"snr"`             // signal-to-noise ratio
+	SatelliteLat    float64   `json:"satellite_lat"`   // satellite position
+	SatelliteLon    float64   `json:"satellite_lon"`
+	SatelliteAlt    float64   `json:"satellite_alt"` // km
+	FOVCenterLat    float64   `json:"fov_center_lat"`
+	FOVCenterLon    float64   `json:"fov_center_lon"`
+	FOVHalfAngle    float64   `json:"fov_half_angle"` // degrees
+	ProcessingFlags uint16    `json:"processing_flags"`
 }
 
 // DIS Entity State PDU for OPIR satellite (simplified)
 type EntityStatePDU struct {
-	ProtocolVersion uint16
-	ExerciseID      uint8
-	PDUType         uint8
-	Timestamp       uint32
-	Length          uint16
-	SiteID          uint16
-	ApplicationID   uint16
-	EntityID        uint32
-	ForceID         uint8
-	EntityTypeKind  uint8
-	EntityTypeDomain uint8
-	EntityTypeCountry uint16
-	EntityTypeCategory uint8
+	ProtocolVersion       uint16
+	ExerciseID            uint8
+	PDUType               uint8
+	Timestamp             uint32
+	Length                uint16
+	SiteID                uint16
+	ApplicationID         uint16
+	EntityID              uint32
+	ForceID               uint8
+	EntityTypeKind        uint8
+	EntityTypeDomain      uint8
+	EntityTypeCountry     uint16
+	EntityTypeCategory    uint8
 	EntityTypeSubcategory uint8
-	EntityTypeSpecific uint8
-	LocationX       float32 // meters (ECEF)
-	LocationY       float32
-	LocationZ       float32
-	OrientationYaw  float32 // radians
-	OrientationPitch float32
-	OrientationRoll float32
-	VelocityX       float32 // m/s
-	VelocityY       float32
-	VelocityZ       float32
+	EntityTypeSpecific    uint8
+	LocationX             float32 // meters (ECEF)
+	LocationY             float32
+	LocationZ             float32
+	OrientationYaw        float32 // radians
+	OrientationPitch      float32
+	OrientationRoll       float32
+	VelocityX             float32 // m/s
+	VelocityY             float32
+	VelocityZ             float32
 }
 
 // Encode entity state PDU per IEEE 1278.1 (big-endian)
@@ -160,7 +160,7 @@ func satellitePosition(t time.Time, baseLon float64) (lat, lon, alt float64) {
 	// Geostationary: fixed longitude, slight inclination
 	lon = baseLon
 	lat = 0.1 * math.Sin(float64(t.Unix())/3600.0*0.05) // tiny inclination wobble
-	alt = 35786.0 // km
+	alt = 35786.0                                       // km
 	return
 }
 
@@ -173,14 +173,16 @@ func generateSighting(id uint64, t time.Time) *OPIRSighting {
 		baseLon  float64
 		fovAngle float64
 	}{
-		{1, -80.0, 8.0},   // SBIRS-High over CONUS
-		{2, 0.0, 10.0},    // NG-OPIR demo
+		{1, -80.0, 8.0}, // SBIRS-High over CONUS
+		{2, 0.0, 10.0},  // NG-OPIR demo
 	}
 	sat := satellites[satType]
 
 	satLat, satLon, satAlt := satellitePosition(t, sat.baseLon)
 	satX, satY, satZ := ecefFromGeodetic(satLat, satLon, satAlt)
-	_ = satX; _ = satY; _ = satZ
+	_ = satX
+	_ = satY
+	_ = satZ
 
 	// Detection on Earth's surface (random point in FOV)
 	detLat := satLat + (rand.Float64()-0.5)*sat.fovAngle
@@ -193,7 +195,7 @@ func generateSighting(id uint64, t time.Time) *OPIRSighting {
 	var intensity float64
 	var snr float64
 	var background float64
-	
+
 	if isPlume {
 		intensity = 2000.0 + rand.ExpFloat64()*1000.0 // W/sr, missile-like
 		snr = 5.0 + rand.ExpFloat64()*5.0
@@ -206,23 +208,23 @@ func generateSighting(id uint64, t time.Time) *OPIRSighting {
 	}
 
 	return &OPIRSighting{
-		SightingID:     id,
-		SatelliteID:    sat.id,
-		SensorID:       1,
-		ScanMode:       0, // Survey
-		Timestamp:      t,
-		DetectionLat:   detLat,
-		DetectionLon:   detLon,
-		DetectionAlt:   detAlt,
-		Intensity:      intensity,
-		BackgroundTemp: background,
-		SNR:            snr,
-		SatelliteLat:   satLat,
-		SatelliteLon:   satLon,
-		SatelliteAlt:   satAlt,
-		FOVCenterLat:   satLat,
-		FOVCenterLon:   satLon,
-		FOVHalfAngle:   sat.fovAngle,
+		SightingID:      id,
+		SatelliteID:     sat.id,
+		SensorID:        1,
+		ScanMode:        0, // Survey
+		Timestamp:       t,
+		DetectionLat:    detLat,
+		DetectionLon:    detLon,
+		DetectionAlt:    detAlt,
+		Intensity:       intensity,
+		BackgroundTemp:  background,
+		SNR:             snr,
+		SatelliteLat:    satLat,
+		SatelliteLon:    satLon,
+		SatelliteAlt:    satAlt,
+		FOVCenterLat:    satLat,
+		FOVCenterLon:    satLon,
+		FOVHalfAngle:    sat.fovAngle,
 		ProcessingFlags: 0,
 	}
 }
@@ -258,32 +260,32 @@ func publishSighting(s *OPIRSighting) error {
 // Publish entity state for satellite to Kafka DIS topic
 func publishSatelliteESP(satID, entityID uint32, lat, lon, alt float64, t time.Time) error {
 	x, y, z := ecefFromGeodetic(lat, lon, alt)
-	
+
 	pdu := EntityStatePDU{
-		ProtocolVersion:  7,
-		ExerciseID:       1,
-		PDUType:          1, // Entity State
-		Timestamp:        timestampDIS(t),
-		Length:           144,
-		SiteID:           uint16(disSite),
-		ApplicationID:    uint16(disApp),
-		EntityID:         entityID,
-		ForceID:          0,
-		EntityTypeKind:   1,  // Platform
-		EntityTypeDomain: 5,  // Space
-		EntityTypeCountry: 225, // USA
-		EntityTypeCategory: 1, // Spacecraft
+		ProtocolVersion:       7,
+		ExerciseID:            1,
+		PDUType:               1, // Entity State
+		Timestamp:             timestampDIS(t),
+		Length:                144,
+		SiteID:                uint16(disSite),
+		ApplicationID:         uint16(disApp),
+		EntityID:              entityID,
+		ForceID:               0,
+		EntityTypeKind:        1,   // Platform
+		EntityTypeDomain:      5,   // Space
+		EntityTypeCountry:     225, // USA
+		EntityTypeCategory:    1,   // Spacecraft
 		EntityTypeSubcategory: 0,
-		EntityTypeSpecific: 1, // Surveillance satellite
-		LocationX:        float32(x),
-		LocationY:        float32(y),
-		LocationZ:        float32(z),
-		OrientationYaw:   0,
-		OrientationPitch: 0,
-		OrientationRoll:  0,
-		VelocityX:        0,
-		VelocityY:        0,
-		VelocityZ:        0,
+		EntityTypeSpecific:    1, // Surveillance satellite
+		LocationX:             float32(x),
+		LocationY:             float32(y),
+		LocationZ:             float32(z),
+		OrientationYaw:        0,
+		OrientationPitch:      0,
+		OrientationRoll:       0,
+		VelocityX:             0,
+		VelocityY:             0,
+		VelocityZ:             0,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -412,7 +414,7 @@ func main() {
 	}()
 
 	// HTTP endpoints
-		http.Handle("/metrics", promhttp.Handler())
+	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/ready", healthHandler)
 

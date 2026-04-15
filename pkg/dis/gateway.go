@@ -37,17 +37,17 @@ func DefaultUDPConfig() *UDPConfig {
 
 // UDPReceiver handles receiving DIS PDUs via UDP
 type UDPReceiver struct {
-	config     *UDPConfig
-	conn       *net.UDPConn
-	multicast  bool
-	running    bool
-	mu         sync.RWMutex
-	ctx        context.Context
-	cancel     context.CancelFunc
-	handlers   []PDUHandler
-	pduChan    chan []byte
-	errChan    chan error
-	stats      ReceiverStats
+	config    *UDPConfig
+	conn      *net.UDPConn
+	multicast bool
+	running   bool
+	mu        sync.RWMutex
+	ctx       context.Context
+	cancel    context.CancelFunc
+	handlers  []PDUHandler
+	pduChan   chan []byte
+	errChan   chan error
+	stats     ReceiverStats
 }
 
 // PDUHandler handles received PDUs
@@ -65,11 +65,11 @@ func (f PDUHandlerFunc) HandlePDU(data []byte, addr net.Addr) {
 
 // ReceiverStats holds receiver statistics
 type ReceiverStats struct {
-	PacketsReceived   uint64 `json:"packets_received"`
-	BytesReceived     uint64 `json:"bytes_received"`
-	PacketsDropped    uint64 `json:"packets_dropped"`
-	Errors            uint64 `json:"errors"`
-	LastReceiveTime   time.Time `json:"last_receive_time"`
+	PacketsReceived uint64    `json:"packets_received"`
+	BytesReceived   uint64    `json:"bytes_received"`
+	PacketsDropped  uint64    `json:"packets_dropped"`
+	Errors          uint64    `json:"errors"`
+	LastReceiveTime time.Time `json:"last_receive_time"`
 }
 
 // NewUDPReceiver creates a new UDP receiver
@@ -77,9 +77,9 @@ func NewUDPReceiver(config *UDPConfig) *UDPReceiver {
 	if config == nil {
 		config = DefaultUDPConfig()
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &UDPReceiver{
 		config:   config,
 		ctx:      ctx,
@@ -94,31 +94,31 @@ func NewUDPReceiver(config *UDPConfig) *UDPReceiver {
 func (r *UDPReceiver) Start() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if r.running {
 		return ErrAlreadyRunning
 	}
-	
+
 	// Parse address
-	addr, err := net.ResolveUDPAddr("udp", 
+	addr, err := net.ResolveUDPAddr("udp",
 		net.JoinHostPort(r.config.Address, "0"))
 	if err != nil {
 		return err
 	}
-	
+
 	// Check if multicast
 	r.multicast = addr.IP.IsMulticast()
-	
+
 	// Bind to port
 	listenAddr := &net.UDPAddr{Port: r.config.Port}
-	
+
 	conn, err := net.ListenPacket("udp", listenAddr.String())
 	if err != nil {
 		return err
 	}
-	
+
 	r.conn = conn.(*net.UDPConn)
-	
+
 	// Join multicast group if needed
 	if r.multicast {
 		if err := r.joinMulticast(); err != nil {
@@ -126,12 +126,12 @@ func (r *UDPReceiver) Start() error {
 			return err
 		}
 	}
-	
+
 	r.running = true
-	
+
 	// Start receive loop
 	go r.receiveLoop()
-	
+
 	return nil
 }
 
@@ -141,11 +141,11 @@ func (r *UDPReceiver) joinMulticast() error {
 	if group == nil {
 		return &DISError{Code: "INVALID_ADDRESS", Message: "invalid multicast address"}
 	}
-	
+
 	// Note: Full multicast join would use net.ListenMulticastUDP
 	// This simplified version just sets the buffer size
 	r.conn.SetReadBuffer(r.config.BufferSize)
-	
+
 	return nil
 }
 
@@ -158,19 +158,19 @@ func (r *UDPReceiver) leaveMulticast() error {
 // receiveLoop handles incoming packets
 func (r *UDPReceiver) receiveLoop() {
 	buf := make([]byte, r.config.BufferSize)
-	
+
 	for {
 		select {
 		case <-r.ctx.Done():
 			return
 		default:
 		}
-		
+
 		// Set read timeout
 		if r.config.ReadTimeout > 0 {
 			r.conn.SetReadDeadline(time.Now().Add(r.config.ReadTimeout))
 		}
-		
+
 		n, addr, err := r.conn.ReadFromUDP(buf)
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
@@ -185,18 +185,18 @@ func (r *UDPReceiver) receiveLoop() {
 			}
 			continue
 		}
-		
+
 		// Update stats
 		r.mu.Lock()
 		r.stats.PacketsReceived++
 		r.stats.BytesReceived += uint64(n)
 		r.stats.LastReceiveTime = time.Now()
 		r.mu.Unlock()
-		
+
 		// Copy data and dispatch to handlers
 		data := make([]byte, n)
 		copy(data, buf[:n])
-		
+
 		// Dispatch to handlers
 		r.mu.RLock()
 		for _, handler := range r.handlers {
@@ -210,23 +210,23 @@ func (r *UDPReceiver) receiveLoop() {
 func (r *UDPReceiver) Stop() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if !r.running {
 		return nil
 	}
-	
+
 	if r.multicast {
 		r.leaveMulticast()
 	}
-	
+
 	if r.conn != nil {
 		r.conn.Close()
 	}
-	
+
 	if r.cancel != nil {
 		r.cancel()
 	}
-	
+
 	r.running = false
 	return nil
 }
@@ -257,20 +257,20 @@ func (r *UDPReceiver) Errors() <-chan error {
 
 // UDPTransmitter handles sending DIS PDUs via UDP
 type UDPTransmitter struct {
-	config     *UDPConfig
-	conn       *net.UDPConn
-	dest       *net.UDPAddr
-	running    bool
-	mu         sync.RWMutex
-	stats      TransmitterStats
+	config  *UDPConfig
+	conn    *net.UDPConn
+	dest    *net.UDPAddr
+	running bool
+	mu      sync.RWMutex
+	stats   TransmitterStats
 }
 
 // TransmitterStats holds transmitter statistics
 type TransmitterStats struct {
-	PacketsSent     uint64 `json:"packets_sent"`
-	BytesSent       uint64 `json:"bytes_sent"`
-	Errors          uint64 `json:"errors"`
-	LastSendTime    time.Time `json:"last_send_time"`
+	PacketsSent  uint64    `json:"packets_sent"`
+	BytesSent    uint64    `json:"bytes_sent"`
+	Errors       uint64    `json:"errors"`
+	LastSendTime time.Time `json:"last_send_time"`
 }
 
 // NewUDPTransmitter creates a new UDP transmitter
@@ -278,7 +278,7 @@ func NewUDPTransmitter(config *UDPConfig) *UDPTransmitter {
 	if config == nil {
 		config = DefaultUDPConfig()
 	}
-	
+
 	return &UDPTransmitter{
 		config: config,
 	}
@@ -288,11 +288,11 @@ func NewUDPTransmitter(config *UDPConfig) *UDPTransmitter {
 func (t *UDPTransmitter) Start() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	
+
 	if t.running {
 		return ErrAlreadyRunning
 	}
-	
+
 	// Resolve destination address
 	dest, err := net.ResolveUDPAddr("udp",
 		net.JoinHostPort(t.config.Address, "3000"))
@@ -300,22 +300,22 @@ func (t *UDPTransmitter) Start() error {
 		return err
 	}
 	t.dest = dest
-	
+
 	// Create UDP connection
 	localAddr := &net.UDPAddr{Port: 0} // Use any available port
 	conn, err := net.DialUDP("udp", localAddr, t.dest)
 	if err != nil {
 		return err
 	}
-	
+
 	// Enable broadcast if configured
 	if t.config.EnableBroadcast {
 		conn.SetWriteBuffer(t.config.BufferSize)
 	}
-	
+
 	t.conn = conn
 	t.running = true
-	
+
 	return nil
 }
 
@@ -323,15 +323,15 @@ func (t *UDPTransmitter) Start() error {
 func (t *UDPTransmitter) Stop() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	
+
 	if !t.running {
 		return nil
 	}
-	
+
 	if t.conn != nil {
 		t.conn.Close()
 	}
-	
+
 	t.running = false
 	return nil
 }
@@ -340,26 +340,26 @@ func (t *UDPTransmitter) Stop() error {
 func (t *UDPTransmitter) Send(data []byte) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if !t.running {
 		return ErrNotRunning
 	}
-	
+
 	// Set write timeout
 	if t.config.WriteTimeout > 0 {
 		t.conn.SetWriteDeadline(time.Now().Add(t.config.WriteTimeout))
 	}
-	
+
 	n, err := t.conn.Write(data)
 	if err != nil {
 		t.stats.Errors++
 		return err
 	}
-	
+
 	t.stats.PacketsSent++
 	t.stats.BytesSent += uint64(n)
 	t.stats.LastSendTime = time.Now()
-	
+
 	return nil
 }
 
@@ -367,30 +367,30 @@ func (t *UDPTransmitter) Send(data []byte) error {
 func (t *UDPTransmitter) SendTo(data []byte, addr string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if !t.running {
 		return ErrNotRunning
 	}
-	
+
 	dest, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		return err
 	}
-	
+
 	if t.config.WriteTimeout > 0 {
 		t.conn.SetWriteDeadline(time.Now().Add(t.config.WriteTimeout))
 	}
-	
+
 	n, err := t.conn.WriteToUDP(data, dest)
 	if err != nil {
 		t.stats.Errors++
 		return err
 	}
-	
+
 	t.stats.PacketsSent++
 	t.stats.BytesSent += uint64(n)
 	t.stats.LastSendTime = time.Now()
-	
+
 	return nil
 }
 
@@ -413,7 +413,7 @@ func NewUDPGateway(config *UDPConfig) *UDPGateway {
 	if config == nil {
 		config = DefaultUDPConfig()
 	}
-	
+
 	return &UDPGateway{
 		receiver:    NewUDPReceiver(config),
 		transmitter: NewUDPTransmitter(config),
@@ -425,31 +425,31 @@ func (g *UDPGateway) Start() error {
 	if err := g.receiver.Start(); err != nil {
 		return err
 	}
-	
+
 	if err := g.transmitter.Start(); err != nil {
 		g.receiver.Stop()
 		return err
 	}
-	
+
 	return nil
 }
 
 // Stop stops the gateway
 func (g *UDPGateway) Stop() error {
 	var errs []error
-	
+
 	if err := g.receiver.Stop(); err != nil {
 		errs = append(errs, err)
 	}
-	
+
 	if err := g.transmitter.Stop(); err != nil {
 		errs = append(errs, err)
 	}
-	
+
 	if len(errs) > 0 {
 		return errs[0]
 	}
-	
+
 	return nil
 }
 

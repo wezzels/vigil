@@ -34,32 +34,32 @@ const (
 
 // OGC CSW response containers
 type CSWGetRecordsResponse struct {
-	XMLName xml.Name `xml:"GetRecordsResponse"`
+	XMLName      xml.Name `xml:"GetRecordsResponse"`
 	SearchStatus struct {
 		Timestamp string `xml:"timestamp,attr"`
 	} `xml:"SearchStatus"`
 	SearchResults struct {
-		NumberOfRecordsMatched string          `xml:"numberOfRecordsMatched,attr"`
-		NumberOfRecordsReturned string         `xml:"numberOfRecordsReturned,attr"`
-		NextRecord            string           `xml:"nextRecord,attr"`
-		Record                []CatalogRecord  `xml:"Record"`
+		NumberOfRecordsMatched  string          `xml:"numberOfRecordsMatched,attr"`
+		NumberOfRecordsReturned string          `xml:"numberOfRecordsReturned,attr"`
+		NextRecord              string          `xml:"nextRecord,attr"`
+		Record                  []CatalogRecord `xml:"Record"`
 	} `xml:"SearchResults"`
 }
 
 type CatalogRecord struct {
-	XMLName   xml.Name `xml:"Record"`
-	Title     string   `xml:"Title"`
-	Abstract  string   `xml:"Abstract"`
-	Keywords  []string `xml:"Keywords>Keyword"`
-	Type      string   `xml:"Type"`
-	Format    string   `xml:"Format"`
-	Identifier string  `xml:"Identifier"`
+	XMLName     xml.Name `xml:"Record"`
+	Title       string   `xml:"Title"`
+	Abstract    string   `xml:"Abstract"`
+	Keywords    []string `xml:"Keywords>Keyword"`
+	Type        string   `xml:"Type"`
+	Format      string   `xml:"Format"`
+	Identifier  string   `xml:"Identifier"`
 	BoundingBox struct {
 		Minx, Miny, Maxx, Maxy string `xml:"minx,attr,ymin,attr,maxx,attr,ymax,attr"`
 	} `xml:"BoundingBox"`
-	CRS       string `xml:"CRS"`
-	Created   string `xml:"Created"`
-	Modified  string `xml:"Modified"`
+	CRS      string `xml:"CRS"`
+	Created  string `xml:"Created"`
+	Modified string `xml:"Modified"`
 }
 
 // Asset types
@@ -76,32 +76,32 @@ const (
 
 // DataAsset in the catalog
 type DataAsset struct {
-	ID           string     `json:"id"`
-	Type         AssetType  `json:"type"`
-	Name         string     `json:"name"`
-	Title        string     `json:"title"`
-	Description  string     `json:"description"`
-	Format       string     `json:"format"`
-	MimeType     string     `json:"mime_type"`
-	SizeBytes    int64      `json:"size_bytes"`
-	CoverageStart time.Time `json:"coverage_start"`
-	CoverageEnd   time.Time `json:"coverage_end"`
-	BBoxMinLat   float64    `json:"bbox_min_lat"`
-	BBoxMinLon   float64    `json:"bbox_min_lon"`
-	BBoxMaxLat   float64    `json:"bbox_max_lat"`
-	BBoxMaxLon   float64    `json:"bbox_max_lon"`
-	Classification string   `json:"classification"`
-	Caveats      []string   `json:"caveats"`
-	DataSource   string     `json:"data_source"`
-	CreatedAt    time.Time  `json:"created_at"`
-	ModifiedAt   time.Time  `json:"modified_at"`
-	SHA256       string     `json:"sha256,omitempty"`
-	Keywords     []string   `json:"keywords"`
-	RecordingID  string     `json:"recording_id,omitempty"`
-	PDUCount     uint64     `json:"pdu_count,omitempty"`
-	AccessURL    string     `json:"access_url,omitempty"`
-	ThumbnailURL string     `json:"thumbnail_url,omitempty"`
-	CRS          string     `json:"crs"`
+	ID             string    `json:"id"`
+	Type           AssetType `json:"type"`
+	Name           string    `json:"name"`
+	Title          string    `json:"title"`
+	Description    string    `json:"description"`
+	Format         string    `json:"format"`
+	MimeType       string    `json:"mime_type"`
+	SizeBytes      int64     `json:"size_bytes"`
+	CoverageStart  time.Time `json:"coverage_start"`
+	CoverageEnd    time.Time `json:"coverage_end"`
+	BBoxMinLat     float64   `json:"bbox_min_lat"`
+	BBoxMinLon     float64   `json:"bbox_min_lon"`
+	BBoxMaxLat     float64   `json:"bbox_max_lat"`
+	BBoxMaxLon     float64   `json:"bbox_max_lon"`
+	Classification string    `json:"classification"`
+	Caveats        []string  `json:"caveats"`
+	DataSource     string    `json:"data_source"`
+	CreatedAt      time.Time `json:"created_at"`
+	ModifiedAt     time.Time `json:"modified_at"`
+	SHA256         string    `json:"sha256,omitempty"`
+	Keywords       []string  `json:"keywords"`
+	RecordingID    string    `json:"recording_id,omitempty"`
+	PDUCount       uint64    `json:"pdu_count,omitempty"`
+	AccessURL      string    `json:"access_url,omitempty"`
+	ThumbnailURL   string    `json:"thumbnail_url,omitempty"`
+	CRS            string    `json:"crs"`
 }
 
 // Query filters
@@ -111,7 +111,7 @@ type CatalogQuery struct {
 	Classification string
 	TimeStart      *time.Time
 	TimeEnd        *time.Time
-	BBox          *BoundingBox
+	BBox           *BoundingBox
 	Format         string
 	Limit          int
 	Offset         int
@@ -240,21 +240,21 @@ func (cs *catalogState) loadRecordings() {
 		info, _ := os.Stat(path)
 
 		a := &DataAsset{
-			Type:          AssetRecording,
-			Name:          ent.Name(),
-			Title:         "DIS Recording: " + ent.Name(),
-			Description:   "Recorded DIS PDU capture",
-			Format:        "application/json",
-			MimeType:      "application/json",
-			SizeBytes:     info.Size(),
+			Type:           AssetRecording,
+			Name:           ent.Name(),
+			Title:          "DIS Recording: " + ent.Name(),
+			Description:    "Recorded DIS PDU capture",
+			Format:         "application/json",
+			MimeType:       "application/json",
+			SizeBytes:      info.Size(),
 			Classification: "UNCLASSIFIED",
-			DataSource:    "replay-engine",
-			Keywords:      []string{"dis", "pdu", "recording", "entity-state", "lvc"},
-			RecordingID:   ent.Name(),
-			AccessURL:     fmt.Sprintf("/api/v1/recordings/%s/download", ent.Name()),
-			CRS:           "EPSG:4326",
-			CoverageStart: info.ModTime().Add(-24 * time.Hour),
-			CoverageEnd:   info.ModTime(),
+			DataSource:     "replay-engine",
+			Keywords:       []string{"dis", "pdu", "recording", "entity-state", "lvc"},
+			RecordingID:    ent.Name(),
+			AccessURL:      fmt.Sprintf("/api/v1/recordings/%s/download", ent.Name()),
+			CRS:            "EPSG:4326",
+			CoverageStart:  info.ModTime().Add(-24 * time.Hour),
+			CoverageEnd:    info.ModTime(),
 		}
 
 		f, _ := os.Open(path)
@@ -306,10 +306,10 @@ func handleGetRecords(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := &CatalogQuery{
-		Type:      AssetType(queryType),
-		Keywords:  queryKeywords,
-		BBox:      queryBBox,
-		Limit:     100,
+		Type:     AssetType(queryType),
+		Keywords: queryKeywords,
+		BBox:     queryBBox,
+		Limit:    100,
 	}
 
 	results := cs.query(q)
@@ -360,7 +360,7 @@ func getEnv(key, fallback string) string {
 func run(ctx context.Context) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:     []string{kafkaBroker},
-		Topic:        TopicTracks,
+		Topic:       TopicTracks,
 		GroupID:     "data-catalog-tracks",
 		MinBytes:    10e3,
 		MaxBytes:    10e6,
@@ -387,7 +387,7 @@ func run(ctx context.Context) {
 			}
 
 			var track struct {
-				TrackNumber  uint32    `json:"track_number"`
+				TrackNumber uint32    `json:"track_number"`
 				FusedLat    float64   `json:"fused_lat"`
 				FusedLon    float64   `json:"fused_lon"`
 				FusedAlt    float64   `json:"fused_alt"`
@@ -407,23 +407,23 @@ func run(ctx context.Context) {
 				}
 
 				a := &DataAsset{
-					Type:          AssetTrack,
-					Name:          fmt.Sprintf("track-%d", track.TrackNumber),
-					Title:         fmt.Sprintf("Track #%d", track.TrackNumber),
-					Description:   fmt.Sprintf("Fused track from %d sources, threat level %d", len(track.Sources), track.ThreatLevel),
-					Format:        "application/json",
-					MimeType:      "application/json",
-					SizeBytes:     int64(len(msg.Value)),
+					Type:           AssetTrack,
+					Name:           fmt.Sprintf("track-%d", track.TrackNumber),
+					Title:          fmt.Sprintf("Track #%d", track.TrackNumber),
+					Description:    fmt.Sprintf("Fused track from %d sources, threat level %d", len(track.Sources), track.ThreatLevel),
+					Format:         "application/json",
+					MimeType:       "application/json",
+					SizeBytes:      int64(len(msg.Value)),
 					Classification: "UNCLASSIFIED",
-					DataSource:    "sensor-fusion",
-					Keywords:      keywords,
-					CRS:           "EPSG:4326",
-					CoverageStart: track.LastUpdate.Add(-5 * time.Minute),
-					CoverageEnd:   track.LastUpdate,
-					BBoxMinLat:   track.FusedLat - 1,
-					BBoxMaxLat:   track.FusedLat + 1,
-					BBoxMinLon:   track.FusedLon - 1,
-					BBoxMaxLon:   track.FusedLon + 1,
+					DataSource:     "sensor-fusion",
+					Keywords:       keywords,
+					CRS:            "EPSG:4326",
+					CoverageStart:  track.LastUpdate.Add(-5 * time.Minute),
+					CoverageEnd:    track.LastUpdate,
+					BBoxMinLat:     track.FusedLat - 1,
+					BBoxMaxLat:     track.FusedLat + 1,
+					BBoxMinLon:     track.FusedLon - 1,
+					BBoxMaxLon:     track.FusedLon + 1,
 				}
 				cs.addAsset(a)
 			}
@@ -470,7 +470,7 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
-http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/v1/assets", func(w http.ResponseWriter, r *http.Request) {
 		q := &CatalogQuery{Limit: 100}
 		if t := r.URL.Query().Get("type"); t != "" {

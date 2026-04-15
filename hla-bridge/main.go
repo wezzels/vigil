@@ -31,16 +31,16 @@ for DIS↔HLA translation
 */
 const (
 	// Object classes
-	HLAObjectRoot          = 0x00000001
-	HLAObjectPlatform      = 0x00000010
-	HLAObjectMissile       = 0x00000020
-	HLAObjectSensor        = 0x00000030
-	HLAObjectTrack         = 0x00000040
+	HLAObjectRoot     = 0x00000001
+	HLAObjectPlatform = 0x00000010
+	HLAObjectMissile  = 0x00000020
+	HLAObjectSensor   = 0x00000030
+	HLAObjectTrack    = 0x00000040
 
 	// Interaction classes
 	HLAInteractionRoot     = 0x00000100
 	HLAInteractionFire     = 0x00000110
-	HLAInteractionDetonate  = 0x00000120
+	HLAInteractionDetonate = 0x00000120
 	HLAInteractionAlert    = 0x00000130
 )
 
@@ -60,7 +60,7 @@ type PDUType uint8
 const (
 	PDUEntityState    PDUType = 1
 	PDUFire           PDUType = 2
-	PDUDetonation    PDUType = 3
+	PDUDetonation     PDUType = 3
 	PDUCollision      PDUType = 4
 	PDUServiceRequest PDUType = 5
 	PDUStartResume    PDUType = 6
@@ -71,87 +71,89 @@ const (
 
 // EntityStatePDU — IEEE 1278.1-2012 Entity State PDU (simplified)
 type EntityStatePDU struct {
-	ProtocolVersion uint16
-	ExerciseID     uint8
-	PDUType        PDUType
-	Timestamp      uint32
-	Length         uint16
-	SiteID         uint16
-	ApplicationID  uint16
-	EntityID       uint32
-	ForceID        uint8
-	EntityTypeKind uint8
-	EntityTypeDomain uint8
-	EntityTypeCountry uint16
-	EntityTypeCategory uint8
+	ProtocolVersion       uint16
+	ExerciseID            uint8
+	PDUType               PDUType
+	Timestamp             uint32
+	Length                uint16
+	SiteID                uint16
+	ApplicationID         uint16
+	EntityID              uint32
+	ForceID               uint8
+	EntityTypeKind        uint8
+	EntityTypeDomain      uint8
+	EntityTypeCountry     uint16
+	EntityTypeCategory    uint8
 	EntityTypeSubcategory uint8
-	EntityTypeSpecific uint8
-	OrientationYaw   float32
-	OrientationPitch float32
-	OrientationRoll  float32
-	VelocityX float32
-	VelocityY float32
-	VelocityZ float32
-	LocationX float32
-	LocationY float32
-	LocationZ float32
+	EntityTypeSpecific    uint8
+	OrientationYaw        float32
+	OrientationPitch      float32
+	OrientationRoll       float32
+	VelocityX             float32
+	VelocityY             float32
+	VelocityZ             float32
+	LocationX             float32
+	LocationY             float32
+	LocationZ             float32
 }
 
 // Fire PDU —DIS
 type FirePDU struct {
 	PDUHeader
-	ExercID     uint8
-	EventID     uint32
-	WeaponID    EntityIdentifier
-	LocationX   float32
-	LocationY   float32
-	LocationZ   float32
-	VelocityX   float32
-	VelocityY   float32
-	VelocityZ   float32
-	Range       float32
+	ExercID   uint8
+	EventID   uint32
+	WeaponID  EntityIdentifier
+	LocationX float32
+	LocationY float32
+	LocationZ float32
+	VelocityX float32
+	VelocityY float32
+	VelocityZ float32
+	Range     float32
 }
 
 // Detonation PDU — DIS
 type DetonationPDU struct {
 	PDUHeader
-	EventID           uint32
-	WeaponID          EntityIdentifier
-	LocationX         float32
-	LocationY         float32
-	LocationZ         float32
-	VelocityX         float32
-	VelocityY         float32
-	VelocityZ         float32
-	DetonationResult  uint8
+	EventID          uint32
+	WeaponID         EntityIdentifier
+	LocationX        float32
+	LocationY        float32
+	LocationZ        float32
+	VelocityX        float32
+	VelocityY        float32
+	VelocityZ        float32
+	DetonationResult uint8
 }
 
 type PDUHeader struct {
 	ProtocolVersion uint16
-	PDUType        PDUType
-	Timestamp      uint32
-	Length         uint16
-	SiteID         uint16
-	ApplicationID  uint16
+	PDUType         PDUType
+	Timestamp       uint32
+	Length          uint16
+	SiteID          uint16
+	ApplicationID   uint16
 }
 
 type EntityIdentifier struct {
-	Site uint16; App uint16; Entity uint32
+	Site   uint16
+	App    uint16
+	Entity uint32
 }
 
 // HLA Attribute Update (Object)
 type HLAObjectUpdate struct {
-	ClassID    uint32       `json:"class_id"`
-	InstanceID uint32       `json:"instance_id"`
+	ClassID    uint32                 `json:"class_id"`
+	InstanceID uint32                 `json:"instance_id"`
 	Attributes map[string]interface{} `json:"attributes"`
-	Timestamp  time.Time   `json:"timestamp"`
+	Timestamp  time.Time              `json:"timestamp"`
 }
 
 // HLA Interaction
 type HLAInteraction struct {
-	ClassID    uint32       `json:"class_id"`
+	ClassID    uint32                 `json:"class_id"`
 	Parameters map[string]interface{} `json:"parameters"`
-	Timestamp  time.Time   `json:"timestamp"`
+	Timestamp  time.Time              `json:"timestamp"`
 }
 
 // Bridge state
@@ -167,9 +169,9 @@ type bridgeState struct {
 	hlaSeq uint32
 
 	// Federation
-	federateName string
+	federateName   string
 	federationName string
-	rtiConnected bool
+	rtiConnected   bool
 }
 
 func newBridge() *bridgeState {
@@ -237,30 +239,30 @@ func parseEntityStatePDU(data []byte) *EntityStatePDU {
 		return nil
 	}
 	return &EntityStatePDU{
-		ProtocolVersion: binary.BigEndian.Uint16(data[0:2]),
-		ExerciseID:     data[2],
-		PDUType:        PDUType(data[3]),
-		Timestamp:      binary.BigEndian.Uint32(data[4:8]),
-		Length:         binary.BigEndian.Uint16(data[8:10]),
-		SiteID:         binary.BigEndian.Uint16(data[10:12]),
-		ApplicationID:  binary.BigEndian.Uint16(data[12:14]),
-		EntityID:       binary.BigEndian.Uint32(data[14:18]),
-		ForceID:        data[18],
-		EntityTypeKind: data[19],
-		EntityTypeDomain: data[20],
-		EntityTypeCountry: binary.BigEndian.Uint16(data[21:23]),
-		EntityTypeCategory: data[23],
+		ProtocolVersion:       binary.BigEndian.Uint16(data[0:2]),
+		ExerciseID:            data[2],
+		PDUType:               PDUType(data[3]),
+		Timestamp:             binary.BigEndian.Uint32(data[4:8]),
+		Length:                binary.BigEndian.Uint16(data[8:10]),
+		SiteID:                binary.BigEndian.Uint16(data[10:12]),
+		ApplicationID:         binary.BigEndian.Uint16(data[12:14]),
+		EntityID:              binary.BigEndian.Uint32(data[14:18]),
+		ForceID:               data[18],
+		EntityTypeKind:        data[19],
+		EntityTypeDomain:      data[20],
+		EntityTypeCountry:     binary.BigEndian.Uint16(data[21:23]),
+		EntityTypeCategory:    data[23],
 		EntityTypeSubcategory: data[24],
-		EntityTypeSpecific: data[25],
-		OrientationYaw:   math.Float32frombits(binary.BigEndian.Uint32(data[28:32])),
-		OrientationPitch: math.Float32frombits(binary.BigEndian.Uint32(data[32:36])),
-		OrientationRoll:  math.Float32frombits(binary.BigEndian.Uint32(data[36:40])),
-		VelocityX: math.Float32frombits(binary.BigEndian.Uint32(data[40:44])),
-		VelocityY: math.Float32frombits(binary.BigEndian.Uint32(data[44:48])),
-		VelocityZ: math.Float32frombits(binary.BigEndian.Uint32(data[48:52])),
-		LocationX: math.Float32frombits(binary.BigEndian.Uint32(data[52:56])),
-		LocationY: math.Float32frombits(binary.BigEndian.Uint32(data[56:60])),
-		LocationZ: math.Float32frombits(binary.BigEndian.Uint32(data[60:64])),
+		EntityTypeSpecific:    data[25],
+		OrientationYaw:        math.Float32frombits(binary.BigEndian.Uint32(data[28:32])),
+		OrientationPitch:      math.Float32frombits(binary.BigEndian.Uint32(data[32:36])),
+		OrientationRoll:       math.Float32frombits(binary.BigEndian.Uint32(data[36:40])),
+		VelocityX:             math.Float32frombits(binary.BigEndian.Uint32(data[40:44])),
+		VelocityY:             math.Float32frombits(binary.BigEndian.Uint32(data[44:48])),
+		VelocityZ:             math.Float32frombits(binary.BigEndian.Uint32(data[48:52])),
+		LocationX:             math.Float32frombits(binary.BigEndian.Uint32(data[52:56])),
+		LocationY:             math.Float32frombits(binary.BigEndian.Uint32(data[56:60])),
+		LocationZ:             math.Float32frombits(binary.BigEndian.Uint32(data[60:64])),
 	}
 }
 
@@ -271,16 +273,16 @@ func parseFirePDU(data []byte) *FirePDU {
 	return &FirePDU{
 		PDUHeader: PDUHeader{
 			ProtocolVersion: binary.BigEndian.Uint16(data[0:2]),
-			PDUType:        PDUType(data[3]),
-			Timestamp:      binary.BigEndian.Uint32(data[4:8]),
-			Length:         binary.BigEndian.Uint16(data[8:10]),
-			SiteID:         binary.BigEndian.Uint16(data[10:12]),
-			ApplicationID:  binary.BigEndian.Uint16(data[12:14]),
+			PDUType:         PDUType(data[3]),
+			Timestamp:       binary.BigEndian.Uint32(data[4:8]),
+			Length:          binary.BigEndian.Uint16(data[8:10]),
+			SiteID:          binary.BigEndian.Uint16(data[10:12]),
+			ApplicationID:   binary.BigEndian.Uint16(data[12:14]),
 		},
 		EventID: binary.BigEndian.Uint32(data[20:24]),
 		WeaponID: EntityIdentifier{
-			Site: binary.BigEndian.Uint16(data[24:26]),
-			App:  binary.BigEndian.Uint16(data[26:28]),
+			Site:   binary.BigEndian.Uint16(data[24:26]),
+			App:    binary.BigEndian.Uint16(data[26:28]),
 			Entity: binary.BigEndian.Uint32(data[28:32]),
 		},
 		LocationX: math.Float32frombits(binary.BigEndian.Uint32(data[32:36])),
@@ -300,24 +302,24 @@ func parseDetonationPDU(data []byte) *DetonationPDU {
 	return &DetonationPDU{
 		PDUHeader: PDUHeader{
 			ProtocolVersion: binary.BigEndian.Uint16(data[0:2]),
-			PDUType:        PDUType(data[3]),
-			Timestamp:      binary.BigEndian.Uint32(data[4:8]),
-			Length:         binary.BigEndian.Uint16(data[8:10]),
-			SiteID:         binary.BigEndian.Uint16(data[10:12]),
-			ApplicationID:  binary.BigEndian.Uint16(data[12:14]),
+			PDUType:         PDUType(data[3]),
+			Timestamp:       binary.BigEndian.Uint32(data[4:8]),
+			Length:          binary.BigEndian.Uint16(data[8:10]),
+			SiteID:          binary.BigEndian.Uint16(data[10:12]),
+			ApplicationID:   binary.BigEndian.Uint16(data[12:14]),
 		},
 		EventID: binary.BigEndian.Uint32(data[20:24]),
 		WeaponID: EntityIdentifier{
-			Site: binary.BigEndian.Uint16(data[24:26]),
-			App:  binary.BigEndian.Uint16(data[26:28]),
+			Site:   binary.BigEndian.Uint16(data[24:26]),
+			App:    binary.BigEndian.Uint16(data[26:28]),
 			Entity: binary.BigEndian.Uint32(data[28:32]),
 		},
-		LocationX: math.Float32frombits(binary.BigEndian.Uint32(data[32:36])),
-		LocationY: math.Float32frombits(binary.BigEndian.Uint32(data[36:40])),
-		LocationZ: math.Float32frombits(binary.BigEndian.Uint32(data[40:44])),
-		VelocityX: math.Float32frombits(binary.BigEndian.Uint32(data[44:48])),
-		VelocityY: math.Float32frombits(binary.BigEndian.Uint32(data[48:52])),
-		VelocityZ: math.Float32frombits(binary.BigEndian.Uint32(data[52:56])),
+		LocationX:        math.Float32frombits(binary.BigEndian.Uint32(data[32:36])),
+		LocationY:        math.Float32frombits(binary.BigEndian.Uint32(data[36:40])),
+		LocationZ:        math.Float32frombits(binary.BigEndian.Uint32(data[40:44])),
+		VelocityX:        math.Float32frombits(binary.BigEndian.Uint32(data[44:48])),
+		VelocityY:        math.Float32frombits(binary.BigEndian.Uint32(data[48:52])),
+		VelocityZ:        math.Float32frombits(binary.BigEndian.Uint32(data[52:56])),
 		DetonationResult: data[60],
 	}
 }
@@ -365,11 +367,11 @@ func (b *bridgeState) translateDetonationToHLA(det *DetonationPDU) *HLAInteracti
 	return &HLAInteraction{
 		ClassID: HLAInteractionDetonate,
 		Parameters: map[string]interface{}{
-			"event_id":          det.EventID,
-			"weapon_id":         det.WeaponID.Entity,
+			"event_id":            det.EventID,
+			"weapon_id":           det.WeaponID.Entity,
 			"detonation_location": map[string]float64{"lat": lat, "lon": lon, "alt": alt},
-			"velocity":          map[string]float32{"x": det.VelocityX, "y": det.VelocityY, "z": det.VelocityZ},
-			"detonation_result": det.DetonationResult,
+			"velocity":            map[string]float32{"x": det.VelocityX, "y": det.VelocityY, "z": det.VelocityZ},
+			"detonation_result":   det.DetonationResult,
 		},
 		Timestamp: time.Now(),
 	}
@@ -404,15 +406,15 @@ func (b *bridgeState) disESPDUToHLA(esp *EntityStatePDU) *HLAObjectUpdate {
 		ClassID:    classID,
 		InstanceID: esp.EntityID,
 		Attributes: map[string]interface{}{
-			"entity_id":            esp.EntityID,
-			"force_id":             forceName[esp.ForceID],
+			"entity_id": esp.EntityID,
+			"force_id":  forceName[esp.ForceID],
 			"entity_type": map[string]interface{}{
-				"kind":       esp.EntityTypeKind,
-				"domain":     domainName[esp.EntityTypeDomain],
-				"country":    esp.EntityTypeCountry,
-				"category":   esp.EntityTypeCategory,
+				"kind":        esp.EntityTypeKind,
+				"domain":      domainName[esp.EntityTypeDomain],
+				"country":     esp.EntityTypeCountry,
+				"category":    esp.EntityTypeCategory,
 				"subcategory": esp.EntityTypeSubcategory,
-				"specific":   esp.EntityTypeSpecific,
+				"specific":    esp.EntityTypeSpecific,
 			},
 			"position": map[string]float64{"lat": lat, "lon": lon, "alt": alt},
 			"orientation": map[string]float32{
@@ -505,28 +507,28 @@ func (b *bridgeState) hlaToDIS(obj *HLAObjectUpdate) *EntityStatePDU {
 	}
 
 	return &EntityStatePDU{
-		ProtocolVersion: 7,
-		ExerciseID:     1,
-		PDUType:        PDUEntityState,
-		Timestamp:      timestampDIS(time.Now()),
-		Length:         144,
-		SiteID:         1,
-		ApplicationID:  10, // dis-hla-gateway
-		EntityID:       obj.InstanceID,
-		ForceID:        uint8(forceID),
-		EntityTypeKind: 1,
-		EntityTypeDomain: 1,
-		EntityTypeCountry: 225,
+		ProtocolVersion:    7,
+		ExerciseID:         1,
+		PDUType:            PDUEntityState,
+		Timestamp:          timestampDIS(time.Now()),
+		Length:             144,
+		SiteID:             1,
+		ApplicationID:      10, // dis-hla-gateway
+		EntityID:           obj.InstanceID,
+		ForceID:            uint8(forceID),
+		EntityTypeKind:     1,
+		EntityTypeDomain:   1,
+		EntityTypeCountry:  225,
 		EntityTypeCategory: category,
-		OrientationYaw:   yaw,
-		OrientationPitch: pitch,
-		OrientationRoll:  roll,
-		VelocityX: vx,
-		VelocityY: vy,
-		VelocityZ: vz,
-		LocationX: float32(x),
-		LocationY: float32(y),
-		LocationZ: float32(z),
+		OrientationYaw:     yaw,
+		OrientationPitch:   pitch,
+		OrientationRoll:    roll,
+		VelocityX:          vx,
+		VelocityY:          vy,
+		VelocityZ:          vz,
+		LocationX:          float32(x),
+		LocationY:          float32(y),
+		LocationZ:          float32(z),
 	}
 }
 
@@ -564,13 +566,13 @@ func espduToBytes(esp *EntityStatePDU) []byte {
 }
 
 var (
-	br               *bridgeState
-	kafkaDISIn       *kafka.Reader
-	kafkaHLAIn       *kafka.Reader
-	kafkaDISOut      *kafka.Writer
-	kafkaHLAOut      *kafka.Writer
-	kafkaBroker      = getEnv("KAFKA_BROKERS", "kafka:9092")
-	port             = getEnv("PORT", "8090")
+	br          *bridgeState
+	kafkaDISIn  *kafka.Reader
+	kafkaHLAIn  *kafka.Reader
+	kafkaDISOut *kafka.Writer
+	kafkaHLAOut *kafka.Writer
+	kafkaBroker = getEnv("KAFKA_BROKERS", "kafka:9092")
+	port        = getEnv("PORT", "8090")
 )
 
 func getEnv(key, fallback string) string {
@@ -581,31 +583,31 @@ func getEnv(key, fallback string) string {
 }
 
 const (
-	TopicDISIn       = "vimi.dis.entity-state"
-	TopicHLAIn       = "vimi.hla.object-update"
-	TopicDISOut      = "vimi.dis.entity-state-out"
-	TopicHLAOut      = "vimi.hla.interaction"
+	TopicDISIn  = "vimi.dis.entity-state"
+	TopicHLAIn  = "vimi.hla.object-update"
+	TopicDISOut = "vimi.dis.entity-state-out"
+	TopicHLAOut = "vimi.hla.interaction"
 )
 
 func run(ctx context.Context) {
 	// DIS input → translate to HLA
 	disReader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBroker},
-		Topic:     TopicDISIn,
-		GroupID:   "dis-hla-gateway-dis",
-		MinBytes:  10e3,
-		MaxBytes:  10e6,
+		Brokers:     []string{kafkaBroker},
+		Topic:       TopicDISIn,
+		GroupID:     "dis-hla-gateway-dis",
+		MinBytes:    10e3,
+		MaxBytes:    10e6,
 		StartOffset: kafka.LastOffset,
 	})
 	defer disReader.Close()
 
 	// HLA input → translate to DIS
 	hlaReader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBroker},
-		Topic:     TopicHLAIn,
-		GroupID:   "dis-hla-gateway-hla",
-		MinBytes:  10e3,
-		MaxBytes:  10e6,
+		Brokers:     []string{kafkaBroker},
+		Topic:       TopicHLAIn,
+		GroupID:     "dis-hla-gateway-hla",
+		MinBytes:    10e3,
+		MaxBytes:    10e6,
 		StartOffset: kafka.LastOffset,
 	})
 	defer hlaReader.Close()
@@ -730,12 +732,12 @@ type HealthResponse struct {
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	resp := HealthResponse{
-		Service:     "dis-hla-gateway",
-		Version:     "0.1.0",
-		Timestamp:   time.Now().UTC(),
-		Status:      "healthy",
-		DisEntities: len(br.disEntities),
-		HlaObjects:  len(br.hlaObjects),
+		Service:      "dis-hla-gateway",
+		Version:      "0.1.0",
+		Timestamp:    time.Now().UTC(),
+		Status:       "healthy",
+		DisEntities:  len(br.disEntities),
+		HlaObjects:   len(br.hlaObjects),
 		RtiConnected: false, // RTI connection not implemented (would use Portico/Mak's RTI)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -773,7 +775,7 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
-http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/health", healthHandler)
 
 	// Manual translation endpoints for testing
 	http.HandleFunc("/translate/dis-to-hla", func(w http.ResponseWriter, r *http.Request) {
@@ -814,10 +816,10 @@ http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/entities", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		type entitySummary struct {
-			EntityID uint32 `json:"entity_id"`
-			SiteID   uint16 `json:"site_id"`
-			AppID    uint16 `json:"app_id"`
-			ForceID  uint8  `json:"force_id"`
+			EntityID uint32  `json:"entity_id"`
+			SiteID   uint16  `json:"site_id"`
+			AppID    uint16  `json:"app_id"`
+			ForceID  uint8   `json:"force_id"`
 			Lat      float64 `json:"lat"`
 			Lon      float64 `json:"lon"`
 			Alt      float64 `json:"alt"`

@@ -9,22 +9,22 @@ import (
 
 // JTAGSMessage represents a JTAGS message
 type JTAGSMessage struct {
-	MessageType    string
-	Priority       string
-	Originator     string
-	TrackData      JTAGSTrackData
-	Timestamp      time.Time
+	MessageType string
+	Priority    string
+	Originator  string
+	TrackData   JTAGSTrackData
+	Timestamp   time.Time
 }
 
 // JTAGSTrackData represents track data in JTAGS format
 type JTAGSTrackData struct {
-	TrackNumber    string
-	Latitude       float64
-	Longitude      float64
-	Altitude       float64
-	VelocityKts    float64
-	Heading        float64
-	TrackQuality   int
+	TrackNumber  string
+	Latitude     float64
+	Longitude    float64
+	Altitude     float64
+	VelocityKts  float64
+	Heading      float64
+	TrackQuality int
 }
 
 // JTAGSFormatter formats JTAGS messages
@@ -105,9 +105,9 @@ func (f *JTAGSFormatter) Parse(data string) (*JTAGSMessage, error) {
 
 // JTAGSConnection handles JTAGS network connections
 type JTAGSConnection struct {
-	Host     string
-	Port     int
-	Timeout  time.Duration
+	Host      string
+	Port      int
+	Timeout   time.Duration
 	connected bool
 }
 
@@ -161,10 +161,10 @@ func (c *JTAGSConnection) IsConnected() bool {
 // Validate validates a JTAGS message
 func (f *JTAGSFormatter) Validate(msg *JTAGSMessage) error {
 	validTypes := map[string]bool{
-		"TRACK":    true,
-		"ALERT":    true,
-		"STATUS":   true,
-		"CONTROL":  true,
+		"TRACK":   true,
+		"ALERT":   true,
+		"STATUS":  true,
+		"CONTROL": true,
 	}
 
 	if !validTypes[msg.MessageType] {

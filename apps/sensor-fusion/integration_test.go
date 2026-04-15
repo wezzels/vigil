@@ -19,14 +19,14 @@ func TestMultiSourceTrackInput(t *testing.T) {
 	// Output topic: correlated-tracks
 
 	type TrackInput struct {
-		SourceID string    `json:"source_id"`
-		Source   string    `json:"source"`
-		Timestamp int64     `json:"timestamp"`
-		Lat      float64   `json:"lat"`
-		Lon      float64   `json:"lon"`
-		Alt      float64   `json:"alt"`
-		Velocity float64   `json:"velocity"`
-		Heading  float64   `json:"heading"`
+		SourceID  string  `json:"source_id"`
+		Source    string  `json:"source"`
+		Timestamp int64   `json:"timestamp"`
+		Lat       float64 `json:"lat"`
+		Lon       float64 `json:"lon"`
+		Alt       float64 `json:"alt"`
+		Velocity  float64 `json:"velocity"`
+		Heading   float64 `json:"heading"`
 	}
 
 	tracks := []TrackInput{
@@ -47,17 +47,17 @@ func TestMultiSourceTrackInput(t *testing.T) {
 // TestTrackCorrelationOutput tests correlated track output
 func TestTrackCorrelationOutput(t *testing.T) {
 	type CorrelatedTrack struct {
-		TrackID     string    `json:"track_id"`
-		TrackNumber int       `json:"track_number"`
-		Lat         float64   `json:"lat"`
-		Lon         float64   `json:"lon"`
-		Alt         float64   `json:"alt"`
-		Velocity    float64   `json:"velocity"`
-		Heading     float64   `json:"heading"`
-		Variance    float64   `json:"variance"`
-		SourceCount int       `json:"source_count"`
-		Confidence  float64   `json:"confidence"`
-		Timestamp   int64     `json:"timestamp"`
+		TrackID     string  `json:"track_id"`
+		TrackNumber int     `json:"track_number"`
+		Lat         float64 `json:"lat"`
+		Lon         float64 `json:"lon"`
+		Alt         float64 `json:"alt"`
+		Velocity    float64 `json:"velocity"`
+		Heading     float64 `json:"heading"`
+		Variance    float64 `json:"variance"`
+		SourceCount int     `json:"source_count"`
+		Confidence  float64 `json:"confidence"`
+		Timestamp   int64   `json:"timestamp"`
 	}
 
 	track := CorrelatedTrack{
@@ -116,19 +116,19 @@ func TestHealthEndpoint(t *testing.T) {
 	// - Memory usage
 
 	type FusionHealth struct {
-		Status              string  `json:"status"`
-		Uptime              int64   `json:"uptime"`
-		TracksProcessed     int     `json:"tracks_processed"`
-		CorrelationRate     float64 `json:"correlation_rate"`
-		AverageLatencyMs   float64 `json:"average_latency_ms"`
+		Status           string  `json:"status"`
+		Uptime           int64   `json:"uptime"`
+		TracksProcessed  int     `json:"tracks_processed"`
+		CorrelationRate  float64 `json:"correlation_rate"`
+		AverageLatencyMs float64 `json:"average_latency_ms"`
 	}
 
 	health := FusionHealth{
-		Status:            "healthy",
-		Uptime:            3600,
-		TracksProcessed:   5678,
-		CorrelationRate:   0.95,
-		AverageLatencyMs:  12.5,
+		Status:           "healthy",
+		Uptime:           3600,
+		TracksProcessed:  5678,
+		CorrelationRate:  0.95,
+		AverageLatencyMs: 12.5,
 	}
 
 	t.Logf("Fusion health: %+v", health)
@@ -143,8 +143,8 @@ func TestKalmanFilterState(t *testing.T) {
 	// - Handle measurement noise
 
 	type KalmanState struct {
-		X        [6]float64   // State vector [lat, lon, alt, vLat, vLon, vAlt]
-		P        [6][6]float64 // Covariance matrix
+		X         [6]float64    // State vector [lat, lon, alt, vLat, vLon, vAlt]
+		P         [6][6]float64 // Covariance matrix
 		Timestamp int64
 	}
 
@@ -180,8 +180,8 @@ func TestJPDACorrelation(t *testing.T) {
 	// - Reject clutter
 
 	tests := []struct {
-		name          string
-		distance      float64
+		name            string
+		distance        float64
 		shouldAssociate bool
 	}{
 		{"Very close", 0.5, true},

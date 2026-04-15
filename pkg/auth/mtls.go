@@ -30,8 +30,8 @@ func DefaultmTLSConfig() *mTLSConfig {
 
 // MTLSManager manages mTLS connections
 type MTLSManager struct {
-	config     *mTLSConfig
-	certPool   *x509.CertPool
+	config      *mTLSConfig
+	certPool    *x509.CertPool
 	certificate tls.Certificate
 }
 
@@ -252,14 +252,14 @@ func (c *TLSConn) VerifyPeerCertificate(opts x509.VerifyOptions) error {
 
 // TLSDialer provides TLS dial functionality
 type TLSDialer struct {
-	config *tls.Config
+	config  *tls.Config
 	timeout time.Duration
 }
 
 // NewTLSDialer creates a new TLS dialer
 func NewTLSDialer(config *tls.Config, timeout time.Duration) *TLSDialer {
 	return &TLSDialer{
-		config: config,
+		config:  config,
 		timeout: timeout,
 	}
 }

@@ -118,10 +118,10 @@ func TestMarkFailed(t *testing.T) {
 // TestShouldRetry tests retry logic
 func TestShouldRetry(t *testing.T) {
 	tracker := NewDeliveryTracker(&DeliveryConfig{
-		MaxAttempts:     3,
-		EnableRetry:     true,
-		RetryDelay:      1 * time.Second,
-		RetryBackoff:    false,
+		MaxAttempts:  3,
+		EnableRetry:  true,
+		RetryDelay:   1 * time.Second,
+		RetryBackoff: false,
 	})
 
 	tracker.Register("ALERT-001", "RECIPIENT-A")

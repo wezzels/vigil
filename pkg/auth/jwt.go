@@ -25,16 +25,16 @@ func DefaultJWTConfig() *JWTConfig {
 
 // Claims represents JWT claims
 type Claims struct {
-	Subject   string            `json:"sub"`
-	Issuer    string            `json:"iss"`
-	Audience  []string          `json:"aud"`
-	ExpiresAt int64             `json:"exp"`
-	NotBefore int64             `json:"nbf"`
-	IssuedAt  int64             `json:"iat"`
-	ID        string            `json:"jti"`
-	Roles     []string          `json:"roles,omitempty"`
-	Permissions []string        `json:"permissions,omitempty"`
-	Metadata  map[string]string `json:"metadata,omitempty"`
+	Subject     string            `json:"sub"`
+	Issuer      string            `json:"iss"`
+	Audience    []string          `json:"aud"`
+	ExpiresAt   int64             `json:"exp"`
+	NotBefore   int64             `json:"nbf"`
+	IssuedAt    int64             `json:"iat"`
+	ID          string            `json:"jti"`
+	Roles       []string          `json:"roles,omitempty"`
+	Permissions []string          `json:"permissions,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
 }
 
 // JWTValidator validates JWT tokens
@@ -189,9 +189,9 @@ type Token struct {
 
 // TokenGenerator generates JWT tokens
 type TokenGenerator struct {
-	config   *JWTConfig
+	config     *JWTConfig
 	signingKey interface{}
-	kid      string
+	kid        string
 }
 
 // NewTokenGenerator creates a new token generator

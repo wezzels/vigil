@@ -53,30 +53,30 @@ func (e EnvPhenomenon) String() string {
 
 // SensorImpact describes how an environmental phenomenon affects sensor types
 type SensorImpact struct {
-	SBIRSImpact  float64 // 0=none, 1=total degradation
-	AWACSImpact  float64
+	SBIRSImpact   float64 // 0=none, 1=total degradation
+	AWACSImpact   float64
 	PATRIOTImpact float64
-	THAADImpact  float64
-	RadiusKm     float64 // Geographic radius of effect
-	AltitudeKm   float64 // Altitude (for space-based effects)
+	THAADImpact   float64
+	RadiusKm      float64 // Geographic radius of effect
+	AltitudeKm    float64 // Altitude (for space-based effects)
 }
 
 // EnvEvent from DoD meteorological/oceanographic (METOC) standards
 type EnvEvent struct {
-	EventID       uint32           `json:"event_id"`
-	Type          EnvPhenomenon    `json:"type"`
-	Severity      int              `json:"severity"` // 1-5
-	CenterLat     float64           `json:"center_lat"`
-	CenterLon     float64           `json:"center_lon"`
-	RadiusKm      float64           `json:"radius_km"`
-	AltitudeMinKm float64           `json:"altitude_min_km"`
-	AltitudeMaxKm float64           `json:"altitude_max_km"`
-	Probability   float64           `json:"probability"` // confidence 0-1
-	Duration      time.Duration     `json:"duration"`
-	StartTime     time.Time         `json:"start_time"`
-	EndTime       time.Time         `json:"end_time"`
-	SensorImpact  SensorImpact      `json:"sensor_impact"`
-	DataSource    string            `json:"data_source"`
+	EventID       uint32        `json:"event_id"`
+	Type          EnvPhenomenon `json:"type"`
+	Severity      int           `json:"severity"` // 1-5
+	CenterLat     float64       `json:"center_lat"`
+	CenterLon     float64       `json:"center_lon"`
+	RadiusKm      float64       `json:"radius_km"`
+	AltitudeMinKm float64       `json:"altitude_min_km"`
+	AltitudeMaxKm float64       `json:"altitude_max_km"`
+	Probability   float64       `json:"probability"` // confidence 0-1
+	Duration      time.Duration `json:"duration"`
+	StartTime     time.Time     `json:"start_time"`
+	EndTime       time.Time     `json:"end_time"`
+	SensorImpact  SensorImpact  `json:"sensor_impact"`
+	DataSource    string        `json:"data_source"`
 }
 
 // SensorCoverage grid cell
@@ -107,14 +107,14 @@ func newEnvMonitor() *envMonitor {
 			lat := float64(i) - 90
 			lon := float64(j) - 180
 			cells[i][j] = GridCell{
-				Lat:          lat,
-				Lon:          lon,
-				CloudCover:   rand.Float64() * 0.3, // baseline 0-30%
+				Lat:           lat,
+				Lon:           lon,
+				CloudCover:    rand.Float64() * 0.3, // baseline 0-30%
 				Precipitation: 0,
 				VisibilityKm:  50,
-				WindSpeedMs:  rand.Float64() * 15,
-				SolarIndex:   0.1,
-				EMNoiseDb:    -100, // baseline
+				WindSpeedMs:   rand.Float64() * 15,
+				SolarIndex:    0.1,
+				EMNoiseDb:     -100, // baseline
 			}
 		}
 	}
@@ -170,7 +170,7 @@ func (em *envMonitor) generateEvent() *EnvEvent {
 		duration = time.Duration(rand.Intn(48)+6) * time.Hour
 
 	case ENV_SOLAR_FLARE:
-		radiusKm = 0 // global effect
+		radiusKm = 0          // global effect
 		altMin, altMax = 0, 0 // affects space-based sensors
 		impact = SensorImpact{SBIRSImpact: 0.9, AWACSImpact: 0.7, PATRIOTImpact: 0.3, THAADImpact: 0.8, RadiusKm: 0, AltitudeKm: 36000}
 		duration = time.Duration(rand.Intn(72)+6) * time.Hour
@@ -321,17 +321,17 @@ func (em *envMonitor) getSensorRating(lat, lon float64, sensorType string) float
 
 // EnvReport for a location query
 type EnvReport struct {
-	Location     Coordinate      `json:"location"`
-	Timestamp    time.Time       `json:"timestamp"`
-	Conditions   string          `json:"conditions"`
-	SBRating     float64         `json:"sbirs_rating"`
-	AWACSRating  float64         `json:"awacs_rating"`
-	PATRIOTRating float64        `json:"patriot_rating"`
-	THAADRating  float64         `json:"thaad_rating"`
-	CloudCover   float64         `json:"cloud_cover"`
-	VisibilityKm float64         `json:"visibility_km"`
-	Precipitation float64        `json:"precipitation_mm_h"`
-	ActiveEvents int              `json:"active_events"`
+	Location      Coordinate `json:"location"`
+	Timestamp     time.Time  `json:"timestamp"`
+	Conditions    string     `json:"conditions"`
+	SBRating      float64    `json:"sbirs_rating"`
+	AWACSRating   float64    `json:"awacs_rating"`
+	PATRIOTRating float64    `json:"patriot_rating"`
+	THAADRating   float64    `json:"thaad_rating"`
+	CloudCover    float64    `json:"cloud_cover"`
+	VisibilityKm  float64    `json:"visibility_km"`
+	Precipitation float64    `json:"precipitation_mm_h"`
+	ActiveEvents  int        `json:"active_events"`
 }
 
 type Coordinate struct {
@@ -341,13 +341,13 @@ type Coordinate struct {
 
 func (em *envMonitor) generateReport(lat, lon float64) *EnvReport {
 	r := &EnvReport{
-		Location:     Coordinate{Lat: lat, Lon: lon},
-		Timestamp:   time.Now(),
-		SBRating:    em.getSensorRating(lat, lon, "SBIRS"),
-		AWACSRating: em.getSensorRating(lat, lon, "AWACS"),
+		Location:      Coordinate{Lat: lat, Lon: lon},
+		Timestamp:     time.Now(),
+		SBRating:      em.getSensorRating(lat, lon, "SBIRS"),
+		AWACSRating:   em.getSensorRating(lat, lon, "AWACS"),
 		PATRIOTRating: em.getSensorRating(lat, lon, "PATRIOT"),
-		THAADRating: em.getSensorRating(lat, lon, "THAAD"),
-		ActiveEvents: len(em.activeEvents),
+		THAADRating:   em.getSensorRating(lat, lon, "THAAD"),
+		ActiveEvents:  len(em.activeEvents),
 	}
 
 	i := int(lat + 90)
@@ -375,10 +375,10 @@ func (em *envMonitor) generateReport(lat, lon float64) *EnvReport {
 }
 
 var (
-	em           *envMonitor
-	kafkaWriter  *kafka.Writer
-	kafkaBroker  = getEnv("KAFKA_BROKERS", "kafka:9092")
-	port         = getEnv("PORT", "8085")
+	em          *envMonitor
+	kafkaWriter *kafka.Writer
+	kafkaBroker = getEnv("KAFKA_BROKERS", "kafka:9092")
+	port        = getEnv("PORT", "8085")
 )
 
 func getEnv(key, fallback string) string {
@@ -487,7 +487,7 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
-http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		sort.Slice(em.activeEvents, func(i, j int) bool {

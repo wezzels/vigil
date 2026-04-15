@@ -10,20 +10,20 @@ import (
 func TestSBXFeedCreation(t *testing.T) {
 	config := DefaultConfig()
 	config.Endpoints = []string{"localhost"}
-	
+
 	feed, err := NewSBXFeed(config)
 	if err != nil {
 		t.Fatalf("Failed to create SBX feed: %v", err)
 	}
-	
+
 	if feed == nil {
 		t.Fatal("Feed should not be nil")
 	}
-	
+
 	if feed.IsConnected() {
 		t.Error("Feed should not be connected initially")
 	}
-	
+
 	if feed.config.RadarType != "SBX" {
 		t.Errorf("Expected radar type SBX, got %s", feed.config.RadarType)
 	}
@@ -33,24 +33,24 @@ func TestSBXFeedCreation(t *testing.T) {
 func TestUEWRFeedCreation(t *testing.T) {
 	config := DefaultConfig()
 	config.Endpoints = []string{"localhost"}
-	
+
 	feed, err := NewUEWRFeed(config)
 	if err != nil {
 		t.Fatalf("Failed to create UEWR feed: %v", err)
 	}
-	
+
 	if feed == nil {
 		t.Fatal("Feed should not be nil")
 	}
-	
+
 	if feed.IsConnected() {
 		t.Error("Feed should not be connected initially")
 	}
-	
+
 	if feed.config.RadarType != "UEWR" {
 		t.Errorf("Expected radar type UEWR, got %s", feed.config.RadarType)
 	}
-	
+
 	if feed.config.FrequencyBand != "L" {
 		t.Errorf("Expected frequency band L, got %s", feed.config.FrequencyBand)
 	}
@@ -59,7 +59,7 @@ func TestUEWRFeedCreation(t *testing.T) {
 // TestSBXStatusParse tests SBX status parsing
 func TestSBXStatusParse(t *testing.T) {
 	feed := &SBXFeed{}
-	
+
 	tests := []struct {
 		status   uint32
 		expected string
@@ -70,7 +70,7 @@ func TestSBXStatusParse(t *testing.T) {
 		{3, TrackStatusDrop},
 		{99, TrackStatusUnknown},
 	}
-	
+
 	for _, tt := range tests {
 		result := feed.parseStatus(tt.status)
 		if result != tt.expected {
@@ -82,7 +82,7 @@ func TestSBXStatusParse(t *testing.T) {
 // TestUEWRStatusParse tests UEWR status parsing
 func TestUEWRStatusParse(t *testing.T) {
 	feed := &UEWRFeed{}
-	
+
 	tests := []struct {
 		status   uint32
 		expected string
@@ -93,7 +93,7 @@ func TestUEWRStatusParse(t *testing.T) {
 		{3, TrackStatusDrop},
 		{99, TrackStatusUnknown},
 	}
-	
+
 	for _, tt := range tests {
 		result := feed.parseStatus(tt.status)
 		if result != tt.expected {
@@ -105,7 +105,7 @@ func TestUEWRStatusParse(t *testing.T) {
 // TestSBXTargetTypeParse tests SBX target type parsing
 func TestSBXTargetTypeParse(t *testing.T) {
 	feed := &SBXFeed{}
-	
+
 	tests := []struct {
 		targetType uint32
 		expected   string
@@ -116,7 +116,7 @@ func TestSBXTargetTypeParse(t *testing.T) {
 		{0, TargetTypeUnknown},
 		{99, TargetTypeUnknown},
 	}
-	
+
 	for _, tt := range tests {
 		result := feed.parseTargetType(tt.targetType)
 		if result != tt.expected {
@@ -130,7 +130,7 @@ func TestSBXTrackValidation(t *testing.T) {
 	config := DefaultConfig()
 	config.EnableFiltering = true
 	feed := &SBXFeed{config: config}
-	
+
 	tests := []struct {
 		name    string
 		track   *RadarTrack
@@ -167,7 +167,7 @@ func TestSBXTrackValidation(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := feed.validateTrack(tt.track)
@@ -184,7 +184,7 @@ func TestUEWRTrackValidation(t *testing.T) {
 	config.MaxRange = 5000000.0
 	config.EnableFiltering = true
 	feed := &UEWRFeed{config: config}
-	
+
 	tests := []struct {
 		name    string
 		track   *RadarTrack
@@ -193,25 +193,25 @@ func TestUEWRTrackValidation(t *testing.T) {
 		{
 			name: "valid track",
 			track: &RadarTrack{
-				Latitude: 38.8977,
+				Latitude:  38.8977,
 				Longitude: -77.0365,
-				Altitude: 10000.0,
-				Range:    1000000.0,
+				Altitude:  10000.0,
+				Range:     1000000.0,
 			},
 			wantErr: false,
 		},
 		{
 			name: "range exceeds max",
 			track: &RadarTrack{
-				Latitude: 38.8977,
+				Latitude:  38.8977,
 				Longitude: -77.0365,
-				Altitude: 10000.0,
-				Range:    6000000.0, // Exceeds max range
+				Altitude:  10000.0,
+				Range:     6000000.0, // Exceeds max range
 			},
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := feed.validateTrack(tt.track)
@@ -225,28 +225,28 @@ func TestUEWRTrackValidation(t *testing.T) {
 // TestSBXMockFeed tests SBX mock feed
 func TestSBXMockFeed(t *testing.T) {
 	feed := NewMockRadarFeed()
-	
+
 	ctx := context.Background()
 	if err := feed.Connect(ctx); err != nil {
 		t.Fatalf("Failed to connect: %v", err)
 	}
-	
+
 	if !feed.IsConnected() {
 		t.Error("Feed should be connected")
 	}
-	
+
 	track := RadarTrack{
 		ID:          "SBX-1001-123",
 		TrackNumber: 1001,
-		SensorID:   "SBX-1",
-		Timestamp:  time.Now(),
-		Latitude:   38.8977,
-		Longitude:  -77.0365,
-		Altitude:   10000.0,
+		SensorID:    "SBX-1",
+		Timestamp:   time.Now(),
+		Latitude:    38.8977,
+		Longitude:   -77.0365,
+		Altitude:    10000.0,
 	}
-	
+
 	feed.Send(track)
-	
+
 	select {
 	case r := <-feed.Receive():
 		if r.ID != "SBX-1001-123" {
@@ -255,7 +255,7 @@ func TestSBXMockFeed(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Error("Timeout waiting for track")
 	}
-	
+
 	if err := feed.Disconnect(); err != nil {
 		t.Fatalf("Failed to disconnect: %v", err)
 	}
@@ -264,24 +264,24 @@ func TestSBXMockFeed(t *testing.T) {
 // TestUEWRMockFeed tests UEWR mock feed
 func TestUEWRMockFeed(t *testing.T) {
 	feed := NewMockRadarFeed()
-	
+
 	ctx := context.Background()
 	if err := feed.Connect(ctx); err != nil {
 		t.Fatalf("Failed to connect: %v", err)
 	}
-	
+
 	track := RadarTrack{
 		ID:          "UEWR-2001-456",
 		TrackNumber: 2001,
-		SensorID:   "UEWR-1",
-		Timestamp:  time.Now(),
-		Latitude:   45.0,
-		Longitude:  -120.0,
-		Altitude:   50000.0,
+		SensorID:    "UEWR-1",
+		Timestamp:   time.Now(),
+		Latitude:    45.0,
+		Longitude:   -120.0,
+		Altitude:    50000.0,
 	}
-	
+
 	feed.Send(track)
-	
+
 	select {
 	case r := <-feed.Receive():
 		if r.ID != "UEWR-2001-456" {
@@ -290,7 +290,7 @@ func TestUEWRMockFeed(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Error("Timeout waiting for track")
 	}
-	
+
 	if err := feed.Disconnect(); err != nil {
 		t.Fatalf("Failed to disconnect: %v", err)
 	}
@@ -311,7 +311,7 @@ func TestRadarConfigDefaults(t *testing.T) {
 	if sbx.config.FrequencyBand != "X" {
 		t.Errorf("Expected X band, got %s", sbx.config.FrequencyBand)
 	}
-	
+
 	// Test UEWR defaults (separate config)
 	configUEWR := DefaultConfig()
 	configUEWR.Endpoints = []string{"localhost"}
@@ -336,18 +336,18 @@ func TestSBXTrackCache(t *testing.T) {
 		config:     DefaultConfig(),
 		trackCache: make(map[uint32]*RadarTrack),
 	}
-	
+
 	track1 := &RadarTrack{TrackNumber: 1001, SensorID: "SBX-1"}
 	track2 := &RadarTrack{TrackNumber: 1002, SensorID: "SBX-1"}
-	
+
 	feed.trackCache[1001] = track1
 	feed.trackCache[1002] = track2
-	
+
 	retrieved := feed.GetTrack(1001)
 	if retrieved == nil || retrieved.TrackNumber != 1001 {
 		t.Error("Failed to get track from cache")
 	}
-	
+
 	active := feed.GetActiveTracks()
 	if len(active) != 2 {
 		t.Errorf("Expected 2 active tracks, got %d", len(active))
@@ -360,10 +360,10 @@ func TestUEWRTrackCache(t *testing.T) {
 		config:     DefaultConfig(),
 		trackCache: make(map[uint32]*RadarTrack),
 	}
-	
+
 	track := &RadarTrack{TrackNumber: 3001, SensorID: "UEWR-1"}
 	feed.trackCache[3001] = track
-	
+
 	retrieved := feed.GetTrack(3001)
 	if retrieved == nil || retrieved.TrackNumber != 3001 {
 		t.Error("Failed to get track from cache")
@@ -378,7 +378,7 @@ func BenchmarkSBXTrackParsing(b *testing.B) {
 		_ = &RadarTrack{
 			ID:          "SBX-1001",
 			TrackNumber: 1001,
-			SensorID:   "SBX-1",
+			SensorID:    "SBX-1",
 			Timestamp:   time.Now(),
 			Latitude:    38.8977,
 			Longitude:   -77.0365,
@@ -395,7 +395,7 @@ func BenchmarkUEWRTrackParsing(b *testing.B) {
 		_ = &RadarTrack{
 			ID:          "UEWR-2001",
 			TrackNumber: 2001,
-			SensorID:   "UEWR-1",
+			SensorID:    "UEWR-1",
 			Timestamp:   time.Now(),
 			Latitude:    45.0,
 			Longitude:   -120.0,

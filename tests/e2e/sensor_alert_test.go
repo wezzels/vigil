@@ -20,12 +20,12 @@ func TestSensorToAlertE2E(t *testing.T) {
 	t.Run("OPIRIngest", func(t *testing.T) {
 		// Simulate OPIR detection
 		detection := &OPIRDetection{
-			Timestamp:   time.Now(),
-			Latitude:    34.0522,
-			Longitude:   -118.2437,
-			Altitude:    10000.0,
+			Timestamp:  time.Now(),
+			Latitude:   34.0522,
+			Longitude:  -118.2437,
+			Altitude:   10000.0,
 			Confidence: 0.95,
-			Source:      "OPIR-SAT-001",
+			Source:     "OPIR-SAT-001",
 		}
 
 		// In production, this would:
@@ -56,12 +56,12 @@ func TestSensorToAlertE2E(t *testing.T) {
 	// Test alert generation
 	t.Run("AlertGeneration", func(t *testing.T) {
 		alert := &Alert{
-			ID:          "alert-001",
-			Type:        "CONOPREP",
-			Priority:    "critical",
-			TrackID:     "track-001",
-			CreatedAt:   time.Now(),
-			Status:      "pending",
+			ID:        "alert-001",
+			Type:      "CONOPREP",
+			Priority:  "critical",
+			TrackID:   "track-001",
+			CreatedAt: time.Now(),
+			Status:    "pending",
 		}
 
 		if alert.Type != "CONOPREP" {
@@ -114,13 +114,13 @@ func TestTrackLifecycleE2E(t *testing.T) {
 
 	t.Run("TrackCreation", func(t *testing.T) {
 		track := &Track{
-			ID:         "track-001",
+			ID:          "track-001",
 			TrackNumber: "TN001",
-			Source:     "OPIR",
-			Position:   Position{Lat: 34.0522, Lon: -118.2437, Alt: 10000},
-			Velocity:   Velocity{X: 100, Y: 200, Z: 50},
-			Quality:    "high",
-			CreatedAt:  time.Now(),
+			Source:      "OPIR",
+			Position:    Position{Lat: 34.0522, Lon: -118.2437, Alt: 10000},
+			Velocity:    Velocity{X: 100, Y: 200, Z: 50},
+			Quality:     "high",
+			CreatedAt:   time.Now(),
 		}
 
 		if track.ID != "track-001" {
@@ -182,10 +182,10 @@ func TestFederationE2E(t *testing.T) {
 	t.Run("HLAFederation", func(t *testing.T) {
 		// Simulate HLA federation join
 		federate := &Federate{
-			Name:         "VIGIL-Coordinator",
-			Federation:   "FORGE-Federation",
-			Status:       "joined",
-			JoinedAt:     time.Now(),
+			Name:       "VIGIL-Coordinator",
+			Federation: "FORGE-Federation",
+			Status:     "joined",
+			JoinedAt:   time.Now(),
 		}
 
 		if federate.Status != "joined" {
@@ -196,11 +196,11 @@ func TestFederationE2E(t *testing.T) {
 	t.Run("DISGateway", func(t *testing.T) {
 		// Simulate DIS entity state
 		entity := &DISEntity{
-			ID:           "entity-001",
-			EntityType:   "Aircraft",
-			Position:     Position{Lat: 34.0522, Lon: -118.2437, Alt: 10000},
-			Orientation:  Orientation{Heading: 90, Pitch: 0, Roll: 0},
-			LastUpdate:   time.Now(),
+			ID:          "entity-001",
+			EntityType:  "Aircraft",
+			Position:    Position{Lat: 34.0522, Lon: -118.2437, Alt: 10000},
+			Orientation: Orientation{Heading: 90, Pitch: 0, Roll: 0},
+			LastUpdate:  time.Now(),
 		}
 
 		if entity.EntityType != "Aircraft" {
@@ -211,11 +211,11 @@ func TestFederationE2E(t *testing.T) {
 	t.Run("EntityState", func(t *testing.T) {
 		// Simulate entity state update
 		pdu := &EntityStatePDU{
-			EntityID:    12345,
-			EntityType:  []byte("Aircraft"),
-			Position:    [3]float64{34.0522, -118.2437, 10000},
-			Velocity:    [3]float64{100, 200, 50},
-			Timestamp:   time.Now(),
+			EntityID:   12345,
+			EntityType: []byte("Aircraft"),
+			Position:   [3]float64{34.0522, -118.2437, 10000},
+			Velocity:   [3]float64{100, 200, 50},
+			Timestamp:  time.Now(),
 		}
 
 		if pdu.EntityID != 12345 {
@@ -233,11 +233,11 @@ func TestC2E2E(t *testing.T) {
 	t.Run("AlertDelivery", func(t *testing.T) {
 		// Simulate alert delivery
 		delivery := &AlertDelivery{
-			AlertID:    "alert-001",
-			Recipient:  "C2BMC",
-			Status:     "sent",
-			SentAt:     time.Now(),
-			Attempts:   1,
+			AlertID:   "alert-001",
+			Recipient: "C2BMC",
+			Status:    "sent",
+			SentAt:    time.Now(),
+			Attempts:  1,
 		}
 
 		if delivery.Status != "sent" {
@@ -263,11 +263,11 @@ func TestC2E2E(t *testing.T) {
 	t.Run("Acknowledgment", func(t *testing.T) {
 		// Simulate acknowledgment
 		ack := &Acknowledgment{
-			AlertID:     "alert-001",
-			Recipient:   "C2BMC",
-			AckedBy:     "operator-001",
-			AckedAt:     time.Now(),
-			Status:      "acknowledged",
+			AlertID:   "alert-001",
+			Recipient: "C2BMC",
+			AckedBy:   "operator-001",
+			AckedAt:   time.Now(),
+			Status:    "acknowledged",
 		}
 
 		if ack.Status != "acknowledged" {
@@ -279,12 +279,12 @@ func TestC2E2E(t *testing.T) {
 // Mock types for E2E testing
 
 type OPIRDetection struct {
-	Timestamp   time.Time
-	Latitude    float64
-	Longitude   float64
-	Altitude    float64
-	Confidence  float64
-	Source      string
+	Timestamp  time.Time
+	Latitude   float64
+	Longitude  float64
+	Altitude   float64
+	Confidence float64
+	Source     string
 }
 
 type MissileWarning struct {
@@ -344,15 +344,15 @@ type Orientation struct {
 }
 
 type EntityStatePDU struct {
-	EntityID  int
+	EntityID   int
 	EntityType []byte
-	Position  [3]float64
-	Velocity  [3]float64
-	Timestamp time.Time
+	Position   [3]float64
+	Velocity   [3]float64
+	Timestamp  time.Time
 }
 
 type AlertDelivery struct {
-	AlertID  string
+	AlertID   string
 	Recipient string
 	Status    string
 	SentAt    time.Time
@@ -368,34 +368,34 @@ type TrackCorrelation struct {
 }
 
 type Acknowledgment struct {
-	AlertID string
+	AlertID   string
 	Recipient string
-	AckedBy string
-	AckedAt time.Time
-	Status string
+	AckedBy   string
+	AckedAt   time.Time
+	Status    string
 }
 
 // Helper functions
 
 func generateMockDetection() *OPIRDetection {
 	return &OPIRDetection{
-		Timestamp:   time.Now(),
-		Latitude:    34.0522,
-		Longitude:   -118.2437,
-		Altitude:    10000.0,
-		Confidence:  0.95,
-		Source:      "OPIR-SAT-001",
+		Timestamp:  time.Now(),
+		Latitude:   34.0522,
+		Longitude:  -118.2437,
+		Altitude:   10000.0,
+		Confidence: 0.95,
+		Source:     "OPIR-SAT-001",
 	}
 }
 
 func createTrackFromDetection(d *OPIRDetection) *Track {
 	return &Track{
-		ID:         "track-001",
+		ID:          "track-001",
 		TrackNumber: "TN001",
-		Source:     d.Source,
-		Position:   Position{Lat: d.Latitude, Lon: d.Longitude, Alt: d.Altitude},
-		Quality:    "high",
-		CreatedAt:  time.Now(),
+		Source:      d.Source,
+		Position:    Position{Lat: d.Latitude, Lon: d.Longitude, Alt: d.Altitude},
+		Quality:     "high",
+		CreatedAt:   time.Now(),
 	}
 }
 
@@ -423,7 +423,7 @@ func fuseTracks(tracks []*Track) *Track {
 	if len(tracks) == 0 {
 		return nil
 	}
-	
+
 	// Simple average fusion
 	var lat, lon, alt float64
 	for _, t := range tracks {
@@ -432,11 +432,11 @@ func fuseTracks(tracks []*Track) *Track {
 		alt += t.Position.Alt
 	}
 	n := float64(len(tracks))
-	
+
 	return &Track{
 		ID:        "fused-001",
 		Source:    "FUSED",
-		Position:  Position{Lat: lat/n, Lon: lon/n, Alt: alt/n},
+		Position:  Position{Lat: lat / n, Lon: lon / n, Alt: alt / n},
 		CreatedAt: time.Now(),
 	}
 }

@@ -12,10 +12,10 @@ import (
 func TestTrackCorrelator(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		resp := TrackCorrelationResponse{
-			PrimaryTrack:    "T-001",
+			PrimaryTrack:     "T-001",
 			CorrelatedTracks: []string{"T-002"},
-			Confidence:      0.95,
-			Status:          AlertStatusComplete,
+			Confidence:       0.95,
+			Status:           AlertStatusComplete,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
@@ -274,10 +274,10 @@ func TestBatchCorrelate(t *testing.T) {
 func TestCorrelateAndSubmit(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		resp := TrackCorrelationResponse{
-			PrimaryTrack:    "T-001",
+			PrimaryTrack:     "T-001",
 			CorrelatedTracks: []string{"T-002", "T-003"},
-			Confidence:      0.95,
-			Status:          AlertStatusComplete,
+			Confidence:       0.95,
+			Status:           AlertStatusComplete,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)

@@ -39,23 +39,23 @@ const (
 
 // AuditEvent represents an audit event
 type AuditEvent struct {
-	ID          string                 `json:"id"`
-	Timestamp   time.Time              `json:"timestamp"`
-	Type        AuditEventType         `json:"type"`
-	Result      AuditResult            `json:"result"`
-	UserID      string                 `json:"user_id,omitempty"`
-	ActorID     string                 `json:"actor_id,omitempty"`
-	Resource    string                 `json:"resource,omitempty"`
-	Action      string                 `json:"action,omitempty"`
-	IPAddress   string                 `json:"ip_address,omitempty"`
-	UserAgent   string                 `json:"user_agent,omitempty"`
-	Method      string                 `json:"method,omitempty"`
-	Path        string                 `json:"path,omitempty"`
-	StatusCode  int                    `json:"status_code,omitempty"`
-	Duration    time.Duration          `json:"duration,omitempty"`
-	Message     string                 `json:"message,omitempty"`
-	Details     map[string]interface{} `json:"details,omitempty"`
-	Metadata    map[string]string      `json:"metadata,omitempty"`
+	ID         string                 `json:"id"`
+	Timestamp  time.Time              `json:"timestamp"`
+	Type       AuditEventType         `json:"type"`
+	Result     AuditResult            `json:"result"`
+	UserID     string                 `json:"user_id,omitempty"`
+	ActorID    string                 `json:"actor_id,omitempty"`
+	Resource   string                 `json:"resource,omitempty"`
+	Action     string                 `json:"action,omitempty"`
+	IPAddress  string                 `json:"ip_address,omitempty"`
+	UserAgent  string                 `json:"user_agent,omitempty"`
+	Method     string                 `json:"method,omitempty"`
+	Path       string                 `json:"path,omitempty"`
+	StatusCode int                    `json:"status_code,omitempty"`
+	Duration   time.Duration          `json:"duration,omitempty"`
+	Message    string                 `json:"message,omitempty"`
+	Details    map[string]interface{} `json:"details,omitempty"`
+	Metadata   map[string]string      `json:"metadata,omitempty"`
 }
 
 // AuditConfig holds audit configuration
@@ -78,17 +78,17 @@ func DefaultAuditConfig() *AuditConfig {
 
 // AuditLogger logs audit events
 type AuditLogger struct {
-	config  *AuditConfig
-	events  []*AuditEvent
-	mu      sync.RWMutex
+	config   *AuditConfig
+	events   []*AuditEvent
+	mu       sync.RWMutex
 	handlers []func(*AuditEvent)
 }
 
 // NewAuditLogger creates a new audit logger
 func NewAuditLogger(config *AuditConfig) *AuditLogger {
 	return &AuditLogger{
-		config:  config,
-		events:  make([]*AuditEvent, 0, config.MaxEvents),
+		config:   config,
+		events:   make([]*AuditEvent, 0, config.MaxEvents),
 		handlers: make([]func(*AuditEvent), 0),
 	}
 }

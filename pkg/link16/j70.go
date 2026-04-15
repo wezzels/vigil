@@ -8,50 +8,50 @@ import (
 
 // J70Message represents a J7.0 Track Management message
 type J70Message struct {
-	TrackNumber      uint16    `json:"track_number"`      // Track number
-	TrackStatus      uint8     `json:"track_status"`       // Track status (0-15)
-	TrackQuality     uint8     `json:"track_quality"`      // Track quality (0-15)
-	TrackIdentity    uint8     `json:"track_identity"`     // Identity code
-	TrackAugment     uint8     `json:"track_augment"`      // Augmentation
-	ForceID          uint8     `json:"force_id"`           // Force ID
-	Environment      uint8     `json:"environment"`        // Environment
-	ActionCode       uint8     `json:"action_code"`        // Track action code
-	SourceTrack      uint16    `json:"source_track"`       // Source track number
-	TargetTrack      uint16    `json:"target_track"`      // Target track number
-	CorrelationCode  uint8     `json:"correlation_code"`   // Correlation code
-	Time             time.Time `json:"time"`              // Time of message
+	TrackNumber     uint16    `json:"track_number"`     // Track number
+	TrackStatus     uint8     `json:"track_status"`     // Track status (0-15)
+	TrackQuality    uint8     `json:"track_quality"`    // Track quality (0-15)
+	TrackIdentity   uint8     `json:"track_identity"`   // Identity code
+	TrackAugment    uint8     `json:"track_augment"`    // Augmentation
+	ForceID         uint8     `json:"force_id"`         // Force ID
+	Environment     uint8     `json:"environment"`      // Environment
+	ActionCode      uint8     `json:"action_code"`      // Track action code
+	SourceTrack     uint16    `json:"source_track"`     // Source track number
+	TargetTrack     uint16    `json:"target_track"`     // Target track number
+	CorrelationCode uint8     `json:"correlation_code"` // Correlation code
+	Time            time.Time `json:"time"`             // Time of message
 }
 
 // J70ActionCodes defines track action codes
 const (
-	J70ActionNewTrack       uint8 = 0  // New track
-	J70ActionUpdate         uint8 = 1  // Update track
-	J70ActionDelete         uint8 = 2  // Delete track
-	J70ActionCorrelate      uint8 = 3  // Correlate tracks
-	J70ActionDecorrelate    uint8 = 4  // Decorrelate tracks
-	J70ActionMerge          uint8 = 5  // Merge tracks
-	J70ActionSplit          uint8 = 6  // Split track
-	J70ActionChangeID       uint8 = 7  // Change track ID
-	J70ActionDropTrack      uint8 = 8  // Drop track
-	J70ActionPromote        uint8 = 9  // Promote track
-	J70ActionDegrade        uint8 = 10 // Degrade track
-	J70ActionRequestInfo    uint8 = 11 // Request information
-	J70ActionProvideInfo    uint8 = 12 // Provide information
-	J70ActionConfirmID      uint8 = 13 // Confirm identity
-	J70ActionChangeType     uint8 = 14 // Change track type
-	J70ActionEmergency      uint8 = 15 // Emergency action
+	J70ActionNewTrack    uint8 = 0  // New track
+	J70ActionUpdate      uint8 = 1  // Update track
+	J70ActionDelete      uint8 = 2  // Delete track
+	J70ActionCorrelate   uint8 = 3  // Correlate tracks
+	J70ActionDecorrelate uint8 = 4  // Decorrelate tracks
+	J70ActionMerge       uint8 = 5  // Merge tracks
+	J70ActionSplit       uint8 = 6  // Split track
+	J70ActionChangeID    uint8 = 7  // Change track ID
+	J70ActionDropTrack   uint8 = 8  // Drop track
+	J70ActionPromote     uint8 = 9  // Promote track
+	J70ActionDegrade     uint8 = 10 // Degrade track
+	J70ActionRequestInfo uint8 = 11 // Request information
+	J70ActionProvideInfo uint8 = 12 // Provide information
+	J70ActionConfirmID   uint8 = 13 // Confirm identity
+	J70ActionChangeType  uint8 = 14 // Change track type
+	J70ActionEmergency   uint8 = 15 // Emergency action
 )
 
 // J70TrackStatus defines track status codes
 const (
-	J70StatusDropped      uint8 = 0  // Track dropped
-	J70StatusInitiating   uint8 = 1  // Track initiating
-	J70StatusTentative    uint8 = 2  // Tentative track
-	J70StatusConfirmed    uint8 = 3  // Confirmed track
-	J70StatusCoasting     uint8 = 4  // Track coasting
-	J70StatusPredicted    uint8 = 5  // Predicted track
-	J70StatusLost         uint8 = 6  // Track lost
-	J70StatusUnknown      uint8 = 7  // Unknown status
+	J70StatusDropped    uint8 = 0 // Track dropped
+	J70StatusInitiating uint8 = 1 // Track initiating
+	J70StatusTentative  uint8 = 2 // Tentative track
+	J70StatusConfirmed  uint8 = 3 // Confirmed track
+	J70StatusCoasting   uint8 = 4 // Track coasting
+	J70StatusPredicted  uint8 = 5 // Predicted track
+	J70StatusLost       uint8 = 6 // Track lost
+	J70StatusUnknown    uint8 = 7 // Unknown status
 )
 
 // J70Parser handles J7.0 message parsing and generation
@@ -67,44 +67,44 @@ func (p *J70Parser) Parse(words []uint32) (*J70Message, error) {
 	if len(words) < 2 {
 		return nil, ErrWordCountMismatch
 	}
-	
+
 	msg := &J70Message{}
-	
+
 	// Word 0: Track number, status, quality, identity
 	msg.TrackNumber = uint16(words[0] >> 16)
 	msg.TrackStatus = uint8((words[0] >> 12) & 0x0F)
 	msg.TrackQuality = uint8((words[0] >> 8) & 0x0F)
 	msg.TrackIdentity = uint8((words[0] >> 4) & 0x0F)
 	msg.ForceID = uint8(words[0] & 0x0F)
-	
+
 	// Word 1: Action code, source, target
 	msg.ActionCode = uint8(words[1] >> 28)
 	msg.SourceTrack = uint16((words[1] >> 12) & 0xFFFF)
 	msg.TargetTrack = uint16(words[1] & 0x0FFF)
 	msg.Environment = uint8((words[1] >> 24) & 0x0F)
-	
+
 	msg.Time = time.Now()
-	
+
 	return msg, nil
 }
 
 // Serialize serializes a J7.0 message to J-Series words
 func (p *J70Parser) Serialize(msg *J70Message) []uint32 {
 	words := make([]uint32, 2)
-	
+
 	// Word 0: Track number, status, quality, identity
 	words[0] = (uint32(msg.TrackNumber) << 16) |
 		(uint32(msg.TrackStatus&0x0F) << 12) |
 		(uint32(msg.TrackQuality&0x0F) << 8) |
 		(uint32(msg.TrackIdentity&0x0F) << 4) |
 		(uint32(msg.ForceID) & 0x0F)
-	
+
 	// Word 1: Action code, source, target
 	words[1] = (uint32(msg.ActionCode&0x0F) << 28) |
 		(uint32(msg.Environment&0x0F) << 24) |
 		(uint32(msg.SourceTrack&0xFFFF) << 12) |
 		(uint32(msg.TargetTrack) & 0x0FFF)
-	
+
 	return words
 }
 
@@ -305,11 +305,11 @@ func MergeTracksAction(source, target uint16) *J70Action {
 
 // J70Stats holds J7.0 message statistics
 type J70Stats struct {
-	TotalMessages    uint64 `json:"total_messages"`
-	NewTracks       uint64 `json:"new_tracks"`
-	Updates         uint64 `json:"updates"`
-	Deletes         uint64 `json:"deletes"`
-	Correlations    uint64 `json:"correlations"`
-	Merges          uint64 `json:"merges"`
-	LastUpdateTime  time.Time `json:"last_update_time"`
+	TotalMessages  uint64    `json:"total_messages"`
+	NewTracks      uint64    `json:"new_tracks"`
+	Updates        uint64    `json:"updates"`
+	Deletes        uint64    `json:"deletes"`
+	Correlations   uint64    `json:"correlations"`
+	Merges         uint64    `json:"merges"`
+	LastUpdateTime time.Time `json:"last_update_time"`
 }

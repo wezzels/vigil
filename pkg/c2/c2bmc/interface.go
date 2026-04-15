@@ -22,9 +22,9 @@ const (
 type AlertType int
 
 const (
-	AlertTypeTrack      AlertType = 0 // Track alert
-	AlertTypeLaunch     AlertType = 1 // Launch alert
-	AlertTypeImpact     AlertType = 2 // Impact prediction
+	AlertTypeTrack       AlertType = 0 // Track alert
+	AlertTypeLaunch      AlertType = 1 // Launch alert
+	AlertTypeImpact      AlertType = 2 // Impact prediction
 	AlertTypeCorrelation AlertType = 3 // Track correlation
 	AlertTypeSystem      AlertType = 4 // System alert
 )
@@ -33,7 +33,7 @@ const (
 type AlertStatus int
 
 const (
-	AlertStatusPending     AlertStatus = 0
+	AlertStatusPending      AlertStatus = 0
 	AlertStatusAcknowledged AlertStatus = 1
 	AlertStatusProcessing   AlertStatus = 2
 	AlertStatusComplete     AlertStatus = 3
@@ -45,7 +45,7 @@ const (
 type TrackQuality int
 
 const (
-	TrackQualityUnknown  TrackQuality = 0
+	TrackQualityUnknown   TrackQuality = 0
 	TrackQualityPoor      TrackQuality = 1
 	TrackQualityFair      TrackQuality = 2
 	TrackQualityGood      TrackQuality = 3
@@ -56,11 +56,11 @@ const (
 type TrackIdentity int
 
 const (
-	TrackIdentityUnknown    TrackIdentity = 0
-	TrackIdentityPending    TrackIdentity = 1
-	TrackIdentityFriendly   TrackIdentity = 2
-	TrackIdentityHostile    TrackIdentity = 3
-	TrackIdentityNeutral    TrackIdentity = 4
+	TrackIdentityUnknown        TrackIdentity = 0
+	TrackIdentityPending        TrackIdentity = 1
+	TrackIdentityFriendly       TrackIdentity = 2
+	TrackIdentityHostile        TrackIdentity = 3
+	TrackIdentityNeutral        TrackIdentity = 4
 	TrackIdentityAssumedHostile TrackIdentity = 5
 )
 
@@ -80,79 +80,79 @@ type Velocity struct {
 
 // TrackData represents track information for C2BMC
 type TrackData struct {
-	TrackNumber      string         `json:"track_number"`
-	TrackID          string         `json:"track_id"`
-	Position         Position       `json:"position"`
-	Velocity         Velocity       `json:"velocity"`
-	Identity         TrackIdentity  `json:"identity"`
-	Quality          TrackQuality   `json:"quality"`
-	Source           string         `json:"source"`           // Sensor source
-	FirstDetect      time.Time      `json:"first_detect"`
-	LastUpdate       time.Time      `json:"last_update"`
-	PredictedImpact  *Position      `json:"predicted_impact,omitempty"`
-	Confidence       float64        `json:"confidence"`        // 0.0-1.0
+	TrackNumber     string        `json:"track_number"`
+	TrackID         string        `json:"track_id"`
+	Position        Position      `json:"position"`
+	Velocity        Velocity      `json:"velocity"`
+	Identity        TrackIdentity `json:"identity"`
+	Quality         TrackQuality  `json:"quality"`
+	Source          string        `json:"source"` // Sensor source
+	FirstDetect     time.Time     `json:"first_detect"`
+	LastUpdate      time.Time     `json:"last_update"`
+	PredictedImpact *Position     `json:"predicted_impact,omitempty"`
+	Confidence      float64       `json:"confidence"` // 0.0-1.0
 }
 
 // AlertRequest represents an alert submission request
 type AlertRequest struct {
-	AlertID       string        `json:"alert_id"`
-	AlertType     AlertType     `json:"alert_type"`
-	Priority      AlertPriority `json:"priority"`
-	TrackData     *TrackData   `json:"track_data,omitempty"`
-	Message       string        `json:"message,omitempty"`
-	SourceSystem  string        `json:"source_system"`
-	Timestamp     time.Time     `json:"timestamp"`
-	ExpiresAt     time.Time     `json:"expires_at,omitempty"`
+	AlertID        string        `json:"alert_id"`
+	AlertType      AlertType     `json:"alert_type"`
+	Priority       AlertPriority `json:"priority"`
+	TrackData      *TrackData    `json:"track_data,omitempty"`
+	Message        string        `json:"message,omitempty"`
+	SourceSystem   string        `json:"source_system"`
+	Timestamp      time.Time     `json:"timestamp"`
+	ExpiresAt      time.Time     `json:"expires_at,omitempty"`
 	EscalationPath []string      `json:"escalation_path,omitempty"`
 }
 
 // AlertResponse represents the response to an alert submission
 type AlertResponse struct {
-	AlertID       string       `json:"alert_id"`
-	Status        AlertStatus  `json:"status"`
+	AlertID        string      `json:"alert_id"`
+	Status         AlertStatus `json:"status"`
 	AcknowledgedBy string      `json:"acknowledged_by,omitempty"`
-	AcknowledgedAt time.Time    `json:"acknowledged_at,omitempty"`
-	Message       string       `json:"message,omitempty"`
+	AcknowledgedAt time.Time   `json:"acknowledged_at,omitempty"`
+	Message        string      `json:"message,omitempty"`
 }
 
 // TrackCorrelationRequest represents a track correlation request
 type TrackCorrelationRequest struct {
-	PrimaryTrack   string   `json:"primary_track"`
-	SecondaryTracks []string `json:"secondary_tracks"`
-	SourceSystem   string   `json:"source_system"`
-	Timestamp      time.Time `json:"timestamp"`
+	PrimaryTrack    string    `json:"primary_track"`
+	SecondaryTracks []string  `json:"secondary_tracks"`
+	SourceSystem    string    `json:"source_system"`
+	Timestamp       time.Time `json:"timestamp"`
 }
 
 // TrackCorrelationResponse represents the response to a correlation request
 type TrackCorrelationResponse struct {
-	PrimaryTrack    string         `json:"primary_track"`
-	CorrelatedTracks []string      `json:"correlated_tracks"`
-	Confidence      float64        `json:"confidence"`
-	Status          AlertStatus    `json:"status"`
-	Message         string         `json:"message,omitempty"`
+	PrimaryTrack     string      `json:"primary_track"`
+	CorrelatedTracks []string    `json:"correlated_tracks"`
+	Confidence       float64     `json:"confidence"`
+	Status           AlertStatus `json:"status"`
+	Message          string      `json:"message,omitempty"`
 }
 
 // C2BMCConfig holds configuration for C2BMC client
 type C2BMCConfig struct {
-	Endpoint        string        `json:"endpoint"`
-	Timeout         time.Duration `json:"timeout"`
-	MaxRetries      int           `json:"max_retries"`
-	RetryDelay      time.Duration `json:"retry_delay"`
-	EnableMTLS      bool          `json:"enable_mtls"`
-	CertFile        string        `json:"cert_file"`
-	KeyFile         string        `json:"key_file"`
-	CAFile          string        `json:"ca_file"`
-	InsecureSkipVerify bool        `json:"insecure_skip_verify"`
+	Endpoint           string        `json:"endpoint"`
+	Timeout            time.Duration `json:"timeout"`
+	MaxRetries         int           `json:"max_retries"`
+	RetryDelay         time.Duration `json:"retry_delay"`
+	EnableMTLS         bool          `json:"enable_mtls"`
+	CertFile           string        `json:"cert_file"`
+	KeyFile            string        `json:"key_file"`
+	CAFile             string        `json:"ca_file"`
+	InsecureSkipVerify bool          `json:"insecure_skip_verify"`
 }
 
 // DefaultC2BMCConfig returns default configuration
 func DefaultC2BMCConfig() *C2BMCConfig {
 	return &C2BMCConfig{
-		Endpoint:    "https://c2bmc.example.mil:8443",
-		Timeout:     30 * time.Second,
-		MaxRetries:  3,
-		RetryDelay:  1 * time.Second,
-		EnableMTLS:  true,
+		Endpoint:   "https://c2bmc.example.mil:8443",
+		Timeout:    30 * time.Second,
+		MaxRetries: 3,
+		RetryDelay: 1 * time.Second,
+		EnableMTLS: true,
 	}
 }
 
@@ -175,13 +175,13 @@ type C2BMCClient interface {
 
 // SystemStatus represents C2BMC system status
 type SystemStatus struct {
-	Status         string        `json:"status"`
-	Connected      bool          `json:"connected"`
-	LastHeartbeat  time.Time     `json:"last_heartbeat"`
-	ActiveAlerts   int           `json:"active_alerts"`
-	ActiveTracks   int           `json:"active_tracks"`
-	Version        string        `json:"version"`
-	Uptime         time.Duration `json:"uptime"`
+	Status        string        `json:"status"`
+	Connected     bool          `json:"connected"`
+	LastHeartbeat time.Time     `json:"last_heartbeat"`
+	ActiveAlerts  int           `json:"active_alerts"`
+	ActiveTracks  int           `json:"active_tracks"`
+	Version       string        `json:"version"`
+	Uptime        time.Duration `json:"uptime"`
 }
 
 // C2BMCError represents a C2BMC error

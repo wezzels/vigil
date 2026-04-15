@@ -109,30 +109,30 @@ func ThreatTypeName(t int) string {
 
 // OPIR Satellite sighting from SBIRS
 type OPIRSighting struct {
-	SatelliteID   int       `json:"satellite_id"`
-	Timestamp     time.Time `json:"timestamp"`
-	DetectionLat  float64   `json:"detection_lat"`
-	DetectionLon  float64   `json:"detection_lon"`
-	Intensity     float64   `json:"intensity"` // IR intensity in gigawatts
-	SNR           float64   `json:"snr"`        // Signal-to-noise ratio
+	SatelliteID  int       `json:"satellite_id"`
+	Timestamp    time.Time `json:"timestamp"`
+	DetectionLat float64   `json:"detection_lat"`
+	DetectionLon float64   `json:"detection_lon"`
+	Intensity    float64   `json:"intensity"` // IR intensity in gigawatts
+	SNR          float64   `json:"snr"`       // Signal-to-noise ratio
 }
 
 // MissileTrack represents a tracked ballistic missile
 type MissileTrack struct {
-	TrackNumber    int       `json:"track_number"`
-	ThreatType     int       `json:"threat_type"`
-	AlertLevel     int       `json:"alert_level"`
-	LaunchLat      float64   `json:"launch_lat"`
-	LaunchLon      float64   `json:"launch_lon"`
-	ImpactLat      float64   `json:"impact_lat"`
-	ImpactLon      float64   `json:"impact_lon"`
-	LaunchTime     time.Time `json:"launch_time"`
-	TimeToImpact   float64   `json:"time_to_impact"` // seconds
-	Velocity       float64   `json:"velocity"`       // m/s
-	Confidence     float64   `json:"confidence"`     // 0.0-1.0
-	LastUpdate     time.Time `json:"last_update"`
-	DetectionCount int       `json:"detection_count"`
-	SourceSensor   string    `json:"source_sensor"`
+	TrackNumber    int            `json:"track_number"`
+	ThreatType     int            `json:"threat_type"`
+	AlertLevel     int            `json:"alert_level"`
+	LaunchLat      float64        `json:"launch_lat"`
+	LaunchLon      float64        `json:"launch_lon"`
+	ImpactLat      float64        `json:"impact_lat"`
+	ImpactLon      float64        `json:"impact_lon"`
+	LaunchTime     time.Time      `json:"launch_time"`
+	TimeToImpact   float64        `json:"time_to_impact"` // seconds
+	Velocity       float64        `json:"velocity"`       // m/s
+	Confidence     float64        `json:"confidence"`     // 0.0-1.0
+	LastUpdate     time.Time      `json:"last_update"`
+	DetectionCount int            `json:"detection_count"`
+	SourceSensor   string         `json:"source_sensor"`
 	Sightings      []OPIRSighting `json:"sightings"`
 }
 
@@ -155,7 +155,7 @@ func (tm *trackManager) findMatching(s *OPIRSighting) *MissileTrack {
 		// In production, use Kalman filter for trajectory prediction
 		latErr := math.Abs(s.DetectionLat - tr.ImpactLat)
 		lonErr := math.Abs(s.DetectionLon - tr.ImpactLon)
-		
+
 		// Update impact prediction based on new sighting
 		if latErr < 5.0 && lonErr < 5.0 {
 			return tr
@@ -185,7 +185,7 @@ func (tm *trackManager) update(s *OPIRSighting) {
 				// Project forward
 				matched.ImpactLat = s.DetectionLat + dlat*30 // 30 second prediction window
 				matched.ImpactLon = s.DetectionLon + dlon*30
-				
+
 				// Compute velocity
 				latKm := (s.DetectionLat - prev.DetectionLat) * 111.0
 				lonKm := (s.DetectionLon - prev.DetectionLon) * 111.0 * math.Cos(s.DetectionLat*math.Pi/180)
@@ -221,7 +221,7 @@ func (tm *trackManager) update(s *OPIRSighting) {
 			alertsTotal.WithLabelValues(alertLevelName(matched.AlertLevel)).Inc()
 			alertsActive.WithLabelValues(alertLevelName(oldLevel)).Dec()
 			alertsActive.WithLabelValues(alertLevelName(matched.AlertLevel)).Inc()
-			
+
 			log.Printf("TRACK %d: %s %s → %s (tti=%.0fs vel=%.1fkm/s conf=%.0f%%)",
 				matched.TrackNumber, ThreatTypeName(matched.ThreatType),
 				alertLevelName(oldLevel), alertLevelName(matched.AlertLevel),
@@ -242,10 +242,10 @@ func (tm *trackManager) update(s *OPIRSighting) {
 			LastUpdate:     now,
 			DetectionCount: 1,
 			SourceSensor:   fmt.Sprintf("SBIRS-%d", s.SatelliteID),
-			Sightings:     []OPIRSighting{*s},
+			Sightings:      []OPIRSighting{*s},
 		}
 		tm.nextTrack++
-		
+
 		// Initial threat type estimate from intensity
 		if s.Intensity > 2000 {
 			tr.ThreatType = THREAT_MRBM
@@ -254,12 +254,12 @@ func (tm *trackManager) update(s *OPIRSighting) {
 		}
 
 		tm.tracks[tr.TrackNumber] = tr
-		
+
 		// Track created metric
 		tracksTotal.WithLabelValues(ThreatTypeName(tr.ThreatType), alertLevelName(tr.AlertLevel)).Inc()
 		tracksActive.Inc()
 		alertsActive.WithLabelValues(alertLevelName(ALERT_CONOPREP)).Inc()
-		
+
 		log.Printf("NEW TRACK %d: %s detected by %s lat=%.3f lon=%.3f snr=%.1f",
 			tr.TrackNumber, ThreatTypeName(tr.ThreatType), tr.SourceSensor,
 			s.DetectionLat, s.DetectionLon, s.SNR)
@@ -361,7 +361,7 @@ func main() {
 
 	// Prometheus metrics endpoint
 	http.Handle("/metrics", promhttp.Handler())
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -373,7 +373,7 @@ func main() {
 		log.Println("Shutting down...")
 		cancel()
 	}()
-	
+
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/tracks", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -393,7 +393,7 @@ func main() {
 	log.Printf("Subscribing to: %s", TopicOPIR)
 	log.Printf("Publishing to: %s (alerts), %s (tracks)", TopicAlerts, TopicTracks)
 	go run(ctx)
-	
+
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("HTTP server on %s", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {

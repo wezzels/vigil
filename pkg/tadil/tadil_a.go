@@ -9,13 +9,13 @@ import (
 
 // TADILAMessage represents a TADIL-A (Link-11) message
 type TADILAMessage struct {
-	Preamble     string
-	MessageType  string
-	Originator    string
-	Destination  string
-	Data         []string
-	Checksum     string
-	Timestamp    time.Time
+	Preamble    string
+	MessageType string
+	Originator  string
+	Destination string
+	Data        []string
+	Checksum    string
+	Timestamp   time.Time
 }
 
 // TADILAFormatter formats TADIL-A messages

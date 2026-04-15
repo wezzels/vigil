@@ -13,10 +13,10 @@ type AlertPriority int
 
 const (
 	PriorityLow      AlertPriority = 0
-	PriorityNormal    AlertPriority = 1
-	PriorityHigh      AlertPriority = 2
-	PriorityCritical  AlertPriority = 3
-	PriorityImminent  AlertPriority = 4
+	PriorityNormal   AlertPriority = 1
+	PriorityHigh     AlertPriority = 2
+	PriorityCritical AlertPriority = 3
+	PriorityImminent AlertPriority = 4
 )
 
 // Alert represents an alert in the queue
@@ -224,7 +224,7 @@ func (aq *AlertQueue) Stats() QueueStats {
 	defer aq.mutex.RUnlock()
 
 	stats := QueueStats{
-		Total: aq.Len(),
+		Total:      aq.Len(),
 		ByPriority: make(map[AlertPriority]int),
 	}
 
@@ -237,14 +237,14 @@ func (aq *AlertQueue) Stats() QueueStats {
 
 // QueueStats holds queue statistics
 type QueueStats struct {
-	Total      int                    `json:"total"`
-	ByPriority map[AlertPriority]int  `json:"by_priority"`
+	Total      int                   `json:"total"`
+	ByPriority map[AlertPriority]int `json:"by_priority"`
 }
 
 // Errors
 var (
-	ErrQueueEmpty     = &QueueError{Code: "QUEUE_EMPTY", Message: "queue is empty"}
-	ErrAlertNotFound  = &QueueError{Code: "ALERT_NOT_FOUND", Message: "alert not found"}
+	ErrQueueEmpty      = &QueueError{Code: "QUEUE_EMPTY", Message: "queue is empty"}
+	ErrAlertNotFound   = &QueueError{Code: "ALERT_NOT_FOUND", Message: "alert not found"}
 	ErrInvalidPriority = &QueueError{Code: "INVALID_PRIORITY", Message: "invalid priority level"}
 )
 

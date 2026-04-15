@@ -22,14 +22,14 @@ type APIKey struct {
 	CreatedAt   time.Time
 	ExpiresAt   time.Time
 	LastUsed    time.Time
-	Enabled      bool
+	Enabled     bool
 	Metadata    map[string]string
 }
 
 // APIKeyConfig holds API key configuration
 type APIKeyConfig struct {
-	KeyLength    int
-	DefaultTTL   time.Duration
+	KeyLength      int
+	DefaultTTL     time.Duration
 	MaxKeysPerUser int
 }
 
@@ -44,10 +44,10 @@ func DefaultAPIKeyConfig() *APIKeyConfig {
 
 // APIKeyManager manages API keys
 type APIKeyManager struct {
-	config    *APIKeyConfig
-	keys      map[string]*APIKey
-	userKeys  map[string][]string // userID -> keyIDs
-	mu        sync.RWMutex
+	config   *APIKeyConfig
+	keys     map[string]*APIKey
+	userKeys map[string][]string // userID -> keyIDs
+	mu       sync.RWMutex
 }
 
 // NewAPIKeyManager creates a new API key manager

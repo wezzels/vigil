@@ -13,19 +13,19 @@ func LoadConfig(path string) (*OPIRConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	config := DefaultConfig()
 	if err := json.Unmarshal(data, config); err != nil {
 		return nil, err
 	}
-	
+
 	return config, nil
 }
 
 // LoadConfigFromEnv loads configuration from environment variables
 func LoadConfigFromEnv() *OPIRConfig {
 	config := DefaultConfig()
-	
+
 	// Endpoints
 	if endpoints := os.Getenv("OPIR_ENDPOINTS"); endpoints != "" {
 		var list []string
@@ -33,19 +33,19 @@ func LoadConfigFromEnv() *OPIRConfig {
 			config.Endpoints = list
 		}
 	}
-	
+
 	// Port
 	if port := os.Getenv("OPIR_PORT"); port != "" {
 		if p, err := parseInt(port); err == nil {
 			config.Port = p
 		}
 	}
-	
+
 	// Protocol
 	if protocol := os.Getenv("OPIR_PROTOCOL"); protocol != "" {
 		config.Protocol = protocol
 	}
-	
+
 	// Authentication
 	if username := os.Getenv("OPIR_USERNAME"); username != "" {
 		config.Username = username
@@ -62,7 +62,7 @@ func LoadConfigFromEnv() *OPIRConfig {
 	if caFile := os.Getenv("OPIR_CA_FILE"); caFile != "" {
 		config.CAFile = caFile
 	}
-	
+
 	// Timeouts
 	if timeout := os.Getenv("OPIR_CONNECT_TIMEOUT"); timeout != "" {
 		if d, err := time.ParseDuration(timeout); err == nil {
@@ -79,7 +79,7 @@ func LoadConfigFromEnv() *OPIRConfig {
 			config.WriteTimeout = d
 		}
 	}
-	
+
 	// Retry
 	if retries := os.Getenv("OPIR_MAX_RETRIES"); retries != "" {
 		if r, err := parseInt(retries); err == nil {
@@ -91,7 +91,7 @@ func LoadConfigFromEnv() *OPIRConfig {
 			config.RetryDelay = d
 		}
 	}
-	
+
 	// Buffering
 	if size := os.Getenv("OPIR_BUFFER_SIZE"); size != "" {
 		if s, err := parseInt(size); err == nil {
@@ -103,7 +103,7 @@ func LoadConfigFromEnv() *OPIRConfig {
 			config.BatchSize = s
 		}
 	}
-	
+
 	// Validation
 	if conf := os.Getenv("OPIR_MIN_CONFIDENCE"); conf != "" {
 		if c, err := parseFloat(conf); err == nil {
@@ -120,7 +120,7 @@ func LoadConfigFromEnv() *OPIRConfig {
 			config.MaxAltitude = a
 		}
 	}
-	
+
 	// Processing
 	if enable := os.Getenv("OPIR_ENABLE_FILTERING"); enable != "" {
 		config.EnableFiltering = enable == "true" || enable == "1"
@@ -130,7 +130,7 @@ func LoadConfigFromEnv() *OPIRConfig {
 			config.DedupeWindow = d
 		}
 	}
-	
+
 	return config
 }
 
@@ -140,14 +140,14 @@ func SaveConfig(config *OPIRConfig, path string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(path, data, 0644)
 }
 
 // MergeConfigs merges multiple configurations (later configs override earlier)
 func MergeConfigs(configs ...*OPIRConfig) *OPIRConfig {
 	result := DefaultConfig()
-	
+
 	for _, config := range configs {
 		if len(config.Endpoints) > 0 {
 			result.Endpoints = config.Endpoints
@@ -213,7 +213,7 @@ func MergeConfigs(configs ...*OPIRConfig) *OPIRConfig {
 			result.MaxAltitude = config.MaxAltitude
 		}
 	}
-	
+
 	return result
 }
 

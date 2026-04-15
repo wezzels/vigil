@@ -32,43 +32,43 @@ const (
 
 // ThreatTrack for globe display
 type ThreatTrack struct {
-	TrackID     uint32    `json:"track_id"`
-	ThreatType  string    `json:"threat_type"`
-	AlertLevel  string    `json:"alert_level"`
-	Lat         float64   `json:"lat"`
-	Lon         float64   `json:"lon"`
-	Alt         float64   `json:"alt_km"`
-	Velocity    float64   `json:"velocity_ms"`
-	Heading     float64   `json:"heading_deg"`
-	Confidence  float64   `json:"confidence"`
-	LaunchLat   float64   `json:"launch_lat"`
-	LaunchLon   float64   `json:"launch_lon"`
-	ImpactLat   float64   `json:"impact_lat"`
-	ImpactLon   float64   `json:"impact_lon"`
-	TimeToImpact float64  `json:"tti_seconds"`
-	SourceSensor string   `json:"source_sensor"`
-	UpdateTime  time.Time `json:"update_time"`
-	MarkerColor string   `json:"marker_color"`
-	MarkerIcon  string    `json:"marker_icon"`
+	TrackID      uint32    `json:"track_id"`
+	ThreatType   string    `json:"threat_type"`
+	AlertLevel   string    `json:"alert_level"`
+	Lat          float64   `json:"lat"`
+	Lon          float64   `json:"lon"`
+	Alt          float64   `json:"alt_km"`
+	Velocity     float64   `json:"velocity_ms"`
+	Heading      float64   `json:"heading_deg"`
+	Confidence   float64   `json:"confidence"`
+	LaunchLat    float64   `json:"launch_lat"`
+	LaunchLon    float64   `json:"launch_lon"`
+	ImpactLat    float64   `json:"impact_lat"`
+	ImpactLon    float64   `json:"impact_lon"`
+	TimeToImpact float64   `json:"tti_seconds"`
+	SourceSensor string    `json:"source_sensor"`
+	UpdateTime   time.Time `json:"update_time"`
+	MarkerColor  string    `json:"marker_color"`
+	MarkerIcon   string    `json:"marker_icon"`
 }
 
 // Alert for notification display
 type Alert struct {
-	AlertID     uint32    `json:"alert_id"`
-	Level       string    `json:"level"`
-	ThreatType  string    `json:"threat_type"`
-	TrackID     uint32    `json:"track_id"`
-	Precedence  string    `json:"precedence"`
-	JTIDSNet    uint8     `json:"jtids_net"`
-	LaunchLat   float64   `json:"launch_lat"`
-	LaunchLon   float64   `json:"launch_lon"`
-	ImpactLat   float64   `json:"impact_lat"`
-	ImpactLon   float64   `json:"impact_lon"`
-	TimeToImpact float64  `json:"tti_seconds"`
-	NCARequired bool      `json:"nca_required"`
-	Weapon      string    `json:"weapon"`
-	IssuedAt    time.Time `json:"issued_at"`
-	Severity    int       `json:"severity"`
+	AlertID      uint32    `json:"alert_id"`
+	Level        string    `json:"level"`
+	ThreatType   string    `json:"threat_type"`
+	TrackID      uint32    `json:"track_id"`
+	Precedence   string    `json:"precedence"`
+	JTIDSNet     uint8     `json:"jtids_net"`
+	LaunchLat    float64   `json:"launch_lat"`
+	LaunchLon    float64   `json:"launch_lon"`
+	ImpactLat    float64   `json:"impact_lat"`
+	ImpactLon    float64   `json:"impact_lon"`
+	TimeToImpact float64   `json:"tti_seconds"`
+	NCARequired  bool      `json:"nca_required"`
+	Weapon       string    `json:"weapon"`
+	IssuedAt     time.Time `json:"issued_at"`
+	Severity     int       `json:"severity"`
 }
 
 // LVCStatus for federation overview
@@ -98,16 +98,16 @@ type EnvEvent struct {
 
 // PluginState
 type PluginState struct {
-	tracks      map[uint32]*ThreatTrack
-	alerts      []*Alert
-	lvc         *LVCStatus
-	envEvents   []*EnvEvent
-	kafkaReader *kafka.Reader
+	tracks       map[uint32]*ThreatTrack
+	alerts       []*Alert
+	lvc          *LVCStatus
+	envEvents    []*EnvEvent
+	kafkaReader  *kafka.Reader
 	alertsReader *kafka.Reader
-	broker      string
-	port        string
-	running     bool
-	lastUpdate  time.Time
+	broker       string
+	port         string
+	running      bool
+	lastUpdate   time.Time
 }
 
 func getEnv(key, fallback string) string {
@@ -461,15 +461,15 @@ func (p *PluginState) run(ctx context.Context) {
 			// Read tracks
 			if msg, err := p.kafkaReader.ReadMessage(ctx); err == nil {
 				var track struct {
-					TrackNumber    uint32    `json:"track_number"`
-					FusedLat       float64   `json:"fused_lat"`
-					FusedLon       float64   `json:"fused_lon"`
-					FusedAlt       float64   `json:"fused_alt"`
-					FusedVelocity  float64   `json:"fused_velocity"`
-					FusedHeading   float64   `json:"fused_heading"`
-					ThreatLevel    int       `json:"threat_level"`
-					Confidence     float64   `json:"confidence"`
-					LastUpdate     time.Time `json:"last_update"`
+					TrackNumber   uint32    `json:"track_number"`
+					FusedLat      float64   `json:"fused_lat"`
+					FusedLon      float64   `json:"fused_lon"`
+					FusedAlt      float64   `json:"fused_alt"`
+					FusedVelocity float64   `json:"fused_velocity"`
+					FusedHeading  float64   `json:"fused_heading"`
+					ThreatLevel   int       `json:"threat_level"`
+					Confidence    float64   `json:"confidence"`
+					LastUpdate    time.Time `json:"last_update"`
 				}
 				if json.Unmarshal(msg.Value, &track) == nil {
 					threatMap := []string{"Unknown", "SRBM", "MRBM", "IRBM", "ICBM"}
@@ -483,16 +483,16 @@ func (p *PluginState) run(ctx context.Context) {
 						aIdx = len(alertMap) - 1
 					}
 					tr := &ThreatTrack{
-						TrackID:     track.TrackNumber,
-						ThreatType:  threatMap[tIdx],
-						AlertLevel:  alertMap[aIdx],
-						Lat:         track.FusedLat,
-						Lon:         track.FusedLon,
-						Alt:         track.FusedAlt,
-						Velocity:    track.FusedVelocity,
-						Heading:     track.FusedHeading,
-						Confidence:  track.Confidence,
-						UpdateTime:  track.LastUpdate,
+						TrackID:    track.TrackNumber,
+						ThreatType: threatMap[tIdx],
+						AlertLevel: alertMap[aIdx],
+						Lat:        track.FusedLat,
+						Lon:        track.FusedLon,
+						Alt:        track.FusedAlt,
+						Velocity:   track.FusedVelocity,
+						Heading:    track.FusedHeading,
+						Confidence: track.Confidence,
+						UpdateTime: track.LastUpdate,
 					}
 					p.tracks[tr.TrackID] = tr
 					p.lastUpdate = time.Now()
@@ -527,7 +527,7 @@ func (p *PluginState) run(ctx context.Context) {
 
 func (p *PluginState) serveHTTP() {
 	http.Handle("/metrics", promhttp.Handler())
-http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"plugin":  PluginName,
 			"version": PluginVersion,

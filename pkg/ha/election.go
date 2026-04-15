@@ -184,10 +184,10 @@ func (le *LeaderElection) OnLeadershipLost(callback func()) {
 
 // EtcdElection implements etcd-based election
 type EtcdElection struct {
-	endpoints   []string
-	namespace   string
-	instanceID  string
-	ttl         int
+	endpoints  []string
+	namespace  string
+	instanceID string
+	ttl        int
 }
 
 // NewEtcdElection creates etcd election
@@ -224,10 +224,10 @@ func (e *EtcdElection) Observe(ctx context.Context) <-chan string {
 
 // RedisElection implements Redis-based election
 type RedisElection struct {
-	addr        string
-	namespace   string
-	instanceID  string
-	ttl         time.Duration
+	addr       string
+	namespace  string
+	instanceID string
+	ttl        time.Duration
 }
 
 // NewRedisElection creates Redis election

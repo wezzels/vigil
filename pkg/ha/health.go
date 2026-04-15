@@ -103,7 +103,7 @@ func (hp *HealthProbe) Readiness(ctx context.Context) *HealthCheck {
 // Startup checks if the service has started
 func (hp *HealthProbe) Startup(ctx context.Context, minUptime time.Duration) *HealthCheck {
 	uptime := time.Since(hp.startTime)
-	
+
 	if uptime < minUptime {
 		return &HealthCheck{
 			Name:      "startup",
@@ -165,7 +165,7 @@ type GracefulShutdown struct {
 func NewGracefulShutdown(timeout time.Duration) *GracefulShutdown {
 	return &GracefulShutdown{
 		stopChan: make(chan struct{}),
-		timeout: timeout,
+		timeout:  timeout,
 	}
 }
 
@@ -249,15 +249,15 @@ func (gs *GracefulShutdown) WaitForShutdown(sigs ...interface{}) {
 
 // CircuitBreaker provides circuit breaker pattern
 type CircuitBreaker struct {
-	name          string
-	failureCount  int
-	successCount  int
-	failureLimit  int
-	successLimit  int
-	timeout       time.Duration
-	lastFailure   time.Time
-	state         CircuitState
-	mu            sync.RWMutex
+	name         string
+	failureCount int
+	successCount int
+	failureLimit int
+	successLimit int
+	timeout      time.Duration
+	lastFailure  time.Time
+	state        CircuitState
+	mu           sync.RWMutex
 }
 
 // CircuitState represents circuit breaker state

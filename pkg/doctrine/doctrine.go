@@ -35,12 +35,12 @@ func (a AlertLevel) String() string {
 type ThreatType int
 
 const (
-	ThreatUnknown    ThreatType = 0
-	ThreatBallistic  ThreatType = 1  // Ballistic missile
-	ThreatCruise     ThreatType = 2  // Cruise missile
-	ThreatAir        ThreatType = 3  // Aircraft
-	ThreatUAV        ThreatType = 4  // UAV/drone
-	ThreatArtillery  ThreatType = 5  // Artillery/rocket
+	ThreatUnknown   ThreatType = 0
+	ThreatBallistic ThreatType = 1 // Ballistic missile
+	ThreatCruise    ThreatType = 2 // Cruise missile
+	ThreatAir       ThreatType = 3 // Aircraft
+	ThreatUAV       ThreatType = 4 // UAV/drone
+	ThreatArtillery ThreatType = 5 // Artillery/rocket
 )
 
 func (t ThreatType) String() string {
@@ -62,19 +62,19 @@ func (t ThreatType) String() string {
 
 // Alert represents an alert to be disseminated
 type Alert struct {
-	ID           uint64
-	TrackNumber  uint32
-	AlertLevel   AlertLevel
-	ThreatType   ThreatType
-	LaunchPoint  LatLonAlt
-	ImpactPoint  LatLonAlt
-	LaunchTime   int64   // Unix milliseconds
-	ImpactTime   int64   // Unix milliseconds
-	Confidence   float64 // 0.0 to 1.0
-	SourceCount  int
-	Heading      float64 // degrees
-	Speed        float64 // m/s
-	Altitude     float64 // meters
+	ID          uint64
+	TrackNumber uint32
+	AlertLevel  AlertLevel
+	ThreatType  ThreatType
+	LaunchPoint LatLonAlt
+	ImpactPoint LatLonAlt
+	LaunchTime  int64   // Unix milliseconds
+	ImpactTime  int64   // Unix milliseconds
+	Confidence  float64 // 0.0 to 1.0
+	SourceCount int
+	Heading     float64 // degrees
+	Speed       float64 // m/s
+	Altitude    float64 // meters
 }
 
 // LatLonAlt represents a position
@@ -86,23 +86,23 @@ type LatLonAlt struct {
 
 // AlertRule defines doctrine for alert level determination
 type AlertRule struct {
-	MinConfidence  float64
+	MinConfidence   float64
 	MaxTimeToImpact float64 // seconds
-	MinAltitude    float64
-	MaxAltitude    float64
-	MinSpeed       float64
-	MaxSpeed       float64
-	ThreatTypes    []ThreatType
-	Level          AlertLevel
+	MinAltitude     float64
+	MaxAltitude     float64
+	MinSpeed        float64
+	MaxSpeed        float64
+	ThreatTypes     []ThreatType
+	Level           AlertLevel
 }
 
 // DefaultDoctrine is the standard alert doctrine
 var DefaultDoctrine = []AlertRule{
 	// CONOPREP: Any track with confidence > 0.5
 	{
-		MinConfidence:  0.5,
+		MinConfidence:   0.5,
 		MaxTimeToImpact: 300, // 5 minutes
-		Level:          AlertCONOPREP,
+		Level:           AlertCONOPREP,
 	},
 	// IMMINENT: High confidence, time to impact < 2 min
 	{
@@ -129,28 +129,28 @@ func DetermineAlertLevel(alert *Alert, doctrine []AlertRule) AlertLevel {
 	if doctrine == nil {
 		doctrine = DefaultDoctrine
 	}
-	
+
 	// Calculate time to impact
 	timeToImpact := float64(alert.ImpactTime-alert.LaunchTime) / 1000.0
 	if timeToImpact < 0 {
 		timeToImpact = 0
 	}
-	
+
 	// Check rules in order (highest to lowest)
 	// Start from highest alert level
 	for i := len(doctrine) - 1; i >= 0; i-- {
 		rule := doctrine[i]
-		
+
 		// Check confidence threshold
 		if alert.Confidence < rule.MinConfidence {
 			continue
 		}
-		
+
 		// Check time to impact
 		if rule.MaxTimeToImpact > 0 && timeToImpact > rule.MaxTimeToImpact {
 			continue
 		}
-		
+
 		// Check altitude range
 		if rule.MinAltitude > 0 && alert.Altitude < rule.MinAltitude {
 			continue
@@ -158,7 +158,7 @@ func DetermineAlertLevel(alert *Alert, doctrine []AlertRule) AlertLevel {
 		if rule.MaxAltitude > 0 && alert.Altitude > rule.MaxAltitude {
 			continue
 		}
-		
+
 		// Check speed range
 		if rule.MinSpeed > 0 && alert.Speed < rule.MinSpeed {
 			continue
@@ -166,7 +166,7 @@ func DetermineAlertLevel(alert *Alert, doctrine []AlertRule) AlertLevel {
 		if rule.MaxSpeed > 0 && alert.Speed > rule.MaxSpeed {
 			continue
 		}
-		
+
 		// Check threat types
 		if len(rule.ThreatTypes) > 0 {
 			found := false
@@ -180,10 +180,10 @@ func DetermineAlertLevel(alert *Alert, doctrine []AlertRule) AlertLevel {
 				continue
 			}
 		}
-		
+
 		return rule.Level
 	}
-	
+
 	return AlertNone
 }
 
@@ -240,13 +240,13 @@ func EstimateTimeToImpact(alert *Alert) float64 {
 	if alert.ImpactTime <= 0 {
 		return math.Inf(1)
 	}
-	
+
 	now := alert.LaunchTime
 	if now <= 0 {
 		// Use current time
 		return float64(alert.ImpactTime) / 1000.0
 	}
-	
+
 	return float64(alert.ImpactTime-now) / 1000.0
 }
 
@@ -254,10 +254,10 @@ func EstimateTimeToImpact(alert *Alert) float64 {
 func EstimateConfidence(sourceCount int, timeSinceLastUpdate int64) float64 {
 	// More sources = higher confidence
 	confidence := math.Min(1.0, float64(sourceCount)/5.0)
-	
+
 	// Time since last update reduces confidence
 	ageSeconds := float64(timeSinceLastUpdate) / 1000.0
 	ageFactor := math.Exp(-ageSeconds / 60.0) // Decay over 60 seconds
-	
+
 	return confidence * ageFactor
 }

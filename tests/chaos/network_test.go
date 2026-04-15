@@ -31,10 +31,10 @@ func TestNetworkPartition(t *testing.T) {
 // testKafkaPartition tests Kafka partition scenarios
 func testKafkaPartition(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Simulate healthy state
 	t.Log("Starting Kafka partition test")
-	
+
 	// Simulate partition
 	partition := &NetworkPartition{
 		Source:      "OPIR-Ingest",
@@ -42,13 +42,13 @@ func testKafkaPartition(t *testing.T) {
 		Duration:    30 * time.Second,
 		StartTime:   time.Now(),
 	}
-	
-	t.Logf("Simulating partition: %v -> %v for %v", 
+
+	t.Logf("Simulating partition: %v -> %v for %v",
 		partition.Source, partition.Destination, partition.Duration)
-	
+
 	// Simulate messages in flight
 	msgs := generateMessages(100)
-	
+
 	// Process with partition
 	var sent, failed int
 	for _, msg := range msgs {
@@ -58,19 +58,19 @@ func testKafkaPartition(t *testing.T) {
 			sent++
 		}
 	}
-	
+
 	t.Logf("Sent: %d, Failed: %d", sent, failed)
-	
+
 	// Verify recovery
 	partition.EndTime = time.Now()
-	
+
 	// After partition, messages should flow again
 	recovered := processAfterPartition(msgs)
-	
+
 	if recovered != len(msgs) {
 		t.Errorf("Not all messages recovered: got %d, want %d", recovered, len(msgs))
 	}
-	
+
 	_ = ctx
 }
 
@@ -83,13 +83,13 @@ func testRedisPartition(t *testing.T) {
 		Duration:    10 * time.Second,
 		StartTime:   time.Now(),
 	}
-	
+
 	// Generate cached data
 	keys := make([]string, 100)
 	for i := range keys {
 		keys[i] = fmt.Sprintf("track:%d", i)
 	}
-	
+
 	// Try to access during partition
 	var hits, misses int
 	for _, key := range keys {
@@ -99,12 +99,12 @@ func testRedisPartition(t *testing.T) {
 			hits++
 		}
 	}
-	
+
 	t.Logf("Cache hits: %d, misses: %d", hits, misses)
-	
+
 	// Verify cache recovers
 	partition.EndTime = time.Now()
-	
+
 	// After partition, cache should be accessible
 	for _, key := range keys {
 		_ = key // In production, verify cache access
@@ -120,10 +120,10 @@ func testDatabasePartition(t *testing.T) {
 		Duration:    15 * time.Second,
 		StartTime:   time.Now(),
 	}
-	
+
 	// Generate queries
 	queries := generateQueries(50)
-	
+
 	var success, failures int
 	for _, query := range queries {
 		if isPartitionActive(partition) {
@@ -133,12 +133,12 @@ func testDatabasePartition(t *testing.T) {
 			success++
 		}
 	}
-	
+
 	t.Logf("Queries succeeded: %d, failed: %d", success, failures)
-	
+
 	// Verify database recovers and queued queries are processed
 	partition.EndTime = time.Now()
-	
+
 	retryCount := retryFailedQueries(queries, failures)
 	t.Logf("Retried queries: %d", retryCount)
 }
@@ -171,21 +171,21 @@ func testPodKill(t *testing.T) {
 		"missile-warning-1",
 		"sensor-fusion-1",
 	}
-	
+
 	// Kill one pod
 	killedPod := pods[0]
 	t.Logf("Killing pod: %s", killedPod)
-	
+
 	// Verify remaining pods handle load
 	remaining := pods[1:]
 	if len(remaining) < 2 {
 		t.Error("Not enough remaining pods for HA")
 	}
-	
+
 	// Simulate recovery
 	recoveryTime := 30 * time.Second
 	t.Logf("Pod recovery time: %v", recoveryTime)
-	
+
 	if recoveryTime > 60*time.Second {
 		t.Errorf("Recovery too slow: %v", recoveryTime)
 	}
@@ -199,16 +199,16 @@ func testNodeDrain(t *testing.T) {
 		{Name: "worker-2", Pods: 10},
 		{Name: "worker-3", Pods: 10},
 	}
-	
+
 	// Drain one node
 	drainedNode := nodes[0]
 	t.Logf("Draining node: %s with %d pods", drainedNode.Name, drainedNode.Pods)
-	
+
 	// Verify pods rescheduled
 	for i := 1; i < len(nodes); i++ {
 		nodes[i].Pods += drainedNode.Pods / (len(nodes) - 1)
 	}
-	
+
 	// Check remaining nodes have capacity
 	for _, node := range nodes[1:] {
 		if node.Pods > 20 {
@@ -221,19 +221,19 @@ func testNodeDrain(t *testing.T) {
 func testPodEviction(t *testing.T) {
 	// Simulate pod eviction due to resource pressure
 	evicted := &PodEviction{
-		PodName:    "sensor-fusion-1",
-		Reason:     "ResourcePressure",
-		EvictedAt:  time.Now(),
+		PodName:   "sensor-fusion-1",
+		Reason:    "ResourcePressure",
+		EvictedAt: time.Now(),
 	}
-	
+
 	t.Logf("Pod evicted: %s, reason: %s", evicted.PodName, evicted.Reason)
-	
+
 	// Verify pod is rescheduled
 	rescheduledAt := time.Now().Add(10 * time.Second)
 	recoveryTime := rescheduledAt.Sub(evicted.EvictedAt)
-	
+
 	t.Logf("Pod rescheduled in: %v", recoveryTime)
-	
+
 	if recoveryTime > 30*time.Second {
 		t.Errorf("Pod rescheduling too slow: %v", recoveryTime)
 	}
@@ -265,20 +265,20 @@ func testBrokerKill(t *testing.T) {
 		{ID: 2, Leader: false},
 		{ID: 3, Leader: false},
 	}
-	
+
 	// Kill broker
 	killedBroker := brokers[0]
 	t.Logf("Killing broker: %d (leader: %v)", killedBroker.ID, killedBroker.Leader)
-	
+
 	// Verify leader election
 	newLeader := electNewLeader(brokers, killedBroker)
-	
+
 	if newLeader == nil {
 		t.Fatal("No leader elected")
 	}
-	
+
 	t.Logf("New leader elected: %d", newLeader.ID)
-	
+
 	// Verify replication
 	for _, broker := range brokers {
 		if broker.ID == killedBroker.ID {
@@ -296,20 +296,20 @@ func testTopicDeletion(t *testing.T) {
 		"correlated-tracks",
 		"alerts",
 	}
-	
+
 	// Attempt to delete critical topic
 	criticalTopic := topics[0]
 	t.Logf("Testing topic deletion: %s", criticalTopic)
-	
+
 	// Verify producer fails
 	producerErr := fmt.Errorf("topic %s not found", criticalTopic)
 	if producerErr == nil {
 		t.Error("Expected error for deleted topic")
 	}
-	
+
 	// Recreate topic
 	t.Logf("Recreating topic: %s", criticalTopic)
-	
+
 	// Verify producer recovers
 	t.Log("Producer recovered")
 }
@@ -322,20 +322,20 @@ func testLeaderFailure(t *testing.T) {
 		Leader:    1,
 		ISR:       []int{1, 2, 3},
 	}
-	
+
 	t.Logf("Testing leader failure for partition %d", partition.Partition)
-	
+
 	// Kill leader
 	t.Logf("Leader broker %d killed", partition.Leader)
-	
+
 	// New leader from ISR
 	newLeader := partition.ISR[1]
 	t.Logf("New leader elected: %d", newLeader)
-	
+
 	// Verify no message loss
 	messagesBefore := 1000
 	messagesAfter := 1000
-	
+
 	if messagesAfter != messagesBefore {
 		t.Errorf("Message loss detected: before %d, after %d", messagesBefore, messagesAfter)
 	}
@@ -399,7 +399,7 @@ func generateQueries(count int) []Query {
 	queries := make([]Query, count)
 	for i := 0; i < count; i++ {
 		queries[i] = Query{
-			SQL:   "SELECT * FROM tracks WHERE id = $1",
+			SQL:    "SELECT * FROM tracks WHERE id = $1",
 			Params: []interface{}{i},
 		}
 	}

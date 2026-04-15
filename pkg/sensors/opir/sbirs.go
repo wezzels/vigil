@@ -33,11 +33,11 @@ func NewSBIRSFeed(config *OPIRConfig) (*SBIRSFeed, error) {
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
-	
+
 	return &SBIRSFeed{
 		config:      config,
-		sightings:  make(chan OPIRSighting, config.BufferSize),
-		errors:     make(chan error, 100),
+		sightings:   make(chan OPIRSighting, config.BufferSize),
+		errors:      make(chan error, 100),
 		reconnectCh: make(chan struct{}, 1),
 	}, nil
 }
@@ -46,22 +46,22 @@ func NewSBIRSFeed(config *OPIRConfig) (*SBIRSFeed, error) {
 func (s *SBIRSFeed) Connect(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if s.connected {
 		return nil
 	}
-	
+
 	s.ctx, s.cancel = context.WithCancel(ctx)
-	
+
 	var conn net.Conn
 	var err error
-	
+
 	for attempt := 0; attempt <= s.config.MaxRetries; attempt++ {
 		conn, err = s.dial()
 		if err == nil {
 			break
 		}
-		
+
 		if attempt < s.config.MaxRetries {
 			delay := s.calculateBackoff(attempt)
 			select {
@@ -72,19 +72,19 @@ func (s *SBIRSFeed) Connect(ctx context.Context) error {
 			}
 		}
 	}
-	
+
 	if err != nil {
 		return NewConnectionError(fmt.Sprintf("failed to connect after %d attempts: %v", s.config.MaxRetries, err), false)
 	}
-	
+
 	s.conn = conn
 	s.connected = true
 	s.stats.Connected = true
 	s.stats.ReconnectCount++
-	
+
 	// Start receive goroutine
 	go s.receiveLoop()
-	
+
 	return nil
 }
 
@@ -93,13 +93,13 @@ func (s *SBIRSFeed) dial() (net.Conn, error) {
 	if len(s.config.Endpoints) == 0 {
 		return nil, NewValidationError("no endpoints configured", "")
 	}
-	
+
 	endpoint := s.config.Endpoints[0]
 	address := fmt.Sprintf("%s:%d", endpoint, s.config.Port)
-	
+
 	var conn net.Conn
 	var err error
-	
+
 	if s.config.CertFile != "" {
 		// TLS connection
 		conn, err = s.dialTLS(address)
@@ -107,17 +107,17 @@ func (s *SBIRSFeed) dial() (net.Conn, error) {
 		// Plain TCP connection
 		conn, err = net.DialTimeout("tcp", address, s.config.ConnectTimeout)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Set keep-alive
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
 		tcpConn.SetKeepAlive(true)
 		tcpConn.SetKeepAlivePeriod(s.config.KeepAlive)
 	}
-	
+
 	return conn, nil
 }
 
@@ -128,30 +128,30 @@ func (s *SBIRSFeed) dialTLS(address string) (net.Conn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load client certificate: %w", err)
 	}
-	
+
 	// Load CA certificate
 	caCert, err := os.ReadFile(s.config.CAFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA certificate: %w", err)
 	}
-	
+
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
-	
+
 	// TLS configuration
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      caCertPool,
 		MinVersion:   tls.VersionTLS12,
 	}
-	
+
 	// Connect with timeout
 	dialer := &net.Dialer{Timeout: s.config.ConnectTimeout}
 	conn, err := tls.DialWithDialer(dialer, "tcp", address, tlsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("TLS connection failed: %w", err)
 	}
-	
+
 	return conn, nil
 }
 
@@ -168,22 +168,22 @@ func (s *SBIRSFeed) calculateBackoff(attempt int) time.Duration {
 func (s *SBIRSFeed) Disconnect() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if !s.connected {
 		return nil
 	}
-	
+
 	s.connected = false
 	s.stats.Connected = false
-	
+
 	if s.cancel != nil {
 		s.cancel()
 	}
-	
+
 	if s.conn != nil {
 		return s.conn.Close()
 	}
-	
+
 	return nil
 }
 
@@ -220,7 +220,7 @@ func (s *SBIRSFeed) receiveLoop() {
 		default:
 			if err := s.receiveOne(); err != nil {
 				s.handleError(err)
-				
+
 				// Attempt reconnection
 				if s.shouldReconnect(err) {
 					s.triggerReconnect()
@@ -235,57 +235,57 @@ func (s *SBIRSFeed) receiveOne() error {
 	s.mu.RLock()
 	conn := s.conn
 	s.mu.RUnlock()
-	
+
 	if conn == nil {
 		return NewConnectionError("no connection", true)
 	}
-	
+
 	// Set read deadline
 	conn.SetReadDeadline(time.Now().Add(s.config.ReadTimeout))
-	
+
 	// Read header (fixed size)
 	header := make([]byte, 32)
 	if _, err := io.ReadFull(conn, header); err != nil {
 		return err
 	}
-	
+
 	// Parse header
 	sighting, dataLen, err := s.parseHeader(header)
 	if err != nil {
 		return err
 	}
-	
+
 	// Read data (if any)
 	if dataLen > 0 {
 		data := make([]byte, dataLen)
 		if _, err := io.ReadFull(conn, data); err != nil {
 			return err
 		}
-		
+
 		// Parse data
 		if err := s.parseData(sighting, data); err != nil {
 			return err
 		}
 	}
-	
+
 	// Validate sighting
 	if err := s.validateSighting(sighting); err != nil {
 		return err
 	}
-	
+
 	// Update stats
 	s.mu.Lock()
 	s.stats.TotalReceived++
 	s.stats.LastReceived = time.Now()
 	s.mu.Unlock()
-	
+
 	// Send sighting
 	select {
 	case s.sightings <- *sighting:
 	case <-s.ctx.Done():
 		return s.ctx.Err()
 	}
-	
+
 	return nil
 }
 
@@ -300,22 +300,22 @@ func (s *SBIRSFeed) parseHeader(header []byte) (*OPIRSighting, uint16, error) {
 	// Bytes 12-15: Sequence number
 	// Bytes 16-23: Timestamp (Unix nanoseconds)
 	// Bytes 24-31: Reserved
-	
+
 	magic := binary.BigEndian.Uint32(header[0:4])
 	if magic != 0x53424952 { // "SBIR"
 		return nil, 0, NewParsingError("invalid magic number", "")
 	}
-	
+
 	version := binary.BigEndian.Uint16(header[4:6])
 	if version != 1 {
 		return nil, 0, NewParsingError(fmt.Sprintf("unsupported version: %d", version), "")
 	}
-	
+
 	dataLen := binary.BigEndian.Uint16(header[8:10])
 	sensorID := binary.BigEndian.Uint16(header[10:12])
 	seqNum := binary.BigEndian.Uint32(header[12:16])
 	timestamp := int64(binary.BigEndian.Uint64(header[16:24]))
-	
+
 	sighting := &OPIRSighting{
 		ID:          fmt.Sprintf("SBIRS-%d-%d", sensorID, seqNum),
 		SensorID:    fmt.Sprintf("SBIRS-GEO-%d", sensorID),
@@ -323,7 +323,7 @@ func (s *SBIRSFeed) parseHeader(header []byte) (*OPIRSighting, uint16, error) {
 		Timestamp:   time.Unix(0, timestamp),
 		ReceivedAt:  time.Now(),
 	}
-	
+
 	return sighting, dataLen, nil
 }
 
@@ -344,11 +344,11 @@ func (s *SBIRSFeed) parseData(sighting *OPIRSighting, data []byte) error {
 	// Bytes 88-95: Covariance Altitude (double)
 	// Bytes 96-99: Target type (uint32)
 	// Bytes 100-127: Signature (string, 28 bytes)
-	
+
 	if len(data) < 128 {
 		return NewParsingError("data too short", sighting.SensorID)
 	}
-	
+
 	sighting.Latitude = float64(binary.BigEndian.Uint64(data[0:8]))
 	sighting.Longitude = float64(binary.BigEndian.Uint64(data[8:16]))
 	sighting.Altitude = float64(binary.BigEndian.Uint64(data[16:24]))
@@ -361,10 +361,10 @@ func (s *SBIRSFeed) parseData(sighting *OPIRSighting, data []byte) error {
 	sighting.CovLat = float64(binary.BigEndian.Uint64(data[72:80]))
 	sighting.CovLon = float64(binary.BigEndian.Uint64(data[80:88]))
 	sighting.CovAlt = float64(binary.BigEndian.Uint64(data[88:96]))
-	
+
 	targetType := binary.BigEndian.Uint32(data[96:100])
 	sighting.TargetType = s.targetTypeString(targetType)
-	
+
 	signature := string(data[100:128])
 	for i, c := range signature {
 		if c == 0 {
@@ -372,7 +372,7 @@ func (s *SBIRSFeed) parseData(sighting *OPIRSighting, data []byte) error {
 			break
 		}
 	}
-	
+
 	return nil
 }
 
@@ -396,27 +396,27 @@ func (s *SBIRSFeed) validateSighting(sighting *OPIRSighting) error {
 	if sighting.Latitude < -90 || sighting.Latitude > 90 {
 		return NewValidationError(fmt.Sprintf("invalid latitude: %.2f", sighting.Latitude), sighting.SensorID)
 	}
-	
+
 	// Longitude range
 	if sighting.Longitude < -180 || sighting.Longitude > 180 {
 		return NewValidationError(fmt.Sprintf("invalid longitude: %.2f", sighting.Longitude), sighting.SensorID)
 	}
-	
+
 	// Altitude range
 	if sighting.Altitude < -1000 || sighting.Altitude > s.config.MaxAltitude {
 		return NewValidationError(fmt.Sprintf("invalid altitude: %.2f", sighting.Altitude), sighting.SensorID)
 	}
-	
+
 	// Confidence range
 	if sighting.Confidence < s.config.MinConfidence {
 		return NewValidationError(fmt.Sprintf("low confidence: %.2f", sighting.Confidence), sighting.SensorID)
 	}
-	
+
 	// SNR threshold
 	if sighting.SNR < s.config.MinSNR {
 		return NewValidationError(fmt.Sprintf("low SNR: %.2f", sighting.SNR), sighting.SensorID)
 	}
-	
+
 	return nil
 }
 
@@ -443,7 +443,7 @@ func (s *SBIRSFeed) handleError(err error) {
 	s.stats.TotalErrors++
 	s.stats.LastError = err.Error()
 	s.mu.Unlock()
-	
+
 	select {
 	case s.errors <- err:
 	case <-time.After(1 * time.Second):

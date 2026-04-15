@@ -190,9 +190,9 @@ func BenchmarkCoordinateTransform(b *testing.B) {
 // Mock implementations (in production, use proper geodetic library)
 
 const (
-	a        = 6378137.0         // WGS84 semi-major axis
-	f        = 1 / 298.257223563 // WGS84 flattening
-	e2       = 2*f - f*f         // eccentricity squared
+	a  = 6378137.0         // WGS84 semi-major axis
+	f  = 1 / 298.257223563 // WGS84 flattening
+	e2 = 2*f - f*f         // eccentricity squared
 )
 
 // GeodeticToECEF converts geodetic coordinates to ECEF
@@ -246,7 +246,7 @@ func LLAToMGRS(lat, lon float64) string {
 	// Simplified MGRS conversion (production would use proper library)
 	zone := int((lon+180)/6) + 1
 	latBand := getLatBand(lat)
-	
+
 	return fmt.Sprintf("%d%s", zone, latBand)
 }
 

@@ -26,12 +26,12 @@ func (f *AlertFormatter) FormatLaunchAlert(track *TrackData) *AlertRequest {
 	}
 
 	return &AlertRequest{
-		AlertType:     AlertTypeLaunch,
-		Priority:      priority,
-		TrackData:     track,
-		SourceSystem:  f.sourceSystem,
-		Timestamp:     time.Now(),
-		Message:       fmt.Sprintf("Launch detected from %s: Track %s", track.Source, track.TrackNumber),
+		AlertType:    AlertTypeLaunch,
+		Priority:     priority,
+		TrackData:    track,
+		SourceSystem: f.sourceSystem,
+		Timestamp:    time.Now(),
+		Message:      fmt.Sprintf("Launch detected from %s: Track %s", track.Source, track.TrackNumber),
 	}
 }
 
@@ -46,12 +46,12 @@ func (f *AlertFormatter) FormatImpactAlert(track *TrackData, impact *Position) *
 	trackCopy.PredictedImpact = impact
 
 	return &AlertRequest{
-		AlertType:     AlertTypeImpact,
-		Priority:      priority,
-		TrackData:     &trackCopy,
-		SourceSystem:  f.sourceSystem,
-		Timestamp:     time.Now(),
-		Message:       fmt.Sprintf("Impact predicted: Lat %.2f, Lon %.2f", impact.Latitude, impact.Longitude),
+		AlertType:    AlertTypeImpact,
+		Priority:     priority,
+		TrackData:    &trackCopy,
+		SourceSystem: f.sourceSystem,
+		Timestamp:    time.Now(),
+		Message:      fmt.Sprintf("Impact predicted: Lat %.2f, Lon %.2f", impact.Latitude, impact.Longitude),
 	}
 }
 
@@ -63,39 +63,39 @@ func (f *AlertFormatter) FormatTrackAlert(track *TrackData, reason string) *Aler
 	}
 
 	return &AlertRequest{
-		AlertType:     AlertTypeTrack,
-		Priority:      priority,
-		TrackData:     track,
-		SourceSystem:  f.sourceSystem,
-		Timestamp:     time.Now(),
-		Message:       fmt.Sprintf("Track %s: %s", track.TrackNumber, reason),
+		AlertType:    AlertTypeTrack,
+		Priority:     priority,
+		TrackData:    track,
+		SourceSystem: f.sourceSystem,
+		Timestamp:    time.Now(),
+		Message:      fmt.Sprintf("Track %s: %s", track.TrackNumber, reason),
 	}
 }
 
 // FormatSystemAlert formats a system-level alert
 func (f *AlertFormatter) FormatSystemAlert(priority AlertPriority, message string) *AlertRequest {
 	return &AlertRequest{
-		AlertType:     AlertTypeSystem,
-		Priority:      priority,
-		SourceSystem:  f.sourceSystem,
-		Timestamp:     time.Now(),
-		Message:       message,
+		AlertType:    AlertTypeSystem,
+		Priority:     priority,
+		SourceSystem: f.sourceSystem,
+		Timestamp:    time.Now(),
+		Message:      message,
 	}
 }
 
 // AlertSubmitter handles alert submission with acknowledgment tracking
 type AlertSubmitter struct {
-	client       C2BMCClient
+	client        C2BMCClient
 	pendingAlerts map[string]*AlertRequest
-	timeout      time.Duration
+	timeout       time.Duration
 }
 
 // NewAlertSubmitter creates a new alert submitter
 func NewAlertSubmitter(client C2BMCClient, timeout time.Duration) *AlertSubmitter {
 	return &AlertSubmitter{
-		client:       client,
+		client:        client,
 		pendingAlerts: make(map[string]*AlertRequest),
-		timeout:      timeout,
+		timeout:       timeout,
 	}
 }
 
@@ -223,9 +223,9 @@ type AlertStats struct {
 	TotalAcknowledged int64
 	TotalFailed       int64
 	TotalCancelled    int64
-	ByType           map[AlertType]int64
-	ByPriority       map[AlertPriority]int64
-	LastSubmitTime   time.Time
+	ByType            map[AlertType]int64
+	ByPriority        map[AlertPriority]int64
+	LastSubmitTime    time.Time
 }
 
 // NewAlertStats creates new alert stats

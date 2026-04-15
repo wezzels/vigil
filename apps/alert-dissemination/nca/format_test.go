@@ -147,7 +147,7 @@ func TestIMMINENTFormatterLowConfidence(t *testing.T) {
 	launchPos := Position{Latitude: 45.0, Longitude: -120.0, Altitude: 0}
 	impactPos := Position{Latitude: 35.0, Longitude: -100.0, Altitude: 0}
 
-	msg := formatter.Format("THREAT-001", launchPos, impactPos, 
+	msg := formatter.Format("THREAT-001", launchPos, impactPos,
 		time.Now(), time.Now().Add(30*time.Minute), 0.5)
 	if msg == nil {
 		t.Fatal("Expected non-nil message")
@@ -165,7 +165,7 @@ func TestINCOMINGFormatter(t *testing.T) {
 	velocity := Velocity{Vx: 5000, Vy: 1000, Vz: -2000}
 	impactPos := Position{Latitude: 35.0, Longitude: -100.0, Altitude: 0}
 
-	msg := formatter.Format("THREAT-001", "IRBM", currentPos, velocity, impactPos, 
+	msg := formatter.Format("THREAT-001", "IRBM", currentPos, velocity, impactPos,
 		10*time.Minute, 0.95)
 	if msg == nil {
 		t.Fatal("Expected non-nil message")
@@ -189,7 +189,7 @@ func TestINCOMINGFormatterShortTime(t *testing.T) {
 	velocity := Velocity{Vx: 5000, Vy: 1000, Vz: -2000}
 	impactPos := Position{Latitude: 35.0, Longitude: -100.0, Altitude: 0}
 
-	msg := formatter.Format("THREAT-001", "SRBM", currentPos, velocity, impactPos, 
+	msg := formatter.Format("THREAT-001", "SRBM", currentPos, velocity, impactPos,
 		3*time.Minute, 0.95)
 	if msg == nil {
 		t.Fatal("Expected non-nil message")
@@ -242,7 +242,7 @@ func TestIMMINENTToText(t *testing.T) {
 	launchPos := Position{Latitude: 45.0, Longitude: -120.0, Altitude: 0}
 	impactPos := Position{Latitude: 35.0, Longitude: -100.0, Altitude: 0}
 
-	msg := formatter.Format("THREAT-001", launchPos, impactPos, 
+	msg := formatter.Format("THREAT-001", launchPos, impactPos,
 		time.Now(), time.Now().Add(30*time.Minute), 0.95)
 	text := msg.ToText()
 
@@ -266,7 +266,7 @@ func TestINCOMINGToText(t *testing.T) {
 	velocity := Velocity{Vx: 5000, Vy: 1000, Vz: -2000}
 	impactPos := Position{Latitude: 35.0, Longitude: -100.0, Altitude: 0}
 
-	msg := formatter.Format("THREAT-001", "IRBM", currentPos, velocity, impactPos, 
+	msg := formatter.Format("THREAT-001", "IRBM", currentPos, velocity, impactPos,
 		10*time.Minute, 0.95)
 	text := msg.ToText()
 
@@ -395,13 +395,13 @@ func BenchmarkIMMINENTFormat(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		formatter.Format("THREAT-001", launchPos, impactPos, 
+		formatter.Format("THREAT-001", launchPos, impactPos,
 			time.Now(), time.Now().Add(30*time.Minute), 0.95)
 	}
 }
 
 // Helper function
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[0:len(substr)] == substr || 
+	return len(s) >= len(substr) && s[0:len(substr)] == substr ||
 		(len(s) > len(substr) && contains(s[1:], substr))
 }

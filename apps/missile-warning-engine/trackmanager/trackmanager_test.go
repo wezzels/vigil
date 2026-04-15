@@ -267,12 +267,12 @@ func TestTrackCleanup(t *testing.T) {
 // Types
 
 type Track struct {
-	ID        string
-	Position  Position
-	Velocity  Velocity
-	Source    string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         string
+	Position   Position
+	Velocity   Velocity
+	Source     string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 	ThreatType ThreatType
 	AlertLevel AlertLevel
 }
@@ -380,7 +380,7 @@ func (tm *TrackManager) CorrelateTracks(ctx context.Context, id1, id2 string) bo
 func (tm *TrackManager) EstimateThreatType(ctx context.Context, track *Track) ThreatType {
 	speed := track.Velocity.X*track.Velocity.X + track.Velocity.Y*track.Velocity.Y + track.Velocity.Z*track.Velocity.Z
 	speed = float64(int(speed*100)) / 100 // sqrt approximation
-	
+
 	if track.Position.Alt > 50000 && speed > 10000000 {
 		return ThreatTypeBallistic
 	}

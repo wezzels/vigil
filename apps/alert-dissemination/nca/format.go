@@ -11,9 +11,9 @@ import (
 type AlertPriority int
 
 const (
-	PriorityRoutine    AlertPriority = 0
-	PriorityPriority   AlertPriority = 1
-	PriorityFlash     AlertPriority = 2
+	PriorityRoutine       AlertPriority = 0
+	PriorityPriority      AlertPriority = 1
+	PriorityFlash         AlertPriority = 2
 	PriorityFlashOverride AlertPriority = 3
 )
 
@@ -21,45 +21,45 @@ const (
 type AlertCategory int
 
 const (
-	CategoryThreat     AlertCategory = 0
-	CategoryLaunch     AlertCategory = 1
-	CategoryImpact     AlertCategory = 2
-	CategoryDefense    AlertCategory = 3
-	CategoryExercise   AlertCategory = 4
+	CategoryThreat   AlertCategory = 0
+	CategoryLaunch   AlertCategory = 1
+	CategoryImpact   AlertCategory = 2
+	CategoryDefense  AlertCategory = 3
+	CategoryExercise AlertCategory = 4
 )
 
 // AlertAction defines required actions
 type AlertAction int
 
 const (
-	ActionNone          AlertAction = 0
-	ActionMonitor       AlertAction = 1
-	ActionPrepare       AlertAction = 2
-	ActionDefend       AlertAction = 3
-	ActionEvacuate     AlertAction = 4
+	ActionNone     AlertAction = 0
+	ActionMonitor  AlertAction = 1
+	ActionPrepare  AlertAction = 2
+	ActionDefend   AlertAction = 3
+	ActionEvacuate AlertAction = 4
 )
 
 // CONOPREPMessage represents a CONOPREP formatted message
 type CONOPREPMessage struct {
 	// Header
-	MessageID      string    `json:"message_id"`
-	Classification string    `json:"classification"`
+	MessageID      string        `json:"message_id"`
+	Classification string        `json:"classification"`
 	Priority       AlertPriority `json:"priority"`
 	Category       AlertCategory `json:"category"`
-	Originator     string    `json:"originator"`
-	Timestamp      time.Time `json:"timestamp"`
-	ExpiresAt      time.Time `json:"expires_at,omitempty"`
+	Originator     string        `json:"originator"`
+	Timestamp      time.Time     `json:"timestamp"`
+	ExpiresAt      time.Time     `json:"expires_at,omitempty"`
 
 	// Content
-	Heading        string    `json:"heading"`
-	Content        string    `json:"content"`
+	Heading        string      `json:"heading"`
+	Content        string      `json:"content"`
 	RequiredAction AlertAction `json:"required_action"`
 
 	// Track data (if applicable)
-	TrackData      *TrackSummary `json:"track_data,omitempty"`
+	TrackData *TrackSummary `json:"track_data,omitempty"`
 
 	// Impact data (if applicable)
-	ImpactData     *ImpactSummary `json:"impact_data,omitempty"`
+	ImpactData *ImpactSummary `json:"impact_data,omitempty"`
 
 	// Authentication
 	AuthenticationCode string `json:"auth_code,omitempty"`
@@ -68,12 +68,12 @@ type CONOPREPMessage struct {
 
 // TrackSummary represents summarized track information
 type TrackSummary struct {
-	TrackNumber    string    `json:"track_number"`
-	LaunchLocation string    `json:"launch_location,omitempty"`
-	LaunchTime     time.Time `json:"launch_time,omitempty"`
+	TrackNumber     string    `json:"track_number"`
+	LaunchLocation  string    `json:"launch_location,omitempty"`
+	LaunchTime      time.Time `json:"launch_time,omitempty"`
 	CurrentPosition Position  `json:"current_position"`
 	PredictedImpact *Position `json:"predicted_impact,omitempty"`
-	Confidence     float64   `json:"confidence"`
+	Confidence      float64   `json:"confidence"`
 }
 
 // Position represents a geographic position
@@ -93,32 +93,32 @@ type ImpactSummary struct {
 
 // IMMINENTMessage represents an IMMINENT alert
 type IMMINENTMessage struct {
-	MessageID      string    `json:"message_id"`
-	Classification string    `json:"classification"`
-	ThreatID       string    `json:"threat_id"`
-	LaunchLocation Position  `json:"launch_location"`
-	LaunchTime     time.Time `json:"launch_time"`
-	PredictedImpact Position `json:"predicted_impact"`
-	EstimatedTime  time.Time `json:"estimated_time"`
-	Confidence     float64   `json:"confidence"`
-	RequiredAction AlertAction `json:"required_action"`
-	Timestamp      time.Time `json:"timestamp"`
-	ExpiresAt      time.Time `json:"expires_at"`
+	MessageID       string      `json:"message_id"`
+	Classification  string      `json:"classification"`
+	ThreatID        string      `json:"threat_id"`
+	LaunchLocation  Position    `json:"launch_location"`
+	LaunchTime      time.Time   `json:"launch_time"`
+	PredictedImpact Position    `json:"predicted_impact"`
+	EstimatedTime   time.Time   `json:"estimated_time"`
+	Confidence      float64     `json:"confidence"`
+	RequiredAction  AlertAction `json:"required_action"`
+	Timestamp       time.Time   `json:"timestamp"`
+	ExpiresAt       time.Time   `json:"expires_at"`
 }
 
 // INCOMINGMessage represents an INCOMING alert
 type INCOMINGMessage struct {
-	MessageID      string    `json:"message_id"`
-	Classification string    `json:"classification"`
-	ThreatID       string    `json:"threat_id"`
-	ThreatType     string    `json:"threat_type"`
-	CurrentPosition Position `json:"current_position"`
-	Velocity       Velocity  `json:"velocity"`
-	PredictedImpact Position `json:"predicted_impact"`
-	TimeToImpact   time.Duration `json:"time_to_impact"`
-	Confidence     float64   `json:"confidence"`
-	RequiredAction AlertAction `json:"required_action"`
-	Timestamp      time.Time `json:"timestamp"`
+	MessageID       string        `json:"message_id"`
+	Classification  string        `json:"classification"`
+	ThreatID        string        `json:"threat_id"`
+	ThreatType      string        `json:"threat_type"`
+	CurrentPosition Position      `json:"current_position"`
+	Velocity        Velocity      `json:"velocity"`
+	PredictedImpact Position      `json:"predicted_impact"`
+	TimeToImpact    time.Duration `json:"time_to_impact"`
+	Confidence      float64       `json:"confidence"`
+	RequiredAction  AlertAction   `json:"required_action"`
+	Timestamp       time.Time     `json:"timestamp"`
 }
 
 // Velocity represents 3D velocity
@@ -130,16 +130,16 @@ type Velocity struct {
 
 // CONOPREPFormatter formats messages to CONOPREP standard
 type CONOPREPFormatter struct {
-	classification string
-	originator      string
+	classification   string
+	originator       string
 	releaseAuthority string
 }
 
 // NewCONOPREPFormatter creates a new formatter
 func NewCONOPREPFormatter(classification, originator, releaseAuthority string) *CONOPREPFormatter {
 	return &CONOPREPFormatter{
-		classification: classification,
-		originator:      originator,
+		classification:   classification,
+		originator:       originator,
 		releaseAuthority: releaseAuthority,
 	}
 }
@@ -152,16 +152,16 @@ func (f *CONOPREPFormatter) FormatThreatAlert(heading, content string, track *Tr
 	}
 
 	return &CONOPREPMessage{
-		MessageID:       generateMessageID(),
-		Classification:  f.classification,
-		Priority:        priority,
-		Category:        CategoryThreat,
-		Originator:      f.originator,
-		Timestamp:       time.Now(),
-		Heading:         heading,
-		Content:         content,
-		RequiredAction:  ActionMonitor,
-		TrackData:       track,
+		MessageID:        generateMessageID(),
+		Classification:   f.classification,
+		Priority:         priority,
+		Category:         CategoryThreat,
+		Originator:       f.originator,
+		Timestamp:        time.Now(),
+		Heading:          heading,
+		Content:          content,
+		RequiredAction:   ActionMonitor,
+		TrackData:        track,
 		ReleaseAuthority: f.releaseAuthority,
 	}
 }
@@ -170,21 +170,21 @@ func (f *CONOPREPFormatter) FormatThreatAlert(heading, content string, track *Tr
 func (f *CONOPREPFormatter) FormatLaunchAlert(launchLocation, launchTime string, track *TrackSummary) *CONOPREPMessage {
 	content := fmt.Sprintf("Launch detected from %s at %s", launchLocation, launchTime)
 	if track != nil {
-		content = fmt.Sprintf("Launch detected from %s at %s. Track: %s", 
+		content = fmt.Sprintf("Launch detected from %s at %s. Track: %s",
 			launchLocation, launchTime, track.TrackNumber)
 	}
 
 	return &CONOPREPMessage{
-		MessageID:       generateMessageID(),
-		Classification:  f.classification,
-		Priority:        PriorityFlash,
-		Category:        CategoryLaunch,
-		Originator:      f.originator,
-		Timestamp:       time.Now(),
-		Heading:         "LAUNCH DETECTED",
-		Content:         content,
-		RequiredAction:  ActionPrepare,
-		TrackData:       track,
+		MessageID:        generateMessageID(),
+		Classification:   f.classification,
+		Priority:         PriorityFlash,
+		Category:         CategoryLaunch,
+		Originator:       f.originator,
+		Timestamp:        time.Now(),
+		Heading:          "LAUNCH DETECTED",
+		Content:          content,
+		RequiredAction:   ActionPrepare,
+		TrackData:        track,
 		ReleaseAuthority: f.releaseAuthority,
 	}
 }
@@ -201,16 +201,16 @@ func (f *CONOPREPFormatter) FormatImpactAlert(impact *ImpactSummary, action Aler
 	}
 
 	return &CONOPREPMessage{
-		MessageID:       generateMessageID(),
-		Classification:  f.classification,
-		Priority:        PriorityFlashOverride,
-		Category:        CategoryImpact,
-		Originator:      f.originator,
-		Timestamp:       time.Now(),
-		Heading:         "IMPACT PREDICTION",
-		Content:         content + warnings,
-		RequiredAction:  action,
-		ImpactData:      impact,
+		MessageID:        generateMessageID(),
+		Classification:   f.classification,
+		Priority:         PriorityFlashOverride,
+		Category:         CategoryImpact,
+		Originator:       f.originator,
+		Timestamp:        time.Now(),
+		Heading:          "IMPACT PREDICTION",
+		Content:          content + warnings,
+		RequiredAction:   action,
+		ImpactData:       impact,
 		ReleaseAuthority: f.releaseAuthority,
 	}
 }
@@ -218,15 +218,15 @@ func (f *CONOPREPFormatter) FormatImpactAlert(impact *ImpactSummary, action Aler
 // FormatDefenseAlert formats a defense action alert
 func (f *CONOPREPFormatter) FormatDefenseAlert(heading, content string, action AlertAction) *CONOPREPMessage {
 	return &CONOPREPMessage{
-		MessageID:       generateMessageID(),
-		Classification:  f.classification,
-		Priority:        PriorityFlash,
-		Category:        CategoryDefense,
-		Originator:      f.originator,
-		Timestamp:       time.Now(),
-		Heading:         heading,
-		Content:         content,
-		RequiredAction:  action,
+		MessageID:        generateMessageID(),
+		Classification:   f.classification,
+		Priority:         PriorityFlash,
+		Category:         CategoryDefense,
+		Originator:       f.originator,
+		Timestamp:        time.Now(),
+		Heading:          heading,
+		Content:          content,
+		RequiredAction:   action,
 		ReleaseAuthority: f.releaseAuthority,
 	}
 }
@@ -234,15 +234,15 @@ func (f *CONOPREPFormatter) FormatDefenseAlert(heading, content string, action A
 // FormatExerciseAlert formats an exercise alert
 func (f *CONOPREPFormatter) FormatExerciseAlert(heading, content string) *CONOPREPMessage {
 	return &CONOPREPMessage{
-		MessageID:       generateMessageID(),
-		Classification:  f.classification,
-		Priority:        PriorityRoutine,
-		Category:        CategoryExercise,
-		Originator:      f.originator,
-		Timestamp:       time.Now(),
-		Heading:         "EXERCISE " + heading,
-		Content:         "EXERCISE EXERCISE EXERCISE - " + content,
-		RequiredAction:  ActionNone,
+		MessageID:        generateMessageID(),
+		Classification:   f.classification,
+		Priority:         PriorityRoutine,
+		Category:         CategoryExercise,
+		Originator:       f.originator,
+		Timestamp:        time.Now(),
+		Heading:          "EXERCISE " + heading,
+		Content:          "EXERCISE EXERCISE EXERCISE - " + content,
+		RequiredAction:   ActionNone,
 		ReleaseAuthority: f.releaseAuthority,
 	}
 }
@@ -258,9 +258,9 @@ func NewIMMINENTFormatter(classification string) *IMMINENTFormatter {
 }
 
 // Format formats an IMMINENT message
-func (f *IMMINENTFormatter) Format(threatID string, launchPos, impactPos Position, 
+func (f *IMMINENTFormatter) Format(threatID string, launchPos, impactPos Position,
 	launchTime, impactTime time.Time, confidence float64) *IMMINENTMessage {
-	
+
 	action := ActionPrepare
 	if confidence < 0.7 {
 		action = ActionMonitor
@@ -294,10 +294,10 @@ func NewINCOMINGFormatter(classification string) *INCOMINGFormatter {
 }
 
 // Format formats an INCOMING message
-func (f *INCOMINGFormatter) Format(threatID, threatType string, 
-	currentPos Position, velocity Velocity, impactPos Position, 
+func (f *INCOMINGFormatter) Format(threatID, threatType string,
+	currentPos Position, velocity Velocity, impactPos Position,
 	timeToImpact time.Duration, confidence float64) *INCOMINGMessage {
-	
+
 	action := ActionDefend
 	if timeToImpact < 5*time.Minute {
 		action = ActionEvacuate
@@ -411,9 +411,9 @@ func formatPosition(p Position) string {
 	if p.Longitude < 0 {
 		lonDir = "W"
 	}
-	return fmt.Sprintf("%.4f%s %.4f%s %.0fm", 
-		abs(p.Latitude), latDir, 
-		abs(p.Longitude), lonDir, 
+	return fmt.Sprintf("%.4f%s %.4f%s %.0fm",
+		abs(p.Latitude), latDir,
+		abs(p.Longitude), lonDir,
 		p.Altitude)
 }
 

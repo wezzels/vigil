@@ -8,9 +8,9 @@ import (
 
 // MockHealthChecker is a mock health checker for testing
 type MockHealthChecker struct {
-	name   string
+	name    string
 	healthy bool
-	err    error
+	err     error
 }
 
 func (m *MockHealthChecker) Name() string {

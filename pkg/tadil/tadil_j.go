@@ -9,15 +9,15 @@ import (
 
 // TADILJMessage represents a TADIL-J (Link-16) J-Series message
 type TADILJMessage struct {
-	MessageNumber    string
-	StationNumber    uint16
-	TrackNumber      string
-	TrackQuality     uint8
-	Position         Position3D
-	Velocity         Velocity3D
-	Identity         uint8
-	Environment      uint8
-	TimeOnTarget     time.Time
+	MessageNumber string
+	StationNumber uint16
+	TrackNumber   string
+	TrackQuality  uint8
+	Position      Position3D
+	Velocity      Velocity3D
+	Identity      uint8
+	Environment   uint8
+	TimeOnTarget  time.Time
 }
 
 // Position3D represents 3D position

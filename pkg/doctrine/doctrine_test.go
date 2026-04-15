@@ -10,7 +10,7 @@ func TestDetermineAlertLevelNone(t *testing.T) {
 	alert := &Alert{
 		Confidence: 0.1,
 	}
-	
+
 	level := DetermineAlertLevel(alert, nil)
 	if level != AlertNone {
 		t.Errorf("Expected AlertNone for low confidence, got %v", level)
@@ -21,10 +21,10 @@ func TestDetermineAlertLevelNone(t *testing.T) {
 func TestDetermineAlertLevelCONOPREP(t *testing.T) {
 	alert := &Alert{
 		Confidence: 0.6,
-		LaunchTime:  1000000,
-		ImpactTime:  160000, // 160 seconds = 2.67 min
+		LaunchTime: 1000000,
+		ImpactTime: 160000, // 160 seconds = 2.67 min
 	}
-	
+
 	level := DetermineAlertLevel(alert, nil)
 	if level != AlertCONOPREP {
 		t.Errorf("Expected CONOPREP for confidence 0.6, got %v", level)
@@ -35,10 +35,10 @@ func TestDetermineAlertLevelCONOPREP(t *testing.T) {
 func TestDetermineAlertLevelIMMINENT(t *testing.T) {
 	alert := &Alert{
 		Confidence: 0.75,
-		LaunchTime:  1000000,
-		ImpactTime:  1100000, // 100 seconds
+		LaunchTime: 1000000,
+		ImpactTime: 1100000, // 100 seconds
 	}
-	
+
 	level := DetermineAlertLevel(alert, nil)
 	if level != AlertIMMINENT {
 		t.Errorf("Expected IMMINENT for confidence 0.75, got %v", level)
@@ -49,10 +49,10 @@ func TestDetermineAlertLevelIMMINENT(t *testing.T) {
 func TestDetermineAlertLevelINCOMING(t *testing.T) {
 	alert := &Alert{
 		Confidence: 0.9,
-		LaunchTime:  1000000,
-		ImpactTime:  1025000, // 25 seconds
+		LaunchTime: 1000000,
+		ImpactTime: 1025000, // 25 seconds
 	}
-	
+
 	level := DetermineAlertLevel(alert, nil)
 	if level != AlertINCOMING {
 		t.Errorf("Expected INCOMING for confidence 0.9, got %v", level)
@@ -63,10 +63,10 @@ func TestDetermineAlertLevelINCOMING(t *testing.T) {
 func TestDetermineAlertLevelHOSTILE(t *testing.T) {
 	alert := &Alert{
 		Confidence: 0.97,
-		LaunchTime:  1000000,
-		ImpactTime:  1005000, // 5 seconds
+		LaunchTime: 1000000,
+		ImpactTime: 1005000, // 5 seconds
 	}
-	
+
 	level := DetermineAlertLevel(alert, nil)
 	if level != AlertHOSTILE {
 		t.Errorf("Expected HOSTILE for confidence 0.97, got %v", level)
@@ -84,10 +84,10 @@ func TestAlertEscalation(t *testing.T) {
 		{AlertCONOPREP, AlertIMMINENT, AlertIMMINENT},
 		{AlertIMMINENT, AlertINCOMING, AlertINCOMING},
 		{AlertINCOMING, AlertHOSTILE, AlertHOSTILE},
-		{AlertHOSTILE, AlertIMMINENT, AlertHOSTILE}, // No deescalation
+		{AlertHOSTILE, AlertIMMINENT, AlertHOSTILE},   // No deescalation
 		{AlertIMMINENT, AlertCONOPREP, AlertIMMINENT}, // No deescalation
 	}
-	
+
 	for _, tt := range tests {
 		result := EscalateAlert(tt.current, tt.new)
 		if result != tt.expected {
@@ -105,13 +105,13 @@ func TestAlertDeescalation(t *testing.T) {
 		expected   AlertLevel
 	}{
 		{AlertHOSTILE, 0.5, AlertHOSTILE},  // High confidence -> stay
-		{AlertHOSTILE, 0.2, AlertINCOMING},   // Low confidence -> deescalate
+		{AlertHOSTILE, 0.2, AlertINCOMING}, // Low confidence -> deescalate
 		{AlertINCOMING, 0.2, AlertIMMINENT},
 		{AlertIMMINENT, 0.2, AlertCONOPREP},
 		{AlertCONOPREP, 0.2, AlertNone},
 		{AlertNone, 0.1, AlertNone},
 	}
-	
+
 	for _, tt := range tests {
 		result := DeescalateAlert(tt.current, tt.confidence)
 		if result != tt.expected {
@@ -134,7 +134,7 @@ func TestThreatTypeString(t *testing.T) {
 		{ThreatUAV, "UAV"},
 		{ThreatArtillery, "ARTILLERY"},
 	}
-	
+
 	for _, tt := range tests {
 		result := tt.t.String()
 		if result != tt.expected {
@@ -156,7 +156,7 @@ func TestAlertLevelString(t *testing.T) {
 		{AlertINCOMING, "INCOMING"},
 		{AlertHOSTILE, "HOSTILE"},
 	}
-	
+
 	for _, tt := range tests {
 		result := tt.level.String()
 		if result != tt.expected {
@@ -169,22 +169,22 @@ func TestAlertLevelString(t *testing.T) {
 // TestShouldAlert tests alert decision
 func TestShouldAlert(t *testing.T) {
 	tests := []struct {
-		confidence float64
+		confidence  float64
 		shouldAlert bool
 	}{
-		{0.1, false},   // Too low
-		{0.5, true},    // Meets CONOPREP threshold
-		{0.7, true},    // Meets IMMINENT threshold
-		{0.9, true},    // Meets INCOMING threshold
+		{0.1, false}, // Too low
+		{0.5, true},  // Meets CONOPREP threshold
+		{0.7, true},  // Meets IMMINENT threshold
+		{0.9, true},  // Meets INCOMING threshold
 	}
-	
+
 	for _, tt := range tests {
 		alert := &Alert{
 			Confidence: tt.confidence,
-			LaunchTime:  1000000,
-			ImpactTime:  1100000, // 100 seconds
+			LaunchTime: 1000000,
+			ImpactTime: 1100000, // 100 seconds
 		}
-		
+
 		result := ShouldAlert(alert, nil)
 		if result != tt.shouldAlert {
 			t.Errorf("ShouldAlert(conf=%.1f) = %v, expected %v",
@@ -200,18 +200,18 @@ func TestEstimateTimeToImpact(t *testing.T) {
 		impact   int64
 		expected float64
 	}{
-		{1000000, 1060000, 60.0},   // 60 seconds
-		{1000000, 1300000, 300.0},  // 5 minutes
-		{1000000, 1600000, 600.0},  // 10 minutes
-		{0, 1000, 1.0},             // No launch time
+		{1000000, 1060000, 60.0},  // 60 seconds
+		{1000000, 1300000, 300.0}, // 5 minutes
+		{1000000, 1600000, 600.0}, // 10 minutes
+		{0, 1000, 1.0},            // No launch time
 	}
-	
+
 	for _, tt := range tests {
 		alert := &Alert{
 			LaunchTime: tt.launch,
 			ImpactTime: tt.impact,
 		}
-		
+
 		result := EstimateTimeToImpact(alert)
 		if math.Abs(result-tt.expected) > 0.1 {
 			t.Errorf("EstimateTimeToImpact(%d, %d) = %.1f, expected %.1f",
@@ -227,12 +227,12 @@ func TestEstimateConfidence(t *testing.T) {
 		ageSeconds int64
 		expected   float64
 	}{
-		{1, 0, 0.2},    // Single source, fresh
-		{5, 0, 1.0},    // Multiple sources, fresh
-		{1, 60, 0.07},  // Single source, old
-		{5, 60, 0.37},  // Multiple sources, old
+		{1, 0, 0.2},   // Single source, fresh
+		{5, 0, 1.0},   // Multiple sources, fresh
+		{1, 60, 0.07}, // Single source, old
+		{5, 60, 0.37}, // Multiple sources, old
 	}
-	
+
 	for _, tt := range tests {
 		result := EstimateConfidence(tt.sources, tt.ageSeconds*1000)
 		// Allow 10% tolerance
@@ -249,22 +249,22 @@ func TestCustomDoctrine(t *testing.T) {
 		{
 			MinConfidence:   0.8,
 			MaxTimeToImpact: 60,
-			Level:          AlertIMMINENT,
+			Level:           AlertIMMINENT,
 		},
 		{
 			MinConfidence:   0.6,
 			MaxTimeToImpact: 180,
-			Level:          AlertCONOPREP,
+			Level:           AlertCONOPREP,
 		},
 	}
-	
+
 	// Test with custom doctrine
 	alert := &Alert{
 		Confidence: 0.75,
-		LaunchTime:  1000000,
-		ImpactTime:  1150000, // 150 seconds
+		LaunchTime: 1000000,
+		ImpactTime: 1150000, // 150 seconds
 	}
-	
+
 	level := DetermineAlertLevel(alert, customDoctrine)
 	if level != AlertCONOPREP {
 		t.Errorf("Expected CONOPREP with custom doctrine, got %v", level)
@@ -278,19 +278,19 @@ func TestAltitudeRange(t *testing.T) {
 			MinConfidence: 0.7,
 			MinAltitude:   10000, // 10 km
 			MaxAltitude:   50000, // 50 km
-			Level:        AlertIMMINENT,
+			Level:         AlertIMMINENT,
 		},
 	}
-	
+
 	tests := []struct {
 		altitude float64
 		expected AlertLevel
 	}{
 		{5000, AlertNone},      // Below range
 		{20000, AlertIMMINENT}, // In range
-		{60000, AlertNone},      // Above range
+		{60000, AlertNone},     // Above range
 	}
-	
+
 	for _, tt := range tests {
 		alert := &Alert{
 			Confidence: 0.8,
@@ -298,7 +298,7 @@ func TestAltitudeRange(t *testing.T) {
 			LaunchTime: 1000000,
 			ImpactTime: 1060000,
 		}
-		
+
 		level := DetermineAlertLevel(alert, doctrine)
 		if level != tt.expected {
 			t.Errorf("Altitude %.0f: expected %v, got %v",
@@ -317,16 +317,16 @@ func TestSpeedRange(t *testing.T) {
 			Level:         AlertIMMINENT,
 		},
 	}
-	
+
 	tests := []struct {
 		speed    float64
 		expected AlertLevel
 	}{
-		{100, AlertNone},       // Below range
-		{2000, AlertIMMINENT},  // In range
-		{6000, AlertNone},      // Above range
+		{100, AlertNone},      // Below range
+		{2000, AlertIMMINENT}, // In range
+		{6000, AlertNone},     // Above range
 	}
-	
+
 	for _, tt := range tests {
 		alert := &Alert{
 			Confidence: 0.8,
@@ -334,7 +334,7 @@ func TestSpeedRange(t *testing.T) {
 			LaunchTime: 1000000,
 			ImpactTime: 1060000,
 		}
-		
+
 		level := DetermineAlertLevel(alert, doctrine)
 		if level != tt.expected {
 			t.Errorf("Speed %.0f: expected %v, got %v",
@@ -349,10 +349,10 @@ func TestThreatTypeFilter(t *testing.T) {
 		{
 			MinConfidence: 0.7,
 			ThreatTypes:   []ThreatType{ThreatBallistic, ThreatCruise},
-			Level:        AlertIMMINENT,
+			Level:         AlertIMMINENT,
 		},
 	}
-	
+
 	tests := []struct {
 		threatType ThreatType
 		expected   AlertLevel
@@ -360,9 +360,9 @@ func TestThreatTypeFilter(t *testing.T) {
 		{ThreatBallistic, AlertIMMINENT},
 		{ThreatCruise, AlertIMMINENT},
 		{ThreatAir, AlertNone}, // Not in list
-		{ThreatUAV, AlertNone},  // Not in list
+		{ThreatUAV, AlertNone}, // Not in list
 	}
-	
+
 	for _, tt := range tests {
 		alert := &Alert{
 			Confidence: 0.8,
@@ -370,7 +370,7 @@ func TestThreatTypeFilter(t *testing.T) {
 			LaunchTime: 1000000,
 			ImpactTime: 1060000,
 		}
-		
+
 		level := DetermineAlertLevel(alert, doctrine)
 		if level != tt.expected {
 			t.Errorf("ThreatType %v: expected %v, got %v",
@@ -389,7 +389,7 @@ func BenchmarkDetermineAlertLevel(b *testing.B) {
 		Altitude:   30000,
 		Speed:      2000,
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		DetermineAlertLevel(alert, nil)

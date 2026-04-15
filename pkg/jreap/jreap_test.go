@@ -14,7 +14,7 @@ func TestJREAPType(t *testing.T) {
 		{JREAPTypeB, "JREAP-B"},
 		{JREAPTypeC, "JREAP-C"},
 	}
-	
+
 	for _, tt := range tests {
 		if got := tt.jreapType.String(); got != tt.want {
 			t.Errorf("JREAPType(%d).String() = %s, want %s", tt.jreapType, got, tt.want)
@@ -25,7 +25,7 @@ func TestJREAPType(t *testing.T) {
 // TestDefaultJREAPConfig tests default configuration
 func TestDefaultJREAPConfig(t *testing.T) {
 	config := DefaultJREAPConfig()
-	
+
 	if config.Type != JREAPTypeB {
 		t.Errorf("Expected JREAP-B, got %v", config.Type)
 	}
@@ -40,11 +40,11 @@ func TestDefaultJREAPConfig(t *testing.T) {
 // TestNewJREAPBridge tests bridge creation
 func TestNewJREAPBridge(t *testing.T) {
 	bridge := NewJREAPBridge(nil)
-	
+
 	if bridge == nil {
 		t.Fatal("Bridge should not be nil")
 	}
-	
+
 	if bridge.config.Type != JREAPTypeB {
 		t.Error("Default type should be JREAP-B")
 	}
@@ -57,7 +57,7 @@ func TestCalculateChecksum(t *testing.T) {
 	if result != 0xFFFF {
 		t.Errorf("CalculateChecksum(empty) = %04X, want FFFF", result)
 	}
-	
+
 	// Test simple data - checksum is XOR of complement
 	// The calculation sums bytes and XORs with 0xFFFF
 	data := []byte{0x01, 0x02, 0x03}
@@ -73,23 +73,23 @@ func TestCalculateChecksum(t *testing.T) {
 func TestBuildMessage(t *testing.T) {
 	data := []byte{0x01, 0x02, 0x03, 0x04}
 	msg := BuildMessage(data)
-	
+
 	if msg.Header.SyncByte != 0x55 {
 		t.Errorf("Expected sync byte 0x55, got %02X", msg.Header.SyncByte)
 	}
-	
+
 	if msg.Header.Version != 0x01 {
 		t.Errorf("Expected version 0x01, got %02X", msg.Header.Version)
 	}
-	
+
 	if msg.Header.MessageLength != 4 {
 		t.Errorf("Expected message length 4, got %d", msg.Header.MessageLength)
 	}
-	
+
 	if len(msg.Data) != 4 {
 		t.Errorf("Expected data length 4, got %d", len(msg.Data))
 	}
-	
+
 	if !msg.Valid {
 		t.Error("Message should be valid")
 	}
@@ -99,17 +99,17 @@ func TestBuildMessage(t *testing.T) {
 func TestSerializeMessage(t *testing.T) {
 	data := []byte{0x01, 0x02, 0x03, 0x04}
 	msg := BuildMessage(data)
-	
+
 	serialized := msg.Serialize()
-	
+
 	if len(serialized) != 12 { // 8 header + 4 data
 		t.Errorf("Expected serialized length 12, got %d", len(serialized))
 	}
-	
+
 	if serialized[0] != 0x55 {
 		t.Errorf("Expected sync byte at position 0, got %02X", serialized[0])
 	}
-	
+
 	if serialized[1] != 0x01 {
 		t.Errorf("Expected version at position 1, got %02X", serialized[1])
 	}
@@ -120,20 +120,20 @@ func TestParseMessage(t *testing.T) {
 	data := []byte{0x01, 0x02, 0x03, 0x04}
 	msg := BuildMessage(data)
 	serialized := msg.Serialize()
-	
+
 	parsed, remaining, err := ParseMessage(serialized)
 	if err != nil {
 		t.Errorf("ParseMessage failed: %v", err)
 	}
-	
+
 	if len(remaining) != 0 {
 		t.Errorf("Expected no remaining data, got %d bytes", len(remaining))
 	}
-	
+
 	if parsed.Header.SyncByte != 0x55 {
 		t.Errorf("Expected sync byte 0x55, got %02X", parsed.Header.SyncByte)
 	}
-	
+
 	if parsed.Header.MessageLength != 4 {
 		t.Errorf("Expected message length 4, got %d", parsed.Header.MessageLength)
 	}
@@ -142,7 +142,7 @@ func TestParseMessage(t *testing.T) {
 // TestParseMessageTooShort tests parsing with insufficient data
 func TestParseMessageTooShort(t *testing.T) {
 	data := []byte{0x55, 0x01, 0x00}
-	
+
 	_, _, err := ParseMessage(data)
 	if err != ErrMessageTooShort {
 		t.Errorf("Expected ErrMessageTooShort, got %v", err)
@@ -152,7 +152,7 @@ func TestParseMessageTooShort(t *testing.T) {
 // TestParseMessageInvalidSync tests parsing with invalid sync byte
 func TestParseMessageInvalidSync(t *testing.T) {
 	data := []byte{0x54, 0x01, 0x00, 0x00, 0x04, 0x00, 0x00, 0xFF, 0xFF, 0x01, 0x02, 0x03, 0x04}
-	
+
 	_, _, err := ParseMessage(data)
 	if err != ErrInvalidSync {
 		t.Errorf("Expected ErrInvalidSync, got %v", err)
@@ -162,17 +162,17 @@ func TestParseMessageInvalidSync(t *testing.T) {
 // TestParseMultipleMessages tests parsing multiple messages
 func TestParseMultipleMessages(t *testing.T) {
 	bridge := NewJREAPBridge(nil)
-	
+
 	data1 := []byte{0x01, 0x02}
 	data2 := []byte{0x03, 0x04}
-	
+
 	msg1 := BuildMessage(data1)
 	msg2 := BuildMessage(data2)
-	
+
 	combined := append(msg1.Serialize(), msg2.Serialize()...)
-	
+
 	messages := bridge.parseMessages(combined)
-	
+
 	if len(messages) != 2 {
 		t.Errorf("Expected 2 messages, got %d", len(messages))
 	}
@@ -187,11 +187,11 @@ func TestMessageHeader(t *testing.T) {
 		MessageLength: 100,
 		Checksum:      0xABCD,
 	}
-	
+
 	if header.SyncByte != 0x55 {
 		t.Errorf("Expected sync byte 0x55, got %02X", header.SyncByte)
 	}
-	
+
 	if header.MessageLength != 100 {
 		t.Errorf("Expected message length 100, got %d", header.MessageLength)
 	}
@@ -200,33 +200,33 @@ func TestMessageHeader(t *testing.T) {
 // TestJREAPBridgeStartStop tests bridge start/stop
 func TestJREAPBridgeStartStop(t *testing.T) {
 	config := &JREAPConfig{
-		Type:     JREAPTypeB,
-		Address:  "127.0.0.1",
-		Port:     15001,
+		Type:    JREAPTypeB,
+		Address: "127.0.0.1",
+		Port:    15001,
 	}
-	
+
 	bridge := NewJREAPBridge(config)
-	
+
 	err := bridge.Start()
 	if err != nil {
 		t.Errorf("Start failed: %v", err)
 	}
-	
+
 	if !bridge.running {
 		t.Error("Bridge should be running after start")
 	}
-	
+
 	// Starting again should fail
 	err = bridge.Start()
 	if err != ErrAlreadyRunning {
 		t.Errorf("Expected ErrAlreadyRunning, got %v", err)
 	}
-	
+
 	err = bridge.Stop()
 	if err != nil {
 		t.Errorf("Stop failed: %v", err)
 	}
-	
+
 	if bridge.running {
 		t.Error("Bridge should not be running after stop")
 	}
@@ -235,13 +235,13 @@ func TestJREAPBridgeStartStop(t *testing.T) {
 // TestJREAPBridgeStats tests statistics
 func TestJREAPBridgeStats(t *testing.T) {
 	bridge := NewJREAPBridge(nil)
-	
+
 	stats := bridge.Stats()
-	
+
 	if stats.MessagesReceived != 0 {
 		t.Error("Initial messages received should be 0")
 	}
-	
+
 	if stats.MessagesSent != 0 {
 		t.Error("Initial messages sent should be 0")
 	}
@@ -250,7 +250,7 @@ func TestJREAPBridgeStats(t *testing.T) {
 // TestJREAPBridgeSend tests sending (not connected)
 func TestJREAPBridgeSend(t *testing.T) {
 	bridge := NewJREAPBridge(nil)
-	
+
 	err := bridge.Send([]byte{0x01, 0x02})
 	if err != ErrNotRunning {
 		t.Errorf("Expected ErrNotRunning, got %v", err)
@@ -260,7 +260,7 @@ func TestJREAPBridgeSend(t *testing.T) {
 // TestJREAPBridgeReceive tests receive channel
 func TestJREAPBridgeReceive(t *testing.T) {
 	bridge := NewJREAPBridge(nil)
-	
+
 	rxChan := bridge.Receive()
 	if rxChan == nil {
 		t.Error("Receive channel should not be nil")
@@ -270,7 +270,7 @@ func TestJREAPBridgeReceive(t *testing.T) {
 // TestJREAPBridgeErrors tests error channel
 func TestJREAPBridgeErrors(t *testing.T) {
 	bridge := NewJREAPBridge(nil)
-	
+
 	errChan := bridge.Errors()
 	if errChan == nil {
 		t.Error("Error channel should not be nil")
@@ -288,7 +288,7 @@ func TestJREAPErrors(t *testing.T) {
 		ErrMessageTooShort,
 		ErrInvalidSync,
 	}
-	
+
 	for _, err := range errors {
 		if err.Error() == "" {
 			t.Errorf("Error %s should have message", err.Code)
@@ -302,7 +302,7 @@ func BenchmarkBuildMessage(b *testing.B) {
 	for i := range data {
 		data[i] = byte(i)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		BuildMessage(data)
@@ -315,10 +315,10 @@ func BenchmarkParseMessage(b *testing.B) {
 	for i := range data {
 		data[i] = byte(i)
 	}
-	
+
 	msg := BuildMessage(data)
 	serialized := msg.Serialize()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ParseMessage(serialized)
@@ -331,9 +331,9 @@ func BenchmarkSerialize(b *testing.B) {
 	for i := range data {
 		data[i] = byte(i)
 	}
-	
+
 	msg := BuildMessage(data)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		msg.Serialize()
@@ -346,7 +346,7 @@ func BenchmarkCalculateChecksum(b *testing.B) {
 	for i := range data {
 		data[i] = byte(i)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		CalculateChecksum(data)

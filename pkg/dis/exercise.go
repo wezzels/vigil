@@ -8,59 +8,59 @@ import (
 
 // ExerciseManager manages DIS exercise state
 type ExerciseManager struct {
-	config      *ExerciseConfig
-	exerciseID  ExerciseID
-	siteID      uint16
+	config        *ExerciseConfig
+	exerciseID    ExerciseID
+	siteID        uint16
 	applicationID uint16
-	entities    map[uint16]map[uint16]map[uint16]EntityInfo // site.app.entity -> EntityInfo
-	nextEntityID uint16
-	mu          sync.RWMutex
-	startTime   time.Time
+	entities      map[uint16]map[uint16]map[uint16]EntityInfo // site.app.entity -> EntityInfo
+	nextEntityID  uint16
+	mu            sync.RWMutex
+	startTime     time.Time
 }
 
 // ExerciseConfig holds exercise configuration
 type ExerciseConfig struct {
-	ExerciseName     string `json:"exercise_name"`
-	ExerciseID       ExerciseID `json:"exercise_id"`
-	SiteID           uint16 `json:"site_id"`
-	ApplicationID    uint16 `json:"application_id"`
-	MaxEntities      int    `json:"max_entities"`
-	AutoEntityID     bool   `json:"auto_entity_id"`
+	ExerciseName  string     `json:"exercise_name"`
+	ExerciseID    ExerciseID `json:"exercise_id"`
+	SiteID        uint16     `json:"site_id"`
+	ApplicationID uint16     `json:"application_id"`
+	MaxEntities   int        `json:"max_entities"`
+	AutoEntityID  bool       `json:"auto_entity_id"`
 }
 
 // ExerciseID represents a DIS exercise ID
 type ExerciseID struct {
-	SiteID       uint16 `json:"site_id"`
+	SiteID        uint16 `json:"site_id"`
 	ApplicationID uint16 `json:"application_id"`
-	InstanceID   uint16 `json:"instance_id"`
+	InstanceID    uint16 `json:"instance_id"`
 }
 
 // EntityInfo holds entity information
 type EntityInfo struct {
-	EntityID     EntityID `json:"entity_id"`
-	EntityType   EntityType `json:"entity_type"`
-	Force        ForceID `json:"force"`
-	Marking      string `json:"marking"`
-	LastUpdate   time.Time `json:"last_update"`
-	IsActive     bool    `json:"is_active"`
+	EntityID   EntityID   `json:"entity_id"`
+	EntityType EntityType `json:"entity_type"`
+	Force      ForceID    `json:"force"`
+	Marking    string     `json:"marking"`
+	LastUpdate time.Time  `json:"last_update"`
+	IsActive   bool       `json:"is_active"`
 }
 
 // EntityID represents a DIS entity ID
 type EntityID struct {
-	SiteID       uint16 `json:"site_id"`
+	SiteID        uint16 `json:"site_id"`
 	ApplicationID uint16 `json:"application_id"`
-	EntityNumber uint16 `json:"entity_number"`
+	EntityNumber  uint16 `json:"entity_number"`
 }
 
 // EntityType represents a DIS entity type
 type EntityType struct {
-	Kind        uint8 `json:"kind"`
-	Domain      uint8 `json:"domain"`
+	Kind        uint8  `json:"kind"`
+	Domain      uint8  `json:"domain"`
 	Country     uint16 `json:"country"`
-	Category    uint8 `json:"category"`
-	Subcategory uint8 `json:"subcategory"`
-	Specific    uint8 `json:"specific"`
-	Extra       uint8 `json:"extra"`
+	Category    uint8  `json:"category"`
+	Subcategory uint8  `json:"subcategory"`
+	Specific    uint8  `json:"specific"`
+	Extra       uint8  `json:"extra"`
 }
 
 // ForceID represents a DIS force ID
@@ -77,7 +77,7 @@ const (
 func DefaultExerciseConfig() *ExerciseConfig {
 	return &ExerciseConfig{
 		ExerciseName:  "VIGIL",
-		ExerciseID:   ExerciseID{SiteID: 1, ApplicationID: 1, InstanceID: 1},
+		ExerciseID:    ExerciseID{SiteID: 1, ApplicationID: 1, InstanceID: 1},
 		SiteID:        1,
 		ApplicationID: 1,
 		MaxEntities:   10000,
@@ -90,7 +90,7 @@ func NewExerciseManager(config *ExerciseConfig) *ExerciseManager {
 	if config == nil {
 		config = DefaultExerciseConfig()
 	}
-	
+
 	return &ExerciseManager{
 		config:        config,
 		exerciseID:    config.ExerciseID,
@@ -106,7 +106,7 @@ func NewExerciseManager(config *ExerciseConfig) *ExerciseManager {
 func (em *ExerciseManager) StartExercise() error {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	em.startTime = time.Now()
 	return nil
 }
@@ -115,7 +115,7 @@ func (em *ExerciseManager) StartExercise() error {
 func (em *ExerciseManager) StopExercise() error {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	// Clear all entities
 	em.entities = make(map[uint16]map[uint16]map[uint16]EntityInfo)
 	return nil
@@ -125,21 +125,21 @@ func (em *ExerciseManager) StopExercise() error {
 func (em *ExerciseManager) AllocateEntityID() EntityID {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	// Use auto-allocation from same site/app
 	id := EntityID{
-		SiteID:       em.siteID,
+		SiteID:        em.siteID,
 		ApplicationID: em.applicationID,
-		EntityNumber: em.nextEntityID,
+		EntityNumber:  em.nextEntityID,
 	}
-	
+
 	em.nextEntityID++
-	
+
 	// Wrap around at max uint16
 	if em.nextEntityID == 0 {
 		em.nextEntityID = 1
 	}
-	
+
 	return id
 }
 
@@ -147,7 +147,7 @@ func (em *ExerciseManager) AllocateEntityID() EntityID {
 func (em *ExerciseManager) RegisterEntity(entityID EntityID, entityType EntityType, force ForceID, marking string) error {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	// Initialize maps if needed
 	if em.entities[entityID.SiteID] == nil {
 		em.entities[entityID.SiteID] = make(map[uint16]map[uint16]EntityInfo)
@@ -155,16 +155,16 @@ func (em *ExerciseManager) RegisterEntity(entityID EntityID, entityType EntityTy
 	if em.entities[entityID.SiteID][entityID.ApplicationID] == nil {
 		em.entities[entityID.SiteID][entityID.ApplicationID] = make(map[uint16]EntityInfo)
 	}
-	
+
 	em.entities[entityID.SiteID][entityID.ApplicationID][entityID.EntityNumber] = EntityInfo{
 		EntityID:   entityID,
 		EntityType: entityType,
 		Force:      force,
 		Marking:    marking,
 		LastUpdate: time.Now(),
-		IsActive:  true,
+		IsActive:   true,
 	}
-	
+
 	return nil
 }
 
@@ -172,12 +172,12 @@ func (em *ExerciseManager) RegisterEntity(entityID EntityID, entityType EntityTy
 func (em *ExerciseManager) UnregisterEntity(entityID EntityID) error {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	if em.entities[entityID.SiteID] == nil ||
 		em.entities[entityID.SiteID][entityID.ApplicationID] == nil {
 		return ErrEntityNotFound
 	}
-	
+
 	delete(em.entities[entityID.SiteID][entityID.ApplicationID], entityID.EntityNumber)
 	return nil
 }
@@ -186,17 +186,17 @@ func (em *ExerciseManager) UnregisterEntity(entityID EntityID) error {
 func (em *ExerciseManager) GetEntity(entityID EntityID) (EntityInfo, error) {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
-	
+
 	if em.entities[entityID.SiteID] == nil ||
 		em.entities[entityID.SiteID][entityID.ApplicationID] == nil {
 		return EntityInfo{}, ErrEntityNotFound
 	}
-	
+
 	info, exists := em.entities[entityID.SiteID][entityID.ApplicationID][entityID.EntityNumber]
 	if !exists {
 		return EntityInfo{}, ErrEntityNotFound
 	}
-	
+
 	return info, nil
 }
 
@@ -204,20 +204,20 @@ func (em *ExerciseManager) GetEntity(entityID EntityID) (EntityInfo, error) {
 func (em *ExerciseManager) UpdateEntity(entityID EntityID) error {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	if em.entities[entityID.SiteID] == nil ||
 		em.entities[entityID.SiteID][entityID.ApplicationID] == nil {
 		return ErrEntityNotFound
 	}
-	
+
 	info, exists := em.entities[entityID.SiteID][entityID.ApplicationID][entityID.EntityNumber]
 	if !exists {
 		return ErrEntityNotFound
 	}
-	
+
 	info.LastUpdate = time.Now()
 	em.entities[entityID.SiteID][entityID.ApplicationID][entityID.EntityNumber] = info
-	
+
 	return nil
 }
 
@@ -225,7 +225,7 @@ func (em *ExerciseManager) UpdateEntity(entityID EntityID) error {
 func (em *ExerciseManager) GetAllEntities() []EntityInfo {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
-	
+
 	var entities []EntityInfo
 	for _, apps := range em.entities {
 		for _, entitiesMap := range apps {
@@ -234,7 +234,7 @@ func (em *ExerciseManager) GetAllEntities() []EntityInfo {
 			}
 		}
 	}
-	
+
 	return entities
 }
 
@@ -242,7 +242,7 @@ func (em *ExerciseManager) GetAllEntities() []EntityInfo {
 func (em *ExerciseManager) GetEntitiesByForce(force ForceID) []EntityInfo {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
-	
+
 	var entities []EntityInfo
 	for _, apps := range em.entities {
 		for _, entitiesMap := range apps {
@@ -253,7 +253,7 @@ func (em *ExerciseManager) GetEntitiesByForce(force ForceID) []EntityInfo {
 			}
 		}
 	}
-	
+
 	return entities
 }
 
@@ -261,14 +261,14 @@ func (em *ExerciseManager) GetEntitiesByForce(force ForceID) []EntityInfo {
 func (em *ExerciseManager) GetEntityCount() int {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
-	
+
 	count := 0
 	for _, apps := range em.entities {
 		for _, entitiesMap := range apps {
 			count += len(entitiesMap)
 		}
 	}
-	
+
 	return count
 }
 
@@ -276,10 +276,10 @@ func (em *ExerciseManager) GetEntityCount() int {
 func (em *ExerciseManager) CleanupStaleEntities(maxAge time.Duration) int {
 	em.mu.Lock()
 	defer em.mu.Unlock()
-	
+
 	cutoff := time.Now().Add(-maxAge)
 	count := 0
-	
+
 	for siteID, apps := range em.entities {
 		for appID, entitiesMap := range apps {
 			for entityNum, info := range entitiesMap {
@@ -290,7 +290,7 @@ func (em *ExerciseManager) CleanupStaleEntities(maxAge time.Duration) int {
 			}
 		}
 	}
-	
+
 	return count
 }
 
@@ -325,11 +325,11 @@ func (em *ExerciseManager) GetApplicationID() uint16 {
 func (em *ExerciseManager) Stats() ExerciseStats {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
-	
+
 	total := 0
 	active := 0
 	byForce := make(map[ForceID]int)
-	
+
 	for _, apps := range em.entities {
 		for _, entitiesMap := range apps {
 			for _, info := range entitiesMap {
@@ -341,27 +341,27 @@ func (em *ExerciseManager) Stats() ExerciseStats {
 			}
 		}
 	}
-	
+
 	return ExerciseStats{
-		ExerciseID:     em.exerciseID,
-		SiteID:         em.siteID,
-		ApplicationID:  em.applicationID,
-		TotalEntities:  total,
-		ActiveEntities: active,
+		ExerciseID:      em.exerciseID,
+		SiteID:          em.siteID,
+		ApplicationID:   em.applicationID,
+		TotalEntities:   total,
+		ActiveEntities:  active,
 		EntitiesByForce: byForce,
-		ExerciseTime:   time.Since(em.startTime),
+		ExerciseTime:    time.Since(em.startTime),
 	}
 }
 
 // ExerciseStats holds exercise statistics
 type ExerciseStats struct {
-	ExerciseID      ExerciseID `json:"exercise_id"`
-	SiteID          uint16 `json:"site_id"`
-	ApplicationID   uint16 `json:"application_id"`
-	TotalEntities   int    `json:"total_entities"`
-	ActiveEntities  int    `json:"active_entities"`
+	ExerciseID      ExerciseID      `json:"exercise_id"`
+	SiteID          uint16          `json:"site_id"`
+	ApplicationID   uint16          `json:"application_id"`
+	TotalEntities   int             `json:"total_entities"`
+	ActiveEntities  int             `json:"active_entities"`
 	EntitiesByForce map[ForceID]int `json:"entities_by_force"`
-	ExerciseTime    time.Duration `json:"exercise_time"`
+	ExerciseTime    time.Duration   `json:"exercise_time"`
 }
 
 // EntityIDEquals checks if two entity IDs are equal
@@ -390,9 +390,9 @@ func (e EntityID) ToUint64() uint64 {
 // FromUint64 creates entity ID from uint64
 func EntityIDFromUint64(v uint64) EntityID {
 	return EntityID{
-		SiteID:       uint16(v >> 48),
+		SiteID:        uint16(v >> 48),
 		ApplicationID: uint16(v >> 32),
-		EntityNumber: uint16(v),
+		EntityNumber:  uint16(v),
 	}
 }
 

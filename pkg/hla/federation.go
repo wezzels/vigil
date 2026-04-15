@@ -24,21 +24,21 @@ type Federation struct {
 
 // FederateInfo contains information about a federate
 type FederateInfo struct {
-	Name         string
-	Type         string
-	JoinedAt     time.Time
-	LastSeen     time.Time
+	Name     string
+	Type     string
+	JoinedAt time.Time
+	LastSeen time.Time
 }
 
 // FederationCallbacks contains callback handlers
 type FederationCallbacks struct {
 	OnObjectDiscover       func(ctx context.Context, objectID, objectClass, federate string) error
 	OnAttributeReflect     func(ctx context.Context, objectID string, attributes map[string]interface{}) error
-	OnObjectRemove        func(ctx context.Context, objectID string) error
-	OnInteractionReceive  func(ctx context.Context, interaction *Interaction) error
-	OnSyncPointAnnounced  func(ctx context.Context, label string) error
-	OnSyncPointAchieved   func(ctx context.Context, label, federate string) error
-	OnFederateSaveBegun   func(ctx context.Context, federate string) error
+	OnObjectRemove         func(ctx context.Context, objectID string) error
+	OnInteractionReceive   func(ctx context.Context, interaction *Interaction) error
+	OnSyncPointAnnounced   func(ctx context.Context, label string) error
+	OnSyncPointAchieved    func(ctx context.Context, label, federate string) error
+	OnFederateSaveBegun    func(ctx context.Context, federate string) error
 	OnFederateSaveComplete func(ctx context.Context, federate string) error
 }
 

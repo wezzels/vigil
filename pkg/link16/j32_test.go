@@ -9,7 +9,7 @@ import (
 // TestJ32Parser tests parser creation
 func TestJ32Parser(t *testing.T) {
 	parser := NewJ32Parser()
-	
+
 	if parser == nil {
 		t.Fatal("Parser should not be nil")
 	}
@@ -18,26 +18,26 @@ func TestJ32Parser(t *testing.T) {
 // TestJ32MessageParse tests message parsing
 func TestJ32MessageParse(t *testing.T) {
 	parser := NewJ32Parser()
-	
+
 	// Create test words
 	words := []uint32{
 		0x00010000 | // Track number 1, quality 0, identity 0
-			(3 << 8) |  // Identity FRIEND
-			(3 << 4) |   // Force FRIEND
-			0,           // Environment AIR
-		(45 << 16) | (-120 & 0xFFFF), // Latitude 45°, Longitude -120°
+			(3 << 8) | // Identity FRIEND
+			(3 << 4) | // Force FRIEND
+			0, // Environment AIR
+		(45 << 16) | (-120 & 0xFFFF),     // Latitude 45°, Longitude -120°
 		(10000 << 16) | (300 << 5) | 180, // Altitude 10000m, Speed 300m/s, Heading 180°
 	}
-	
+
 	msg, err := parser.Parse(words)
 	if err != nil {
 		t.Errorf("Parse failed: %v", err)
 	}
-	
+
 	if msg.TrackNumber != 1 {
 		t.Errorf("Track number should be 1, got %d", msg.TrackNumber)
 	}
-	
+
 	if msg.TrackIdentity != IdentityFriend {
 		t.Errorf("Identity should be FRIEND, got %d", msg.TrackIdentity)
 	}
@@ -46,9 +46,9 @@ func TestJ32MessageParse(t *testing.T) {
 // TestJ32MessageParseTooShort tests parsing with insufficient words
 func TestJ32MessageParseTooShort(t *testing.T) {
 	parser := NewJ32Parser()
-	
+
 	words := []uint32{0x00010000}
-	
+
 	_, err := parser.Parse(words)
 	if err == nil {
 		t.Error("Expected error for insufficient words")
@@ -58,7 +58,7 @@ func TestJ32MessageParseTooShort(t *testing.T) {
 // TestJ32MessageSerialize tests message serialization
 func TestJ32MessageSerialize(t *testing.T) {
 	parser := NewJ32Parser()
-	
+
 	msg := &J32Message{
 		TrackNumber:   100,
 		TrackQuality:  10,
@@ -72,9 +72,9 @@ func TestJ32MessageSerialize(t *testing.T) {
 		Force:         IdentityFriend,
 		Environment:   EnvAir,
 	}
-	
+
 	words := parser.Serialize(msg)
-	
+
 	if len(words) != J32WordCount {
 		t.Errorf("Expected %d words, got %d", J32WordCount, len(words))
 	}
@@ -83,7 +83,7 @@ func TestJ32MessageSerialize(t *testing.T) {
 // TestJ32Roundtrip tests parse/serialize roundtrip
 func TestJ32Roundtrip(t *testing.T) {
 	parser := NewJ32Parser()
-	
+
 	original := &J32Message{
 		TrackNumber:   500,
 		TrackQuality:  12,
@@ -97,18 +97,18 @@ func TestJ32Roundtrip(t *testing.T) {
 		Force:         IdentityHostile,
 		Environment:   EnvAir,
 	}
-	
+
 	words := parser.Serialize(original)
 	parsed, err := parser.Parse(words)
 	if err != nil {
 		t.Errorf("Parse failed: %v", err)
 	}
-	
+
 	if parsed.TrackNumber != original.TrackNumber {
 		t.Errorf("Track number mismatch: got %d, want %d",
 			parsed.TrackNumber, original.TrackNumber)
 	}
-	
+
 	if parsed.TrackIdentity != original.TrackIdentity {
 		t.Errorf("Identity mismatch: got %d, want %d",
 			parsed.TrackIdentity, original.TrackIdentity)
@@ -130,7 +130,7 @@ func TestIdentityStrings(t *testing.T) {
 		{IdentityHostile, "HOSTILE"},
 		{99, "UNKNOWN"},
 	}
-	
+
 	for _, tt := range tests {
 		result := GetIdentityString(tt.identity)
 		if result != tt.expected {
@@ -152,7 +152,7 @@ func TestEnvironmentStrings(t *testing.T) {
 		{EnvLand, "LAND"},
 		{99, "UNKNOWN"},
 	}
-	
+
 	for _, tt := range tests {
 		result := GetEnvironmentString(tt.env)
 		if result != tt.expected {
@@ -165,7 +165,7 @@ func TestEnvironmentStrings(t *testing.T) {
 // TestJ32Builder tests message builder
 func TestJ32Builder(t *testing.T) {
 	builder := NewJ32Builder()
-	
+
 	msg := builder.
 		SetTrackNumber(100).
 		SetPosition(33.5, -118.2, 5000).
@@ -175,15 +175,15 @@ func TestJ32Builder(t *testing.T) {
 		SetEnvironment(EnvAir).
 		SetQuality(10).
 		Build()
-	
+
 	if msg.TrackNumber != 100 {
 		t.Errorf("Track number should be 100, got %d", msg.TrackNumber)
 	}
-	
+
 	if msg.Latitude != 33.5 {
 		t.Errorf("Latitude should be 33.5, got %f", msg.Latitude)
 	}
-	
+
 	if msg.TrackIdentity != IdentityHostile {
 		t.Errorf("Identity should be HOSTILE, got %d", msg.TrackIdentity)
 	}
@@ -203,20 +203,20 @@ func TestJ32TrackConversion(t *testing.T) {
 		Environment:   EnvAir,
 		Time:          time.Now(),
 	}
-	
+
 	track := msg.ToTrack()
-	
+
 	if track.TrackNumber != 200 {
 		t.Errorf("Track number should be 200, got %d", track.TrackNumber)
 	}
-	
+
 	if track.Identity != "FRIEND" {
 		t.Errorf("Identity should be FRIEND, got %s", track.Identity)
 	}
-	
+
 	// Convert back
 	msg2 := FromTrack(track)
-	
+
 	if msg2.TrackNumber != msg.TrackNumber {
 		t.Errorf("Track number mismatch after roundtrip")
 	}
@@ -227,11 +227,11 @@ func TestJ32Constants(t *testing.T) {
 	if J32WordCount != 3 {
 		t.Errorf("J32WordCount should be 3, got %d", J32WordCount)
 	}
-	
+
 	if J32LatitudeScale <= 0 {
 		t.Error("J32LatitudeScale should be positive")
 	}
-	
+
 	if J32LongitudeScale <= 0 {
 		t.Error("J32LongitudeScale should be positive")
 	}
@@ -240,35 +240,35 @@ func TestJ32Constants(t *testing.T) {
 // TestJ32PositionBounds tests position bounds
 func TestJ32PositionBounds(t *testing.T) {
 	parser := NewJ32Parser()
-	
+
 	// Test reasonable positions - roundtrip through encoding
 	tests := []struct {
 		name string
-		lat float64
-		lon float64
-		alt float64
+		lat  float64
+		lon  float64
+		alt  float64
 	}{
 		{"Mid latitude", 45.0, -120.0, 10000.0},
 		{"Equator", 0.0, 0.0, 0.0},
 		{"Low altitude", 33.5, -117.0, 1000.0},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := &J32Message{
-				TrackNumber:  1,
-				Latitude:     tt.lat,
-				Longitude:    tt.lon,
-				Altitude:     tt.alt,
-				Time:         time.Now(),
+				TrackNumber: 1,
+				Latitude:    tt.lat,
+				Longitude:   tt.lon,
+				Altitude:    tt.alt,
+				Time:        time.Now(),
 			}
-			
+
 			words := parser.Serialize(msg)
 			parsed, err := parser.Parse(words)
 			if err != nil {
 				t.Errorf("Parse failed: %v", err)
 			}
-			
+
 			// Check that values are in reasonable range after roundtrip
 			// Note: encoding has limited precision
 			if math.Abs(parsed.Latitude-tt.lat) > 100 {
@@ -285,7 +285,7 @@ func TestJ32PositionBounds(t *testing.T) {
 func BenchmarkJ32Parse(b *testing.B) {
 	parser := NewJ32Parser()
 	words := []uint32{0x00010000 | (3 << 8), (45 << 16) | 0xFFFF, (10000 << 16) | (300 << 5) | 180}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parser.Parse(words)
@@ -306,7 +306,7 @@ func BenchmarkJ32Serialize(b *testing.B) {
 		Heading:       180.0,
 		Time:          time.Now(),
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parser.Serialize(msg)
@@ -338,7 +338,7 @@ func BenchmarkJ32TrackConversion(b *testing.B) {
 		TrackIdentity: IdentityFriend,
 		Time:          time.Now(),
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		track := msg.ToTrack()

@@ -167,11 +167,11 @@ func (tc *TrackCache) sourceKey(source string) string {
 
 // TrackCacheStats represents cache statistics
 type TrackCacheStats struct {
-	TotalTracks   int64 `json:"total_tracks"`
-	TotalSources  int64 `json:"total_sources"`
-	CacheHits     int64 `json:"cache_hits"`
-	CacheMisses   int64 `json:"cache_misses"`
-	Evictions     int64 `json:"evictions"`
+	TotalTracks  int64 `json:"total_tracks"`
+	TotalSources int64 `json:"total_sources"`
+	CacheHits    int64 `json:"cache_hits"`
+	CacheMisses  int64 `json:"cache_misses"`
+	Evictions    int64 `json:"evictions"`
 }
 
 // GetStats returns cache statistics
