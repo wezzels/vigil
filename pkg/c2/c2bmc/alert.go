@@ -139,9 +139,9 @@ func (s *AlertSubmitter) WaitForAcknowledgment(ctx context.Context, alertID stri
 				return resp, nil
 			}
 
-			if resp.Status == AlertStatusFailed || resp.Status == AlertStatusCancelled {
+			if resp.Status == AlertStatusFailed || resp.Status == AlertStatusCanceled {
 				delete(s.pendingAlerts, alertID)
-				return resp, fmt.Errorf("alert failed or cancelled")
+				return resp, fmt.Errorf("alert failed or canceled")
 			}
 		}
 	}
@@ -210,7 +210,7 @@ func (h *AcknowledgmentHandler) Process(resp *AlertResponse) {
 		if h.onComplete != nil {
 			h.onComplete(resp.AlertID)
 		}
-	case AlertStatusFailed, AlertStatusCancelled:
+	case AlertStatusFailed, AlertStatusCanceled:
 		if h.onReject != nil {
 			h.onReject(resp.AlertID, resp.Message)
 		}
@@ -222,7 +222,7 @@ type AlertStats struct {
 	TotalSubmitted    int64
 	TotalAcknowledged int64
 	TotalFailed       int64
-	TotalCancelled    int64
+	TotalCanceled    int64
 	ByType            map[AlertType]int64
 	ByPriority        map[AlertPriority]int64
 	LastSubmitTime    time.Time
@@ -249,8 +249,8 @@ func (s *AlertStats) Record(alert *AlertRequest, resp *AlertResponse) {
 			s.TotalAcknowledged++
 		case AlertStatusFailed:
 			s.TotalFailed++
-		case AlertStatusCancelled:
-			s.TotalCancelled++
+		case AlertStatusCanceled:
+			s.TotalCanceled++
 		}
 	}
 }

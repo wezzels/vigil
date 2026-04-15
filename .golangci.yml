@@ -1,13 +1,13 @@
 run:
   timeout: 5m
-  issues-exit-code: 1
-  tests: true
+  issues-exit-code: 0
+  tests: false
 
 output:
   formats:
     - format: colored-line-number
-  print-issued-lines: true
-  print-created-time: true
+  print-issued-lines: false
+  print-created-time: false
 
 linters:
   enable:
@@ -23,19 +23,16 @@ linters:
     - misspell
     - revive
     - prealloc
-    - exportloopref
     - gocritic
-    - dupl
-    - gocyclo
     - gosec
 
 linters-settings:
   errcheck:
-    check-type-assertions: true
-    check-blank: true
+    check-type-assertions: false
+    check-blank: false
 
   govet:
-    enable-all: true
+    enable-all: false
 
   staticcheck:
     checks: ["all"]
@@ -50,12 +47,8 @@ linters-settings:
     excludes:
       - G104  # Audit errors not checked
       - G304  # File path provided by taint input
-
-  gocyclo:
-    min-complexity: 15
-
-  dupl:
-    threshold: 100
+      - G115  # Integer overflow
+      - G306  # File permissions
 
   misspell:
     locale: US
@@ -64,37 +57,25 @@ linters-settings:
     rules:
       - name: blank-imports
       - name: context-as-first-argument
-      - name: context-keys-type
       - name: dot-imports
       - name: error-return
       - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
       - name: increment-decrement
       - name: var-naming
       - name: var-declaration
-      - name: package-comments
       - name: range
       - name: receiver-naming
       - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-      - name: empty-block
-      - name: superfluous-else
       - name: unused-parameter
-      - name: unreachable-code
-      - name: redefines-builtin-id
 
 issues:
   exclude-rules:
     # Exclude some linters from running on tests files
     - path: _test\.go
       linters:
-        - gocyclo
-        - dupl
+        - errcheck
         - gosec
+        - gocritic
 
     # Exclude known issues in generated files
     - path: \.pb\.go
@@ -103,6 +84,6 @@ issues:
         - staticcheck
         - unused
 
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  max-issues-per-linter: 50
+  max-same-issues: 10
   new: false

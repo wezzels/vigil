@@ -405,7 +405,7 @@ func (t *UDPTransmitter) Stats() TransmitterStats {
 type UDPGateway struct {
 	receiver    *UDPReceiver
 	transmitter *UDPTransmitter
-	mu          sync.RWMutex
+	// mu        sync.RWMutex
 }
 
 // NewUDPGateway creates a new UDP gateway
