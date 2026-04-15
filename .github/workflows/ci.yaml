@@ -182,7 +182,6 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          fail_on_severity: critical
 
   # ============================================
   # STAGE 4: UNIT TEST PACKAGES
