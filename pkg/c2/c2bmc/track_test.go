@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 )
@@ -329,12 +330,15 @@ func TestCorrelateAndSubmit(t *testing.T) {
 
 // TestTrackUpdateHandler tests track update batching
 func TestTrackUpdateHandler(t *testing.T) {
+	var mu sync.Mutex
 	received := make([]*TrackData, 0)
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var track TrackData
 		json.NewDecoder(r.Body).Decode(&track)
+		mu.Lock()
 		received = append(received, &track)
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}
 
@@ -369,6 +373,8 @@ func TestTrackUpdateHandler(t *testing.T) {
 	// Wait for processing
 	time.Sleep(200 * time.Millisecond)
 
+	mu.Lock()
+	defer mu.Unlock()
 	if len(received) != 5 {
 		t.Errorf("Expected 5 tracks, got %d", len(received))
 	}

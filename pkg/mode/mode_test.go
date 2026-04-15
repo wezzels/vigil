@@ -2,6 +2,7 @@ package mode
 
 import (
 	"math"
+	"sync"
 	"testing"
 	"time"
 )
@@ -111,31 +112,31 @@ func TestSetModeSame(t *testing.T) {
 func TestModeChangeCallback(t *testing.T) {
 	mm := NewModeManager(nil)
 
+	var mu sync.Mutex
 	callbackCalled := false
 	var callbackOld, callbackNew Mode
 
 	mm.RegisterCallback(func(old, new_ Mode) {
+		mu.Lock()
 		callbackCalled = true
 		callbackOld = old
 		callbackNew = new_
+		mu.Unlock()
 	})
-
-	// Give callback time to register
-	time.Sleep(10 * time.Millisecond)
 
 	mm.SetMode(ModeReplay)
 
 	// Wait for callback
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
+	mu.Lock()
+	defer mu.Unlock()
 	if !callbackCalled {
 		t.Error("Callback should have been called")
 	}
-
 	if callbackOld != ModeLive {
 		t.Errorf("Callback old mode should be LIVE, got %v", callbackOld)
 	}
-
 	if callbackNew != ModeReplay {
 		t.Errorf("Callback new mode should be REPLAY, got %v", callbackNew)
 	}
