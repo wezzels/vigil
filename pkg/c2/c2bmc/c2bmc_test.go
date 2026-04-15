@@ -125,7 +125,7 @@ func TestStatusStrings(t *testing.T) {
 		{AlertStatusProcessing, "PROCESSING"},
 		{AlertStatusComplete, "COMPLETE"},
 		{AlertStatusFailed, "FAILED"},
-		{AlertStatusCancelled, "CANCELLED"},
+		{AlertStatusCanceled, "CANCELED"},
 		{AlertStatus(99), "UNKNOWN"},
 	}
 

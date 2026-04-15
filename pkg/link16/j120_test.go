@@ -163,7 +163,7 @@ func TestMissionStatusStrings(t *testing.T) {
 		{J120StatusAssigned, "ASSIGNED"},
 		{J120StatusActive, "ACTIVE"},
 		{J120StatusComplete, "COMPLETE"},
-		{J120StatusCancelled, "CANCELLED"},
+		{J120StatusCanceled, "CANCELED"},
 		{J120StatusAborted, "ABORTED"},
 		{J120StatusDelayed, "DELAYED"},
 		{J120StatusSuspended, "SUSPENDED"},
